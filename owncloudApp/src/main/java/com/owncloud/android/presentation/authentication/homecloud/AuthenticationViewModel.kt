@@ -31,6 +31,11 @@ import com.owncloud.android.domain.authentication.usecases.GetBaseUrlUseCase
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
+import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessDeviceByIdUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessDevicesUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.model.ServerInfo
 import com.owncloud.android.domain.server.usecases.GetServerInfoAsyncUseCase
 import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncUseCase
@@ -43,6 +48,7 @@ import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.time.Duration.Companion.seconds
 
 class AuthenticationViewModel(
     private val loginBasicAsyncUseCase: LoginBasicAsyncUseCase,
@@ -54,6 +60,11 @@ class AuthenticationViewModel(
     private val workManagerProvider: WorkManagerProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val contextProvider: ContextProvider,
+    private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
+    private val getRemoteAccessDeviceByIdUseCase: GetRemoteAccessDeviceByIdUseCase,
+    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
+    private val getRemoteAccessDevicesUseCase: GetRemoteAccessDevicesUseCase,
+    private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase,
 ) : ViewModel() {
 
     private val _serverInfo = MediatorLiveData<Event<UIResult<ServerInfo>>>()
@@ -72,6 +83,9 @@ class AuthenticationViewModel(
     val screenState: LiveData<LoginScreenState> = _screenState
 
     var launchedFromDeepLink = false
+
+    var reference: String? = null
+
 
     init {
         _screenState.addSource(_serverInfo) { event ->
@@ -122,6 +136,54 @@ class AuthenticationViewModel(
     }
 
     fun handleCtaButtonClicked() {
+
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            discoverLocalNetworkDevicesUseCase(
+                DiscoverLocalNetworkDevicesUseCase.Params(
+                    serviceType = "_https._tcp",
+                    serviceName = "HomeCloud",
+                    duration = 30.seconds
+                )
+            ).collect { verifiedDeviceUrl ->
+                // Only verified, alive devices are emitted here
+                Timber.d("Found verified device: $verifiedDeviceUrl")
+            }
+        }
+//
+//        return
+//
+//        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+//            Timber.d("DEBUG start remote access")
+//            try {
+//                getDevices()
+//            } catch (e: Exception) {
+//                Timber.d("DEBUG failed to get devices")
+//                if (reference.isNullOrEmpty()) {
+//                    Timber.d("DEBUG Getting reference")
+//                    reference = initiateRemoteAccessAuthenticationUseCase(
+//                        InitiateRemoteAccessAuthenticationUseCase.Params(
+//                            email = screenState.value?.username ?: "",
+//                            clientId = UUID.randomUUID().toString(),
+//                            clientFriendlyName = Build.MODEL,
+//                        )
+//                    ).getDataOrNull()
+//                    Timber.d("DEBUG Got reference: $reference")
+//                } else {
+//                    Timber.d("DEBUG Getting token")
+//                    getRemoteAccessTokenUseCase(
+//                        GetRemoteAccessTokenUseCase.Params(
+//                            reference = reference ?: "",
+//                            code = screenState.value?.password ?: "",
+//                        )
+//                    )
+//                    Timber.d("DEBUG Got token")
+//
+//                    getDevices()
+//
+//                }
+//            }
+//
+//        }
         val currentValue = _screenState.value ?: return
         if (currentValue.url.isNotEmpty()) {
             _screenState.update {
@@ -133,6 +195,16 @@ class AuthenticationViewModel(
         }
     }
 
+    private fun getDevices() {
+        Timber.d("DEBUG trying to get devices")
+        val devices = getRemoteAccessDevicesUseCase(Unit).getDataOrNull()
+        Timber.d("DEBUG Got devices: $devices")
+        devices?.forEach {
+            val paths = getRemoteAccessDeviceByIdUseCase(GetRemoteAccessDeviceByIdUseCase.Params(it.seagateDeviceId)).getDataOrNull()
+            Timber.d("DEBUG Got paths: $paths")
+        }
+    }
+
     private fun updateCtaButtonState() {
         val currentValue = _screenState.value ?: return
         val isCtaButtonEnabled = with(currentValue) {
@@ -140,7 +212,7 @@ class AuthenticationViewModel(
         }
         _screenState.update {
             it.copy(
-                ctaButtonEnabled = isCtaButtonEnabled,
+                ctaButtonEnabled = true,
             )
         }
     }
