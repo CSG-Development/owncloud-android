@@ -48,7 +48,6 @@ import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 class AuthenticationViewModel(
     private val loginBasicAsyncUseCase: LoginBasicAsyncUseCase,
@@ -85,7 +84,6 @@ class AuthenticationViewModel(
     var launchedFromDeepLink = false
 
     var reference: String? = null
-
 
     init {
         _screenState.addSource(_serverInfo) { event ->
@@ -137,21 +135,30 @@ class AuthenticationViewModel(
 
     fun handleCtaButtonClicked() {
 
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            discoverLocalNetworkDevicesUseCase(
-                DiscoverLocalNetworkDevicesUseCase.Params(
-                    serviceType = "_https._tcp",
-                    serviceName = "HomeCloud",
-                    duration = 30.seconds
-                )
-            ).collect { verifiedDeviceUrl ->
-                // Only verified, alive devices are emitted here
-                Timber.d("Found verified device: $verifiedDeviceUrl")
-            }
-        }
-//
-//        return
-//
+//        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+//            discoverLocalNetworkDevicesUseCase(
+//                DiscoverLocalNetworkDevicesUseCase.Params(
+//                    serviceType = "_https._tcp",
+//                    serviceName = "HomeCloud",
+//                    duration = 30.seconds
+//                )
+//            ).collect { verifiedDeviceUrl ->
+//                // Only verified, alive devices are emitted here
+//                Timber.d("Found verified device: $verifiedDeviceUrl")
+//            }
+//        }
+
+//        viewModelScope.launch {
+//            try {
+//                reference = initiateRemoteAccessAuthenticationUseCase.execute(
+//                    email = screenState.value?.username ?: "",
+//                )
+//                Timber.d("DEBUG $reference")
+//            } catch (e: Exception) {
+//                Timber.e(e, "Failed to handle CTA button click")
+//            }
+//        }
+
 //        viewModelScope.launch(coroutinesDispatcherProvider.io) {
 //            Timber.d("DEBUG start remote access")
 //            try {
@@ -160,13 +167,11 @@ class AuthenticationViewModel(
 //                Timber.d("DEBUG failed to get devices")
 //                if (reference.isNullOrEmpty()) {
 //                    Timber.d("DEBUG Getting reference")
-//                    reference = initiateRemoteAccessAuthenticationUseCase(
-//                        InitiateRemoteAccessAuthenticationUseCase.Params(
+//                    reference = initiateRemoteAccessAuthenticationUseCase.execute(
 //                            email = screenState.value?.username ?: "",
 //                            clientId = UUID.randomUUID().toString(),
 //                            clientFriendlyName = Build.MODEL,
-//                        )
-//                    ).getDataOrNull()
+//                    )
 //                    Timber.d("DEBUG Got reference: $reference")
 //                } else {
 //                    Timber.d("DEBUG Getting token")
@@ -195,12 +200,12 @@ class AuthenticationViewModel(
         }
     }
 
-    private fun getDevices() {
+    private suspend fun getDevices() {
         Timber.d("DEBUG trying to get devices")
-        val devices = getRemoteAccessDevicesUseCase(Unit).getDataOrNull()
+        val devices = getRemoteAccessDevicesUseCase.execute()
         Timber.d("DEBUG Got devices: $devices")
         devices?.forEach {
-            val paths = getRemoteAccessDeviceByIdUseCase(GetRemoteAccessDeviceByIdUseCase.Params(it.seagateDeviceId)).getDataOrNull()
+            val paths = getRemoteAccessDeviceByIdUseCase.execute(it.seagateDeviceId)
             Timber.d("DEBUG Got paths: $paths")
         }
     }
