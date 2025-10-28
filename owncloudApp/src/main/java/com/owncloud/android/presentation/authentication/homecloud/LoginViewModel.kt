@@ -18,7 +18,6 @@ import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncU
 import com.owncloud.android.presentation.authentication.ACTION_CREATE
 import com.owncloud.android.presentation.authentication.EXTRA_ACCOUNT
 import com.owncloud.android.presentation.authentication.EXTRA_ACTION
-import com.owncloud.android.presentation.authentication.KEY_AUTH_TOKEN_TYPE
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
@@ -58,8 +57,6 @@ class LoginViewModel(
     private val account by lazy { savedStateHandle.get<Account>(EXTRA_ACCOUNT) }
 
     init {
-        Timber.d("DEBUG LoginViewModel ${savedStateHandle.get<Byte>(EXTRA_ACTION)}")
-        Timber.d("DEBUG LoginViewModel ${savedStateHandle.get<String>(KEY_AUTH_TOKEN_TYPE)}")
         if (loginAction != ACTION_CREATE) {
             account?.let {
                 onUserNameChanged(it.name)

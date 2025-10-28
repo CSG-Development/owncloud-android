@@ -65,7 +65,6 @@
                 app:helperText=" "
                 app:hintAnimationEnabled="false"
                 app:hintEnabled="true">
-<!--                app:startIconDrawable="@drawable/ic_arrow_forward"-->
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
                     android:id="@+id/hostUrlInput"
