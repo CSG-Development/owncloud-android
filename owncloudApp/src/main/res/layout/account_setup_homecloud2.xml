@@ -47,7 +47,7 @@
 
             <androidx.constraintlayout.widget.Group
                 android:id="@+id/login_state_group"
-                app:constraint_referenced_ids="hostUrlInputLayout,servers_refresh_button,account_password_container,reset_password_link"
+                app:constraint_referenced_ids="hostUrlInputLayout,account_password_container,reset_password_link"
                 android:layout_width="0dp"
                 android:layout_height="0dp" />
 
@@ -56,6 +56,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
+                android:layout_marginEnd="8dp"
                 android:hint="@string/homecloud_login_server_address_hint"
                 app:layout_constraintTop_toBottomOf="@+id/thumbnail"
                 app:layout_constraintStart_toStartOf="parent"
@@ -81,7 +82,6 @@
                 android:id="@+id/servers_refresh_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:padding="6dp"
                 android:contentDescription="refresh"
                 android:src="@drawable/ic_refresh"
@@ -90,6 +90,17 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/hostUrlInputLayout"
                 app:layout_constraintBottom_toBottomOf="@id/hostUrlInputLayout" />
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/servers_refresh_loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:layout_constraintVertical_bias="0.3"
+                app:layout_constraintStart_toEndOf="@id/hostUrlInputLayout"
+                app:layout_constraintTop_toTopOf="@id/hostUrlInputLayout"
+                app:layout_constraintBottom_toBottomOf="@id/hostUrlInputLayout"/>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/account_username_container"

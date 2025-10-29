@@ -28,6 +28,18 @@ class RemoteAccessTokenStorage(
         }
     }
 
+    fun getUserName(): String? {
+        synchronized(tokenLock) {
+            return sharedPreferencesProvider.getString(KEY_USER_NAME, null)
+        }
+    }
+
+    fun saveUserName(userName: String) {
+        synchronized(tokenLock) {
+            sharedPreferencesProvider.putString(KEY_USER_NAME, userName)
+        }
+    }
+
     fun clearTokens() {
         synchronized(tokenLock) {
             sharedPreferencesProvider.removePreference(KEY_ACCESS_TOKEN)
@@ -38,6 +50,7 @@ class RemoteAccessTokenStorage(
     companion object {
         private const val KEY_ACCESS_TOKEN = "remote_access_access_token"
         private const val KEY_REFRESH_TOKEN = "remote_access_refresh_token"
+        private const val KEY_USER_NAME = "remote_account_name"
     }
 }
 

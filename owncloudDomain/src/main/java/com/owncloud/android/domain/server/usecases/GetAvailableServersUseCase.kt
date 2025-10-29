@@ -23,20 +23,15 @@ class GetAvailableServersUseCase(
     private val remoteAccessDevicesFlow = MutableStateFlow(emptyList<Server>())
 
     suspend fun refreshRemoteAccessDevices() {
-        try {
-            val remoteAccessDevices = getRemoteAccessDevicesUseCase.execute().map {
-                val devicePath = getRemoteAccessDeviceByIdUseCase.execute(it.seagateDeviceId)
-                val remoteAccessPath = devicePath.firstOrNull()
-                val baseUrl = "${remoteAccessPath?.address.orEmpty()}:${remoteAccessPath?.port ?: ""}"
-                Server(
-                    hostName = it.friendlyName, hostUrl = baseUrl
-                )
-            }
-            remoteAccessDevicesFlow.update { remoteAccessDevices }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
+        val remoteAccessDevices = getRemoteAccessDevicesUseCase.execute().map {
+            val devicePath = getRemoteAccessDeviceByIdUseCase.execute(it.seagateDeviceId)
+            val remoteAccessPath = devicePath.firstOrNull()
+            val baseUrl = "https://${remoteAccessPath?.address.orEmpty()}:${remoteAccessPath?.port ?: ""}"
+            Server(
+                hostName = it.friendlyName, hostUrl = baseUrl
+            )
         }
+        remoteAccessDevicesFlow.update { remoteAccessDevices }
     }
 
     suspend fun getServersUpdates(
