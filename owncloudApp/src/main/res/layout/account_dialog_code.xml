@@ -71,24 +71,23 @@
     <!-- Action Buttons -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/allowButton"
-        style="?attr/borderlessButtonStyle"
+        style="@style/Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/homecloud_button_allow_access"
-        android:textColor="@color/selector_borderless_button_color"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/codeInputLayout" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/skipButton"
-        style="?attr/borderlessButtonStyle"
+        style="@style/Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:text="@string/homecloud_button_skip"
-        android:textColor="@color/selector_borderless_button_color"
+        android:enabled="false"
         app:layout_constraintBaseline_toBaselineOf="@id/allowButton"
         app:layout_constraintEnd_toStartOf="@id/allowButton" />
 
