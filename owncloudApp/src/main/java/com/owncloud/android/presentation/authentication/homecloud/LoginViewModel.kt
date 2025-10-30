@@ -16,7 +16,7 @@ import com.owncloud.android.domain.exceptions.SSLErrorException
 import com.owncloud.android.domain.exceptions.UnknownErrorException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
-import com.owncloud.android.domain.remoteaccess.usecases.GetExistingUserUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoveAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.model.Server
@@ -53,7 +53,7 @@ class LoginViewModel(
     private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val getServersUseCase: GetAvailableServersUseCase,
-    private val getExistingUserUseCase: GetExistingUserUseCase,
+    private val getExistingRemoveAccessUserUseCase: GetExistingRemoveAccessUserUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -157,7 +157,7 @@ class LoginViewModel(
     }
 
     private fun restorePreviousUserIfExists() {
-        val existingUserName = getExistingUserUseCase.execute()
+        val existingUserName = getExistingRemoveAccessUserUseCase.execute()
         if (existingUserName != null) {
             onPreviousUserRestore(existingUserName)
             startObserveServers()
