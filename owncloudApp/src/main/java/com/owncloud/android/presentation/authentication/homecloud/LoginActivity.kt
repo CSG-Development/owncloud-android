@@ -22,7 +22,6 @@ import com.owncloud.android.extensions.manageOptionLockSelected
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.updateTextIfDiffers
 import com.owncloud.android.lib.common.network.CertificateCombinedException
-import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.authentication.AccountUtils.getAccounts
 import com.owncloud.android.presentation.authentication.UNTRUSTED_CERT_DIALOG_TAG
 import com.owncloud.android.presentation.authentication.homecloud.LoginViewModel.LoginScreenState
@@ -34,7 +33,6 @@ import com.owncloud.android.ui.dialog.SslUntrustedCertDialog
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import timber.log.Timber
 
 class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrustedCertListener, SecurityEnforced {
 
@@ -67,9 +65,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =
             PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(this)
-
-        val account = AccountUtils.getCurrentOwnCloudAccount(this)
-        Timber.d("Current account: $account")
 
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED, block = {
@@ -187,8 +182,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.accountPassword.updateTextIfDiffers(state.password)
         binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
         binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-        binding.errorMessage.text = state.errorLoginMessage
-        binding.errorMessage.isVisible = !state.errorLoginMessage.isNullOrBlank()
+        binding.errorMessage.text = state.errorMessage
+        binding.errorMessage.isVisible = !state.errorMessage.isNullOrBlank()
 
         when (state.loginState) {
             LoginViewModel.LoginState.REMOTE_ACCESS -> {
@@ -207,6 +202,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.loadingLayout.visibility = View.VISIBLE
                     binding.actionGroup.visibility = View.GONE
                     binding.loginStateGroup.visibility = View.GONE
+                    binding.serversRefreshButton.visibility = View.INVISIBLE
                 } else {
                     binding.loadingLayout.visibility = View.GONE
                     binding.actionGroup.visibility = View.VISIBLE
@@ -229,7 +225,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     override fun onSavedCertificate() {
-
+        loginViewModel.onActionClicked()
     }
 
     override fun onFailedSavingCertificate() {

@@ -80,13 +80,12 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     val reference = initiateRemoteAccessAuthenticationUseCase.execute(_state.value.username)
-                    _state.update { it.copy(reference = reference, errorEmailInvalidMessage = null) }
+                    _state.update { it.copy(reference = reference, errorEmailInvalidMessage = null, errorMessage = null) }
                     _events.emit(LoginEvent.NavigateToCodeDialog)
-                    Timber.d("DEBUG Initiated token $reference")
                     startObserveServers()
                 },
                 exceptionHandlerBlock = {
-                    Timber.d("DEBUG Initiated token failed $it")
+                    _state.update { it.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error)) }
                 }
             )
         }
@@ -113,13 +112,11 @@ class LoginViewModel(
         viewModelScope.launch {
             runCatchingException(
                 block = {
-                    _state.update { it.copy(isAllowLoading = true) }
+                    _state.update { it.copy(isAllowLoading = true, errorCodeMessage = null) }
                     getRemoteAccessTokenUseCase.execute(_state.value.reference, code)
-                    Timber.d("DEBUG getRemoteAccessTokenUseCase successful")
                     toLoginState()
                 },
                 exceptionHandlerBlock = {
-                    Timber.d("DEBUG code failed $it")
                     handleCodeError(it)
                 },
                 completeBlock = {
@@ -228,7 +225,7 @@ class LoginViewModel(
 
     private fun performLogin() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorLoginMessage = null) }
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
             val currentState = _state.value
             runCatchingException(
                 block = {
@@ -278,12 +275,12 @@ class LoginViewModel(
     }
 
     private suspend fun handleLoginError(e: Throwable?) {
-        if (e is CertificateCombinedException) {
-            _events.emit(LoginEvent.ShowUntrustedCertDialog(e))
-            return
-        }
-
         val text = when {
+            e is CertificateCombinedException -> {
+                _events.emit(LoginEvent.ShowUntrustedCertDialog(e))
+                null
+            }
+
             e is OwncloudVersionNotSupportedException -> {
                 contextProvider.getString(R.string.server_not_supported)
             }
@@ -308,13 +305,12 @@ class LoginViewModel(
         _state.update {
             it.copy(
                 isLoading = false,
-                errorLoginMessage = text?.toString()
+                errorMessage = text?.toString()
             )
         }
     }
 
     fun discoverAccount(accountName: String, discoveryNeeded: Boolean = false) {
-        Timber.d("Account Discovery for account: $accountName needed: $discoveryNeeded")
         if (!discoveryNeeded) {
             return
         }
@@ -346,7 +342,7 @@ class LoginViewModel(
         val selectedServer: Server? = null,
         val servers: List<Server> = emptyList(),
         val serverUrl: String = "",
-        val errorLoginMessage: String? = null,
+        val errorMessage: String? = null,
         val errorCodeMessage: String? = null,
         val errorEmailInvalidMessage: String? = null,
     )
