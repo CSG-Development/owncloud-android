@@ -31,7 +31,7 @@ class HCRemoteAccessRepository(
         return remoteAccessService.initiateAuthentication(request = request).reference
     }
 
-    override suspend fun getToken(reference: String, code: String) {
+    override suspend fun getToken(reference: String, code: String, userName: String) {
         try {
             val request = RemoteAccessTokenRequest(
                 reference = reference,
@@ -43,6 +43,8 @@ class HCRemoteAccessRepository(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
             )
+
+            tokenStorage.saveUserName(userName = userName)
         } catch (e: HttpException) {
             if (e.code() == HttpConstants.HTTP_BAD_REQUEST) {
                 throw WrongCodeException(e)
@@ -50,6 +52,10 @@ class HCRemoteAccessRepository(
                 throw e
             }
         }
+    }
+
+    override fun getUserName(): String? {
+        return tokenStorage.getUserName()
     }
 
     override suspend fun getDevices(): List<RemoteAccessDevice> {

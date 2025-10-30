@@ -6,8 +6,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
-import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
-import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
@@ -16,7 +14,9 @@ import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedExcepti
 import com.owncloud.android.domain.exceptions.SSLErrorCode
 import com.owncloud.android.domain.exceptions.SSLErrorException
 import com.owncloud.android.domain.exceptions.UnknownErrorException
+import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetExistingUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.model.Server
@@ -53,7 +53,7 @@ class LoginViewModel(
     private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val getServersUseCase: GetAvailableServersUseCase,
-    private val tokenStorage: RemoteAccessTokenStorage,
+    private val getExistingUserUseCase: GetExistingUserUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -113,7 +113,7 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     _state.update { it.copy(isAllowLoading = true, errorCodeMessage = null) }
-                    getRemoteAccessTokenUseCase.execute(_state.value.reference, code)
+                    getRemoteAccessTokenUseCase.execute(_state.value.reference, code, _state.value.username)
                     switchToLoginState()
                 },
                 exceptionHandlerBlock = {
@@ -157,19 +157,20 @@ class LoginViewModel(
     }
 
     private fun restorePreviousUserIfExists() {
-        if (tokenStorage.getAccessToken() != null) {
-            onPreviousUserRestore()
+        val existingUserName = getExistingUserUseCase.execute()
+        if (existingUserName != null) {
+            onPreviousUserRestore(existingUserName)
             startObserveServers()
             refreshServers()
         }
     }
 
-    private fun onPreviousUserRestore() {
+    private fun onPreviousUserRestore(existingUserName: String) {
         viewModelScope.launch {
             _state.update {
                 it.copy(
                     loginState = LoginState.LOGIN,
-                    username = tokenStorage.getUserName().orEmpty(),
+                    username = existingUserName,
                 )
             }
             _events.emit(LoginEvent.NavigateToLogin)
@@ -253,7 +254,7 @@ class LoginViewModel(
                         }
 
                         if (accountNameResult.isSuccess) {
-                            tokenStorage.saveUserName(currentState.username)
+//                            tokenStorage.saveUserName(currentState.username)
                             val accountName = accountNameResult.getDataOrNull().orEmpty()
                             discoverAccount(accountName, loginAction == ACTION_CREATE)
                             _events.emit(LoginEvent.LoginResult(accountName = accountName))

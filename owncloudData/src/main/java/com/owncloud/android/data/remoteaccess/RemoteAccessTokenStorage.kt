@@ -44,6 +44,7 @@ class RemoteAccessTokenStorage(
         synchronized(tokenLock) {
             sharedPreferencesProvider.removePreference(KEY_ACCESS_TOKEN)
             sharedPreferencesProvider.removePreference(KEY_REFRESH_TOKEN)
+            sharedPreferencesProvider.removePreference(KEY_USER_NAME)
         }
     }
 
