@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
-import com.owncloud.android.data.remoteaccess.WrongCodeException
+import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
@@ -114,7 +114,7 @@ class LoginViewModel(
                 block = {
                     _state.update { it.copy(isAllowLoading = true, errorCodeMessage = null) }
                     getRemoteAccessTokenUseCase.execute(_state.value.reference, code)
-                    toLoginState()
+                    switchToLoginState()
                 },
                 exceptionHandlerBlock = {
                     handleCodeError(it)
@@ -147,11 +147,11 @@ class LoginViewModel(
 
     fun onSkipClicked() {
         viewModelScope.launch {
-            toLoginState()
+            switchToLoginState()
         }
     }
 
-    private suspend fun toLoginState() {
+    private suspend fun switchToLoginState() {
         _state.update { it.copy(loginState = LoginState.LOGIN) }
         _events.emit(LoginEvent.NavigateToLogin)
     }

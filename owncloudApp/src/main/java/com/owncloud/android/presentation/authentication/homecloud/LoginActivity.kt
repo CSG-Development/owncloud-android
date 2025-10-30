@@ -14,7 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogCodeBinding
-import com.owncloud.android.databinding.AccountSetupHomecloud2Binding
+import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.server.model.Server
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
@@ -38,7 +38,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private val loginViewModel by viewModel<LoginViewModel>()
 
-    private lateinit var binding: AccountSetupHomecloud2Binding
+    private lateinit var binding: AccountSetupHomecloudBinding
     private val dialogBinding by lazy { AccountDialogCodeBinding.inflate(layoutInflater) }
 
     private val adapter by lazy {
@@ -60,7 +60,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         handleDeepLink()
 
-        binding = AccountSetupHomecloud2Binding.inflate(layoutInflater)
+        binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =

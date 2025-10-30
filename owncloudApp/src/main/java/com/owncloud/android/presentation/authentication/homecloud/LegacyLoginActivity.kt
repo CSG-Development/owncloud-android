@@ -42,7 +42,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.BuildConfig
 import com.owncloud.android.MainApp.Companion.accountType
 import com.owncloud.android.R
-import com.owncloud.android.databinding.AccountSetupHomecloudBinding
+import com.owncloud.android.databinding.AccountSetupHomecloudLegacyBinding
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -94,7 +94,7 @@ class LegacyLoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUnt
     private var userAccount: Account? = null
     private lateinit var serverBaseUrl: String
 
-    private lateinit var binding: AccountSetupHomecloudBinding
+    private lateinit var binding: AccountSetupHomecloudLegacyBinding
 
     companion object Companion {
         private const val DEV_SHORTCUT_WINDOW_MS = 1200L
@@ -126,7 +126,7 @@ class LegacyLoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUnt
         }
 
         // UI initialization
-        binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
+        binding = AccountSetupHomecloudLegacyBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
 

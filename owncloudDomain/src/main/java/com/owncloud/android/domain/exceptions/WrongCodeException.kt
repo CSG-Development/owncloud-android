@@ -1,3 +1,3 @@
-package com.owncloud.android.data.remoteaccess
+package com.owncloud.android.domain.exceptions
 
 class WrongCodeException(cause: Throwable?): Exception(cause)

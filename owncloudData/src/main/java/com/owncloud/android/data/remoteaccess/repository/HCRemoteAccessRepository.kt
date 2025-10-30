@@ -2,7 +2,7 @@ package com.owncloud.android.data.remoteaccess.repository
 
 import com.owncloud.android.data.remoteaccess.RemoteAccessModelMapper
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
-import com.owncloud.android.data.remoteaccess.WrongCodeException
+import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
