@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
+import com.owncloud.android.data.remoteaccess.WrongCodeException
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
@@ -84,7 +85,7 @@ class LoginViewModel(
                     startObserveServers()
                 },
                 exceptionHandlerBlock = {
-
+                    Timber.d("DEBUG Initiated token failed $it")
                 }
             )
         }
@@ -112,12 +113,31 @@ class LoginViewModel(
                     toLoginState()
                 },
                 exceptionHandlerBlock = {
-
+                    Timber.d("DEBUG code failed $it")
+                    handleCodeError(it)
                 },
                 completeBlock = {
                     _state.update { it.copy(isAllowLoading = false) }
                     refreshServers()
                 }
+            )
+        }
+    }
+
+    private fun handleCodeError(e: Throwable) {
+        val errorMessage = when {
+            e is WrongCodeException -> {
+                contextProvider.getString(R.string.homecloud_incorrect_code)
+            }
+
+            else -> {
+                contextProvider.getString(R.string.homecloud_code_unknown_error)
+            }
+        }
+
+        _state.update {
+            it.copy(
+                errorCodeMessage = errorMessage
             )
         }
     }
@@ -137,6 +157,7 @@ class LoginViewModel(
         if (tokenStorage.getAccessToken() != null) {
             onPreviousUserRestore()
             startObserveServers()
+            refreshServers()
         }
     }
 
@@ -201,7 +222,7 @@ class LoginViewModel(
 
     private fun performLogin() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            _state.update { it.copy(isLoading = true, errorLoginMessage = null) }
             val currentState = _state.value
             runCatchingException(
                 block = {
@@ -281,7 +302,7 @@ class LoginViewModel(
         _state.update {
             it.copy(
                 isLoading = false,
-                errorMessage = text?.toString()
+                errorLoginMessage = text?.toString()
             )
         }
     }
@@ -319,7 +340,8 @@ class LoginViewModel(
         val selectedServer: Server? = null,
         val servers: List<Server> = emptyList(),
         val serverUrl: String = "",
-        val errorMessage: String? = null
+        val errorLoginMessage: String? = null,
+        val errorCodeMessage: String? = null
     )
 
     sealed class LoginEvent {

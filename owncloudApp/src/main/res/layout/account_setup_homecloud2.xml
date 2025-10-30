@@ -63,6 +63,9 @@
                 app:layout_constraintEnd_toStartOf="@+id/servers_refresh_button"
                 app:endIconMode="dropdown_menu"
                 app:expandedHintEnabled="false"
+                app:startIconDrawable="@drawable/ic_device"
+                app:startIconTintMode="screen"
+                app:startIconTint="@color/transparent"
                 app:helperText=" "
                 app:hintAnimationEnabled="false"
                 app:hintEnabled="true">

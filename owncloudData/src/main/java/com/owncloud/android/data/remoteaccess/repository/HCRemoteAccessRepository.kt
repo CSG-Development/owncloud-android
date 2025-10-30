@@ -2,12 +2,15 @@ package com.owncloud.android.data.remoteaccess.repository
 
 import com.owncloud.android.data.remoteaccess.RemoteAccessModelMapper
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
+import com.owncloud.android.data.remoteaccess.WrongCodeException
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
 import com.owncloud.android.domain.remoteaccess.model.RemoteAccessDevice
 import com.owncloud.android.domain.remoteaccess.model.RemoteAccessPath
+import com.owncloud.android.lib.common.http.HttpConstants
+import retrofit2.HttpException
 
 class HCRemoteAccessRepository(
     private val remoteAccessService: RemoteAccessService,
@@ -29,16 +32,24 @@ class HCRemoteAccessRepository(
     }
 
     override suspend fun getToken(reference: String, code: String) {
-        val request = RemoteAccessTokenRequest(
-            reference = reference,
-            code = code
-        )
-        val (accessToken, refreshToken) = remoteAccessService.getToken(request = request)
+        try {
+            val request = RemoteAccessTokenRequest(
+                reference = reference,
+                code = code
+            )
+            val (accessToken, refreshToken) = remoteAccessService.getToken(request = request)
 
-        tokenStorage.saveToken(
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-        )
+            tokenStorage.saveToken(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+            )
+        } catch (e: HttpException) {
+            if (e.code() == HttpConstants.HTTP_BAD_REQUEST) {
+                throw WrongCodeException(e)
+            } else {
+                throw e
+            }
+        }
     }
 
     override suspend fun getDevices(): List<RemoteAccessDevice> {

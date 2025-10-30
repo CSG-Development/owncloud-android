@@ -34,11 +34,10 @@ class GetAvailableServersUseCase(
         remoteAccessDevicesFlow.update { remoteAccessDevices }
     }
 
-    suspend fun getServersUpdates(
+    fun getServersUpdates(
         scope: CoroutineScope,
         discoverLocalNetworkDevicesParams: DiscoverLocalNetworkDevicesUseCase.Params
     ): StateFlow<List<Server>> {
-        refreshRemoteAccessDevices()
         val localNetworkDevicesFlow = discoverLocalNetworkDevicesUseCase.execute(discoverLocalNetworkDevicesParams)
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), "")
 

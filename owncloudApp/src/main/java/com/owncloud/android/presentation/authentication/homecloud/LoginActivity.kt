@@ -165,7 +165,11 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun showCodeDialog() {
         dialogBinding.codeEditText.doAfterTextChanged {
-            dialogBinding.allowButton.isEnabled = it.toString().isNotEmpty()
+            val isNotEmpty = it.toString().isNotEmpty()
+            dialogBinding.allowButton.isEnabled = isNotEmpty
+            if (isNotEmpty) {
+                dialogBinding.codeInputLayout.error = null
+            }
         }
         dialogBinding.allowButton.setOnClickListener {
             loginViewModel.onCodeEntered(dialogBinding.codeEditText.text.toString())
@@ -182,8 +186,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.accountPassword.updateTextIfDiffers(state.password)
         binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
         binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-        binding.errorMessage.text = state.errorMessage
-        binding.errorMessage.isVisible = !state.errorMessage.isNullOrBlank()
+        binding.errorMessage.text = state.errorLoginMessage
+        binding.errorMessage.isVisible = !state.errorLoginMessage.isNullOrBlank()
 
         when (state.loginState) {
             LoginViewModel.LoginState.REMOTE_ACCESS -> {
@@ -193,6 +197,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 dialogBinding.allowLoading.visibility = if (state.isAllowLoading) View.VISIBLE else View.GONE
                 binding.actionButton.isEnabled = state.username.isNotEmpty()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
+                dialogBinding.codeInputLayout.error = state.errorCodeMessage
             }
 
             LoginViewModel.LoginState.LOGIN -> {
