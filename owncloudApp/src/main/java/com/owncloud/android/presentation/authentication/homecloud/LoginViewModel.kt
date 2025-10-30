@@ -1,6 +1,7 @@
 package com.owncloud.android.presentation.authentication.homecloud
 
 import android.accounts.Account
+import android.util.Patterns
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -79,7 +80,7 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     val reference = initiateRemoteAccessAuthenticationUseCase.execute(_state.value.username)
-                    _state.update { it.copy(reference = reference) }
+                    _state.update { it.copy(reference = reference, errorEmailInvalidMessage = null) }
                     _events.emit(LoginEvent.NavigateToCodeDialog)
                     Timber.d("DEBUG Initiated token $reference")
                     startObserveServers()
@@ -92,7 +93,12 @@ class LoginViewModel(
     }
 
     fun onUserNameChanged(username: String) {
-        _state.update { it.copy(username = username) }
+        val errorEmailValidation = if (!Patterns.EMAIL_ADDRESS.matcher(username).matches()) {
+            contextProvider.getString(R.string.homecloud_login_invalid_email_message)
+        } else {
+            null
+        }
+        _state.update { it.copy(username = username, errorEmailInvalidMessage = errorEmailValidation) }
     }
 
     fun onPasswordChanged(password: String) {
@@ -341,7 +347,8 @@ class LoginViewModel(
         val servers: List<Server> = emptyList(),
         val serverUrl: String = "",
         val errorLoginMessage: String? = null,
-        val errorCodeMessage: String? = null
+        val errorCodeMessage: String? = null,
+        val errorEmailInvalidMessage: String? = null,
     )
 
     sealed class LoginEvent {

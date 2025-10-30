@@ -42,4 +42,5 @@
     <string name="homecloud_action_button_next">Next</string>
     <string name="homecloud_incorrect_code">Incorrect code.</string>
     <string name="homecloud_code_unknown_error">Something went wrong.</string>
+    <string name="homecloud_login_invalid_email_message">Incorrect email</string>
 </resources>

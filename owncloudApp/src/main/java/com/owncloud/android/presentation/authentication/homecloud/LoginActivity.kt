@@ -3,6 +3,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 import android.accounts.AccountManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -191,11 +192,12 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         when (state.loginState) {
             LoginViewModel.LoginState.REMOTE_ACCESS -> {
+                binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
                 dialogBinding.allowButton.visibility = if (state.isAllowLoading) View.INVISIBLE else View.VISIBLE
                 dialogBinding.allowLoading.visibility = if (state.isAllowLoading) View.VISIBLE else View.GONE
-                binding.actionButton.isEnabled = state.username.isNotEmpty()
+                binding.actionButton.isEnabled = state.errorEmailInvalidMessage == null && state.username.isNotEmpty()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
                 dialogBinding.codeInputLayout.error = state.errorCodeMessage
             }
@@ -212,7 +214,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.accountUsername.isEnabled = false
                     binding.actionButton.setText(R.string.setup_btn_login)
                     binding.actionButton.isEnabled = state.username.isNotEmpty() && state.password.isNotEmpty() &&
-                            (state.selectedServer != null || state.serverUrl.isNotEmpty())
+                            (state.selectedServer != null || state.serverUrl.isNotEmpty()) && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
                 }
             }
         }

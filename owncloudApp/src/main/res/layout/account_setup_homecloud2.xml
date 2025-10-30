@@ -111,6 +111,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="@string/homecloud_login_email_hint"
+                app:errorEnabled="true"
                 app:endIconDrawable="@drawable/ic_clear_input"
                 app:endIconMode="clear_text"
                 app:expandedHintEnabled="false"
