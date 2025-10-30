@@ -254,7 +254,6 @@ class LoginViewModel(
                         }
 
                         if (accountNameResult.isSuccess) {
-//                            tokenStorage.saveUserName(currentState.username)
                             val accountName = accountNameResult.getDataOrNull().orEmpty()
                             discoverAccount(accountName, loginAction == ACTION_CREATE)
                             _events.emit(LoginEvent.LoginResult(accountName = accountName))
