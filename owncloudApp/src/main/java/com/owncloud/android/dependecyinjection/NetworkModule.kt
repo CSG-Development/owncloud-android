@@ -66,7 +66,7 @@ val networkModule = module {
     // Device Verification Client for mDNS
     single {
         HCDeviceVerificationClient(
-            okHttpClient = get<OkHttpClient>(named(NetworkModuleQualifiers.OKHTTP_CLIENT_PINNED_CERTS)),
+            okHttpClient = get<OkHttpClient>(named(NetworkModuleQualifiers.OKHTTP_CLIENT_TRUST_ALL)),
             moshi = get()
         )
     }

@@ -2,6 +2,7 @@ package com.owncloud.android.domain.remoteaccess
 
 import com.owncloud.android.domain.remoteaccess.model.RemoteAccessDevice
 import com.owncloud.android.domain.remoteaccess.model.RemoteAccessPath
+import com.owncloud.android.domain.server.model.Server
 
 interface RemoteAccessRepository {
     /**
@@ -39,8 +40,14 @@ interface RemoteAccessRepository {
     /**
      * Get information about a specific device including its connection paths
      * @param deviceId Device identifier
-     * @return List of paths for partivular device
+     * @return List of paths for particular device
      */
     suspend fun getDeviceById(deviceId: String): List<RemoteAccessPath>
+
+    /**
+     * Get all available server urls for all devices
+     * @return a list of available servers
+     */
+    suspend fun getAvailableServers(): List<Server>
 }
 
