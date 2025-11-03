@@ -67,7 +67,7 @@ class HCRemoteAccessRepository(
                 val baseUrl = getDeviceBaseUrl(devicePath)
                 if (deviceVerificationClient.verifyDevice(baseUrl)) {
                     // Get certificate common name
-                    val certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl)
+                    val certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
                     server = Server(
                         hostName = it.friendlyName,
                         hostUrl = "$baseUrl/files",

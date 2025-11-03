@@ -41,7 +41,7 @@ class HCMdnsDiscoveryRepository(
                 Timber.d("Device verified: $deviceUrl")
                 
                 // Get certificate common name
-                val certificateCommonName = deviceVerificationClient.getCertificateCommonName(deviceUrl)
+                val certificateCommonName = deviceVerificationClient.getCertificateCommonName(deviceUrl).orEmpty()
                 Timber.d("Device certificate common name: $certificateCommonName")
                 
                 Server(

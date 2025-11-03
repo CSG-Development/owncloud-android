@@ -35,7 +35,7 @@ class GetAvailableServersUseCase(
             Timber.d("Remote access devices: $remote, Local network device: $local")
             val mutableServers = remote.toMutableList()
             if (local != null) {
-                if (local.certificateCommonName == null || mutableServers.none { it.certificateCommonName == local.certificateCommonName }) {
+                if (local.certificateCommonName.isEmpty() || mutableServers.none { it.certificateCommonName == local.certificateCommonName }) {
                     mutableServers.add(local)
                 }
             }

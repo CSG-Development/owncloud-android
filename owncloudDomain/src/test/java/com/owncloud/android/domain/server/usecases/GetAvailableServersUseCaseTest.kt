@@ -167,17 +167,17 @@ class GetAvailableServersUseCaseTest {
     }
 
     @Test
-    fun `getServersUpdates should keep servers with null certificate common name`() = runTest {
+    fun `getServersUpdates should keep servers with empty certificate common name`() = runTest {
         // --- Mocks Setup ---
         val servers = listOf(
-            Server("Remote Server 1", "https://remote1.com", null),
-            Server("Remote Server 2", "https://remote2.com", null),
+            Server("Remote Server 1", "https://remote1.com", ""),
+            Server("Remote Server 2", "https://remote2.com", ""),
         )
         coEvery { getRemoteAvailableServersUseCase.execute() }.returns(servers)
 
         // Local device also without certificate common name
         val localDevicesFlow = flowOf(
-            Server(hostName = "https://local.com", hostUrl = "https://local.com", certificateCommonName = null)
+            Server(hostName = "https://local.com", hostUrl = "https://local.com", certificateCommonName = "")
         )
         val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns localDevicesFlow
@@ -197,9 +197,9 @@ class GetAvailableServersUseCaseTest {
 
             // Should have all 3 servers since they don't have certificate common names
             val expectedServers = listOf(
-                Server(hostName = "Remote Server 1", hostUrl = "https://remote1.com", certificateCommonName = null),
-                Server(hostName = "Remote Server 2", hostUrl = "https://remote2.com", certificateCommonName = null),
-                Server(hostName = "https://local.com", hostUrl = "https://local.com", certificateCommonName = null)
+                Server(hostName = "Remote Server 1", hostUrl = "https://remote1.com", certificateCommonName = ""),
+                Server(hostName = "Remote Server 2", hostUrl = "https://remote2.com", certificateCommonName = ""),
+                Server(hostName = "https://local.com", hostUrl = "https://local.com", certificateCommonName = "")
             )
 
             assertEquals(expectedServers, finalEmission)
