@@ -61,10 +61,10 @@ class HCRemoteAccessRepository(
 
     override suspend fun getAvailableServers(): List<Server> {
         return remoteAccessService.getDevices().mapNotNull {
-            val remoteAccesses = remoteAccessService.getDeviceById(it.seagateDeviceId).paths
+            val devicePaths = remoteAccessService.getDeviceById(it.seagateDeviceId).paths
             var server: Server? = null
-            for (remoteAccessPath in remoteAccesses) {
-                val baseUrl = getDeviceBaseUrl(remoteAccessPath)
+            for (devicePath in devicePaths) {
+                val baseUrl = getDeviceBaseUrl(devicePath)
                 if (deviceVerificationClient.verifyDevice(baseUrl)) {
                     server = Server(
                         hostName = it.friendlyName, hostUrl = "$baseUrl/files"
