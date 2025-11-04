@@ -92,12 +92,9 @@ class LoginViewModel(
     }
 
     fun onUserNameChanged(username: String) {
-        val errorEmailValidation = if (!Patterns.EMAIL_ADDRESS.matcher(username).matches()) {
-            contextProvider.getString(R.string.homecloud_login_invalid_email_message)
-        } else {
-            null
-        }
-        _state.update { it.copy(username = username, errorEmailInvalidMessage = errorEmailValidation) }
+        // Don't show validation error while typing - just update username
+        // Error will only be shown if user somehow clicks the button when it should be disabled
+        _state.update { it.copy(username = username, errorEmailInvalidMessage = null) }
     }
 
     fun onPasswordChanged(password: String) {
@@ -214,8 +211,20 @@ class LoginViewModel(
     }
 
     fun onActionClicked() {
+        // Validate email before proceeding
+        val isEmailValid = Patterns.EMAIL_ADDRESS.matcher(_state.value.username).matches()
+        
         when (_state.value.loginState) {
-            LoginState.REMOTE_ACCESS -> initiateToken()
+            LoginState.REMOTE_ACCESS -> {
+                if (isEmailValid && _state.value.username.isNotEmpty()) {
+                    initiateToken()
+                } else {
+                    // Show validation error if somehow the button was clicked with invalid email
+                    _state.update { 
+                        it.copy(errorEmailInvalidMessage = contextProvider.getString(R.string.homecloud_login_invalid_email_message)) 
+                    }
+                }
+            }
             LoginState.LOGIN -> performLogin()
         }
     }
@@ -327,6 +336,14 @@ class LoginViewModel(
             }
         }
         workManagerProvider.enqueueAccountDiscovery(accountName)
+    }
+
+    fun onCodeDialogDismissed() {
+        _state.update {
+            it.copy(
+                errorCodeMessage = null
+            )
+        }
     }
 
     data class LoginScreenState(

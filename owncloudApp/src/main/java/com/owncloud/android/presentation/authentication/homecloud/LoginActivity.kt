@@ -3,6 +3,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 import android.accounts.AccountManager
 import android.content.Intent
 import android.os.Bundle
+import android.text.TextWatcher
 import android.util.Patterns
 import android.view.View
 import androidx.activity.enableEdgeToEdge
@@ -40,6 +41,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private lateinit var binding: AccountSetupHomecloudBinding
     private val dialogBinding by lazy { AccountDialogCodeBinding.inflate(layoutInflater) }
+    private var codeTextWatcher: TextWatcher? = null
 
     private val adapter by lazy {
         ServerAddressAdapter(
@@ -160,7 +162,9 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun showCodeDialog() {
-        dialogBinding.codeEditText.doAfterTextChanged {
+        dialogBinding.codeEditText.removeTextChangedListener(codeTextWatcher)
+        dialogBinding.codeEditText.setText("")
+        codeTextWatcher = dialogBinding.codeEditText.doAfterTextChanged {
             val isNotEmpty = it.toString().isNotEmpty()
             dialogBinding.allowButton.isEnabled = isNotEmpty
             if (isNotEmpty) {
@@ -172,6 +176,9 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         }
         dialogBinding.skipButton.setOnClickListener {
             loginViewModel.onSkipClicked()
+        }
+        dialog.setOnDismissListener {
+            loginViewModel.onCodeDialogDismissed()
         }
         dialog.show()
     }
@@ -192,7 +199,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
                 dialogBinding.allowButton.visibility = if (state.isAllowLoading) View.INVISIBLE else View.VISIBLE
                 dialogBinding.allowLoading.visibility = if (state.isAllowLoading) View.VISIBLE else View.GONE
-                binding.actionButton.isEnabled = state.errorEmailInvalidMessage == null && state.username.isNotEmpty()
+                // Enable button only if username is not empty and is a valid email
+                binding.actionButton.isEnabled = state.username.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
                 dialogBinding.codeInputLayout.error = state.errorCodeMessage
             }
