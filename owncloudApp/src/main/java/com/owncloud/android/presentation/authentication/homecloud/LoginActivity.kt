@@ -9,6 +9,7 @@ import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -125,10 +126,10 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.hostUrlInput.setAdapter(adapter)
         binding.hostUrlInput.setOnItemClickListener { parent, view, position, id ->
             val selectedServer = parent.getItemAtPosition(position) as Server
-            loginViewModel.onServerSelected(selectedServer)
+            loginViewModel.onServerSelected(selectedServer, selectedServer.hostUrl)
         }
         binding.hostUrlInput.doAfterTextChanged { text ->
-            loginViewModel.onServerUrlChanged(text.toString())
+            loginViewModel.onServerSelected(null, text.toString())
         }
         binding.serversRefreshButton.setOnClickListener {
             loginViewModel.refreshServers()
@@ -163,6 +164,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun updateServers(servers: List<Server>) {
         adapter.setServers(servers)
+        binding.hostUrlInputLayout.startIconDrawable = if (servers.isEmpty()) null else ContextCompat.getDrawable(this, R.drawable.ic_device)
     }
 
     private fun showLoginScreen() {
@@ -213,6 +215,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 // Enable button only if username is not empty and is a valid email
                 binding.actionButton.isEnabled = state.username.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
+                binding.serversRefreshLoading.visibility = View.GONE
                 dialogBinding.codeInputLayout.error = state.errorCodeMessage
                 binding.accountUsername.isEnabled = true
             }
@@ -221,9 +224,14 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.backButton.visibility = View.VISIBLE
                 updateServers(state.servers)
                 binding.accountPassword.updateTextIfDiffers(state.password)
+                if (state.selectedServer == null) {
+                    binding.hostUrlInput.updateTextIfDiffers(state.serverUrl)
+                } else {
+                    binding.hostUrlInput.updateTextIfDiffers(state.selectedServer.hostName)
+                }
                 binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
                 binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-                
+
                 if (state.isLoading) {
                     binding.backButton.visibility = View.GONE
                     binding.loadingLayout.visibility = View.VISIBLE

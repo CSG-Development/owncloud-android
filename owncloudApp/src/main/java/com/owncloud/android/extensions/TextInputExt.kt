@@ -1,9 +1,9 @@
 package com.owncloud.android.extensions
 
-import com.google.android.material.textfield.TextInputEditText
+import android.widget.TextView
 
-fun TextInputEditText.updateTextIfDiffers(text: String) {
+fun TextView.updateTextIfDiffers(text: String) {
     if (this.text?.toString() != text) {
-        this.setText(text)
+        this.text = text
     }
 }

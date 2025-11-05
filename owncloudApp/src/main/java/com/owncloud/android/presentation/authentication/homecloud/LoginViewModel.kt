@@ -123,10 +123,10 @@ class LoginViewModel(
         }
     }
 
-    fun onServerUrlChanged(serverUrl: String) {
+    fun onServerSelected(selectedServer: Server?, hostUrl: String) {
         _state.update { currentState ->
             when (currentState) {
-                is LoginScreenState.LoginState -> currentState.copy(serverUrl = serverUrl)
+                is LoginScreenState.LoginState -> currentState.copy(selectedServer = selectedServer, serverUrl = selectedServer?.hostUrl ?: hostUrl)
                 is LoginScreenState.EmailState -> currentState
             }
         }
@@ -184,11 +184,17 @@ class LoginViewModel(
     fun onBackPressed() {
         viewModelScope.launch {
             val currentState = _state.value
-            if (currentState is LoginScreenState.LoginState) {
-                _state.update {
-                    LoginScreenState.EmailState(username = currentState.username)
+            when (currentState) {
+                is LoginScreenState.LoginState -> {
+                    _state.update {
+                        LoginScreenState.EmailState(username = currentState.username)
+                    }
+                    _events.emit(LoginEvent.NavigateToEmail)
                 }
-                _events.emit(LoginEvent.NavigateToEmail)
+
+                is LoginScreenState.EmailState -> {
+                    // do nothing
+                }
             }
         }
     }
@@ -246,7 +252,8 @@ class LoginViewModel(
 
                         is LoginScreenState.LoginState -> currentState.copy(
                             username = currentState.username,
-                            servers = servers
+                            servers = servers,
+                            selectedServer = servers.firstOrNull()
                         )
                     }
                 }
@@ -302,15 +309,6 @@ class LoginViewModel(
             }
 
             is LoginScreenState.LoginState -> performLogin()
-        }
-    }
-
-    fun onServerSelected(selectedServer: Server) {
-        _state.update { currentState ->
-            when (currentState) {
-                is LoginScreenState.LoginState -> currentState.copy(selectedServer = selectedServer, serverUrl = selectedServer.hostUrl)
-                is LoginScreenState.EmailState -> currentState
-            }
         }
     }
 
