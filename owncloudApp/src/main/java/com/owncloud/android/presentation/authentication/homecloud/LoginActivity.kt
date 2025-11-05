@@ -153,7 +153,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun updateServers(servers: List<Server>) {
         adapter.setServers(servers)
-        dialogBinding.skipButton.isEnabled = servers.isNotEmpty()
     }
 
     private fun showLoginScreen() {
@@ -184,16 +183,12 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun updateLoginState(state: LoginScreenState) {
-        updateServers(state.servers)
         binding.accountUsername.updateTextIfDiffers(state.username)
-        binding.accountPassword.updateTextIfDiffers(state.password)
-        binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
-        binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
         binding.errorMessage.text = state.errorMessage
         binding.errorMessage.isVisible = !state.errorMessage.isNullOrBlank()
 
-        when (state.loginState) {
-            LoginViewModel.LoginState.REMOTE_ACCESS -> {
+        when (state) {
+            is LoginScreenState.EmailState -> {
                 binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
@@ -205,7 +200,12 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 dialogBinding.codeInputLayout.error = state.errorCodeMessage
             }
 
-            LoginViewModel.LoginState.LOGIN -> {
+            is LoginScreenState.LoginState -> {
+                updateServers(state.servers)
+                binding.accountPassword.updateTextIfDiffers(state.password)
+                binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
+                binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
+                
                 if (state.isLoading) {
                     binding.loadingLayout.visibility = View.VISIBLE
                     binding.actionGroup.visibility = View.GONE
