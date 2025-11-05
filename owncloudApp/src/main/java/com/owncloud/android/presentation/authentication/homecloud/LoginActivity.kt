@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.TextWatcher
 import android.util.Patterns
 import android.view.View
+import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -62,9 +63,14 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         handleDeepLink()
 
+        onBackPressedDispatcher.addCallback {
+            loginViewModel.onBackPressed()
+        }
+
         binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
+        binding.backButton.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =
             PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(this)
 
@@ -96,6 +102,9 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun setupListeners() {
+        binding.backButton.setOnClickListener {
+            loginViewModel.onBackPressed()
+        }
         binding.settingsLink.setOnClickListener {
             val settingsIntent = Intent(this, SettingsActivity::class.java)
             startActivity(settingsIntent)
@@ -130,6 +139,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         when (event) {
             LoginViewModel.LoginEvent.NavigateToCodeDialog -> showCodeDialog()
             LoginViewModel.LoginEvent.NavigateToLogin -> showLoginScreen()
+            LoginViewModel.LoginEvent.NavigateToEmail -> showEmailScreen()
             is LoginViewModel.LoginEvent.LoginResult -> handleLoginResult(event)
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
         }
@@ -158,6 +168,11 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private fun showLoginScreen() {
         binding.loginStateGroup.visibility = View.VISIBLE
         dialog.dismiss()
+    }
+
+    private fun showEmailScreen() {
+        binding.loginStateGroup.visibility = View.GONE
+        binding.accountUsername.isEnabled = true
     }
 
     private fun showCodeDialog() {
@@ -189,6 +204,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         when (state) {
             is LoginScreenState.EmailState -> {
+                binding.backButton.visibility = View.GONE
                 binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
@@ -198,20 +214,24 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.isEnabled = state.username.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
                 dialogBinding.codeInputLayout.error = state.errorCodeMessage
+                binding.accountUsername.isEnabled = true
             }
 
             is LoginScreenState.LoginState -> {
+                binding.backButton.visibility = View.VISIBLE
                 updateServers(state.servers)
                 binding.accountPassword.updateTextIfDiffers(state.password)
                 binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
                 binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
                 
                 if (state.isLoading) {
+                    binding.backButton.visibility = View.GONE
                     binding.loadingLayout.visibility = View.VISIBLE
                     binding.actionGroup.visibility = View.GONE
                     binding.loginStateGroup.visibility = View.GONE
                     binding.serversRefreshButton.visibility = View.INVISIBLE
                 } else {
+                    binding.backButton.visibility = View.VISIBLE
                     binding.loadingLayout.visibility = View.GONE
                     binding.actionGroup.visibility = View.VISIBLE
                     binding.loginStateGroup.visibility = View.VISIBLE

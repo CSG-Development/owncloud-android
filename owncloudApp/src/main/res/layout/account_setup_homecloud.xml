@@ -244,6 +244,18 @@
     </ScrollView>
 
     <ImageButton
+        android:id="@+id/back_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:background="?attr/selectableItemBackground"
+        android:contentDescription="@string/common_back"
+        android:padding="@dimen/standard_padding"
+        android:src="@drawable/ic_arrow_back"
+        android:visibility="gone"
+        app:tint="?attr/colorOnSecondaryContainer" />
+
+    <ImageButton
         android:id="@+id/settings_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -253,5 +265,5 @@
         android:padding="@dimen/standard_padding"
         android:src="@drawable/ic_settings"
         android:text="@string/actionbar_settings"
-        app:tint="?attr/colorPrimary" />
+        app:tint="?attr/colorOnSecondaryContainer" />
 </FrameLayout>

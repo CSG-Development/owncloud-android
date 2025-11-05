@@ -181,13 +181,24 @@ class LoginViewModel(
         }
     }
 
+    fun onBackPressed() {
+        viewModelScope.launch {
+            val currentState = _state.value
+            if (currentState is LoginScreenState.LoginState) {
+                _state.update {
+                    LoginScreenState.EmailState(username = currentState.username)
+                }
+                _events.emit(LoginEvent.NavigateToEmail)
+            }
+        }
+    }
+
     private suspend fun switchToLoginState() {
         val currentState = _state.value
-        val username = currentState.username
         _state.update {
             LoginScreenState.LoginState(
-                username = username,
-                servers = emptyList()
+                username = currentState.username,
+                servers = currentState.servers
             )
         }
         _events.emit(LoginEvent.NavigateToLogin)
@@ -207,6 +218,7 @@ class LoginViewModel(
             _state.update {
                 LoginScreenState.LoginState(
                     username = existingUserName,
+                    servers = it.servers
                 )
             }
             _events.emit(LoginEvent.NavigateToLogin)
@@ -229,6 +241,7 @@ class LoginViewModel(
                     when (currentState) {
                         is LoginScreenState.EmailState -> currentState.copy(
                             username = currentState.username,
+                            servers = servers
                         )
 
                         is LoginScreenState.LoginState -> currentState.copy(
@@ -424,6 +437,8 @@ class LoginViewModel(
         abstract val username: String
         abstract val errorMessage: String?
 
+        abstract val servers: List<Server>
+
         data class EmailState(
             override val username: String = "",
             val reference: String = "",
@@ -431,6 +446,7 @@ class LoginViewModel(
             override val errorMessage: String? = null,
             val errorCodeMessage: String? = null,
             val errorEmailInvalidMessage: String? = null,
+            override val servers: List<Server> = emptyList(),
         ) : LoginScreenState()
 
         data class LoginState(
@@ -439,15 +455,16 @@ class LoginViewModel(
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
             val selectedServer: Server? = null,
-            val servers: List<Server> = emptyList(),
             val serverUrl: String = "",
             override val errorMessage: String? = null,
+            override val servers: List<Server> = emptyList(),
         ) : LoginScreenState()
     }
 
     sealed class LoginEvent {
         data object NavigateToCodeDialog : LoginEvent()
         data object NavigateToLogin : LoginEvent()
+        data object NavigateToEmail : LoginEvent()
 
         data class LoginResult(val accountName: String, val error: String? = null) : LoginEvent()
 
