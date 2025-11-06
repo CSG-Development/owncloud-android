@@ -97,7 +97,7 @@ class LoginViewModel(
                 },
                 exceptionHandlerBlock = {
                     _state.update {
-                        it.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
+                        it.copyState(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
                     }
                 }
             )
@@ -437,7 +437,7 @@ class LoginViewModel(
 
     fun onCodeDialogDismissed() {
         _state.update { currentState ->
-            currentState.copy(errorMessage = null)
+            currentState.copyState(errorMessage = null)
         }
     }
 
@@ -447,19 +447,19 @@ class LoginViewModel(
 
         abstract val servers: List<Server>
 
-        fun copy(
+        fun copyState(
             username: String = this.username,
             errorMessage: String? = this.errorMessage,
             servers: List<Server> = this.servers,
         ): LoginScreenState {
             return when (this) {
-                is EmailState -> this.copy(
+                is EmailState -> copy(
                     username = username,
                     errorMessage = errorMessage,
                     servers = servers
                 )
 
-                is LoginState -> this.copy(
+                is LoginState -> copy(
                     username = username,
                     errorMessage = errorMessage,
                     servers = servers
