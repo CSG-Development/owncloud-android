@@ -57,11 +57,11 @@
                 android:id="@+id/hostUrlInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginEnd="8dp"
                 android:hint="@string/homecloud_login_server_address_hint"
                 style="@style/homeCloud.TextInputLayout.OutlinedBox"
-                app:layout_constraintTop_toBottomOf="@+id/thumbnail"
+                app:layout_constraintTop_toBottomOf="@id/account_username_text"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/servers_refresh_button"
                 app:endIconMode="dropdown_menu"
@@ -111,7 +111,7 @@
                 android:id="@+id/account_username_container"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="24dp"
                 android:hint="@string/homecloud_login_email_hint"
                 app:errorEnabled="true"
                 app:endIconDrawable="@drawable/ic_clear_input"
@@ -121,7 +121,7 @@
                 app:expandedHintEnabled="true"
                 app:hintEnabled="true"
                 app:placeholderTextColor="@color/homecloud_input_placeholder"
-                app:layout_constraintTop_toBottomOf="@id/hostUrlInputLayout"
+                app:layout_constraintTop_toBottomOf="@+id/thumbnail"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
                 <com.google.android.material.textfield.TextInputEditText
@@ -133,6 +133,29 @@
                     android:inputType="textNoSuggestions"
                     android:textColorHint="@color/homecloud_input_placeholder"/>
             </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/account_username_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:padding="16dp"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurface"
+                android:visibility="gone"
+                android:gravity="center_horizontal"
+                tools:text="user@example.com"
+                tools:visibility="visible"
+                app:layout_constraintTop_toBottomOf="@+id/thumbnail"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/email_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="reset_password_link,account_username_container" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/account_password_container"
@@ -146,7 +169,7 @@
                 app:hintAnimationEnabled="true"
                 app:expandedHintEnabled="true"
                 app:hintEnabled="true"
-                app:layout_constraintTop_toBottomOf="@id/account_username_container"
+                app:layout_constraintTop_toBottomOf="@id/hostUrlInputLayout"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
                 <com.google.android.material.textfield.TextInputEditText
@@ -185,7 +208,7 @@
                 app:drawableStartCompat="@drawable/ic_exclamation_mark_circle"
                 app:drawableTint="@color/homecloud_error"
                 tools:text="Incorrect username or password"
-                app:layout_constraintTop_toBottomOf="@id/reset_password_link"
+                app:layout_constraintTop_toBottomOf="@id/email_barrier"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -211,7 +234,7 @@
 
             <androidx.constraintlayout.widget.Group
                 android:id="@+id/action_group"
-                app:constraint_referenced_ids="account_username_container,actionButton"
+                app:constraint_referenced_ids="account_username_text,actionButton"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 tools:visibility="gone"/>

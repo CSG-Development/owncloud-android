@@ -174,6 +174,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun showEmailScreen() {
         binding.loginStateGroup.visibility = View.GONE
+        binding.accountUsernameContainer.visibility = View.VISIBLE
+        binding.accountUsernameText.visibility = View.GONE
         binding.accountUsername.isEnabled = true
     }
 
@@ -200,12 +202,16 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun updateLoginState(state: LoginScreenState) {
-        binding.accountUsername.updateTextIfDiffers(state.username)
         binding.errorMessage.text = state.errorMessage
         binding.errorMessage.isVisible = !state.errorMessage.isNullOrBlank()
 
         when (state) {
             is LoginScreenState.EmailState -> {
+                // Show email input, hide email text
+                binding.accountUsernameContainer.visibility = View.VISIBLE
+                binding.accountUsernameText.visibility = View.GONE
+                binding.accountUsername.updateTextIfDiffers(state.username)
+                
                 binding.backButton.visibility = View.GONE
                 binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
@@ -221,6 +227,11 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             }
 
             is LoginScreenState.LoginState -> {
+                // Hide email input, show email text
+                binding.accountUsernameContainer.visibility = View.GONE
+                binding.accountUsernameText.visibility = View.VISIBLE
+                binding.accountUsernameText.text = state.username
+                
                 binding.backButton.visibility = View.VISIBLE
                 updateServers(state.servers)
                 binding.accountPassword.updateTextIfDiffers(state.password)
@@ -243,7 +254,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.loadingLayout.visibility = View.GONE
                     binding.actionGroup.visibility = View.VISIBLE
                     binding.loginStateGroup.visibility = View.VISIBLE
-                    binding.accountUsername.isEnabled = false
                     binding.actionButton.setText(R.string.setup_btn_login)
                     binding.actionButton.isEnabled = state.username.isNotEmpty() && state.password.isNotEmpty() &&
                             (state.selectedServer != null || state.serverUrl.isNotEmpty()) && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
