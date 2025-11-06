@@ -126,10 +126,10 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.hostUrlInput.setAdapter(adapter)
         binding.hostUrlInput.setOnItemClickListener { parent, view, position, id ->
             val selectedServer = parent.getItemAtPosition(position) as Server
-            loginViewModel.onServerSelected(selectedServer, selectedServer.hostUrl)
+            loginViewModel.onServerSelected(selectedServer)
         }
         binding.hostUrlInput.doAfterTextChanged { text ->
-            loginViewModel.onServerSelected(null, text.toString())
+            loginViewModel.onServerUrlChanged(text.toString())
         }
         binding.serversRefreshButton.setOnClickListener {
             loginViewModel.refreshServers()
@@ -138,11 +138,11 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun handleEvents(event: LoginViewModel.LoginEvent) {
         when (event) {
-            LoginViewModel.LoginEvent.NavigateToCodeDialog -> showCodeDialog()
-            LoginViewModel.LoginEvent.NavigateToLogin -> showLoginScreen()
-            LoginViewModel.LoginEvent.NavigateToEmail -> showEmailScreen()
+            LoginViewModel.LoginEvent.ShowCodeDialog -> showCodeDialog()
+            LoginViewModel.LoginEvent.DismissCodeDialog -> hideCodeDialog()
             is LoginViewModel.LoginEvent.LoginResult -> handleLoginResult(event)
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
+            LoginViewModel.LoginEvent.Close -> finish()
         }
     }
 
@@ -170,13 +170,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private fun showLoginScreen() {
         binding.loginStateGroup.visibility = View.VISIBLE
         dialog.dismiss()
-    }
-
-    private fun showEmailScreen() {
-        binding.loginStateGroup.visibility = View.GONE
-        binding.accountUsernameContainer.visibility = View.VISIBLE
-        binding.accountUsernameText.visibility = View.GONE
-        binding.accountUsername.isEnabled = true
     }
 
     private fun showCodeDialog() {

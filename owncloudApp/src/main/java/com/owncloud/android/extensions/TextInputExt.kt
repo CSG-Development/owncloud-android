@@ -1,9 +1,9 @@
 package com.owncloud.android.extensions
 
-import android.widget.TextView
+import android.widget.EditText
 
-fun TextView.updateTextIfDiffers(text: String) {
+fun EditText.updateTextIfDiffers(text: String) {
     if (this.text?.toString() != text) {
-        this.text = text
+        setText(text)
     }
 }

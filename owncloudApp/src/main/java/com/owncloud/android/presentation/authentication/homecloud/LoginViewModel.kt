@@ -92,13 +92,12 @@ class LoginViewModel(
                             errorMessage = null,
                         )
                     }
-                    _events.emit(LoginEvent.NavigateToCodeDialog)
+                    _events.emit(LoginEvent.ShowCodeDialog)
                     startObserveServers()
                 },
                 exceptionHandlerBlock = {
-                    val currentState = _state.value as LoginScreenState.EmailState
                     _state.update {
-                        currentState.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
+                        it.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
                     }
                 }
             )
@@ -123,7 +122,15 @@ class LoginViewModel(
         }
     }
 
-    fun onServerSelected(selectedServer: Server?, hostUrl: String) {
+    fun onServerSelected(selectedServer: Server) {
+        changeServer(selectedServer, selectedServer.hostUrl)
+    }
+
+    fun onServerUrlChanged(serverUrl: String) {
+        changeServer(null, serverUrl)
+    }
+
+    private fun changeServer(selectedServer: Server?, hostUrl: String) {
         _state.update { currentState ->
             when (currentState) {
                 is LoginScreenState.LoginState -> currentState.copy(selectedServer = selectedServer, serverUrl = selectedServer?.hostUrl ?: hostUrl)
@@ -189,11 +196,11 @@ class LoginViewModel(
                     _state.update {
                         LoginScreenState.EmailState(username = currentState.username)
                     }
-                    _events.emit(LoginEvent.NavigateToEmail)
                 }
 
                 is LoginScreenState.EmailState -> {
                     // do nothing
+                    _events.emit(LoginEvent.Close)
                 }
             }
         }
@@ -207,7 +214,7 @@ class LoginViewModel(
                 servers = currentState.servers
             )
         }
-        _events.emit(LoginEvent.NavigateToLogin)
+        _events.emit(LoginEvent.DismissCodeDialog)
     }
 
     private fun restorePreviousUserIfExists() {
@@ -227,7 +234,7 @@ class LoginViewModel(
                     servers = it.servers
                 )
             }
-            _events.emit(LoginEvent.NavigateToLogin)
+            _events.emit(LoginEvent.DismissCodeDialog)
         }
     }
 
@@ -298,7 +305,7 @@ class LoginViewModel(
 
         when (currentState) {
             is LoginScreenState.EmailState -> {
-                if (isEmailValid && currentState.username.isNotEmpty()) {
+                if (isEmailValid) {
                     initiateToken()
                 } else {
                     // Show validation error if somehow the button was clicked with invalid email
@@ -424,10 +431,7 @@ class LoginViewModel(
 
     fun onCodeDialogDismissed() {
         _state.update { currentState ->
-            when (currentState) {
-                is LoginScreenState.EmailState -> currentState.copy(errorCodeMessage = null)
-                is LoginScreenState.LoginState -> currentState
-            }
+            currentState.copy(errorMessage = null)
         }
     }
 
@@ -436,6 +440,26 @@ class LoginViewModel(
         abstract val errorMessage: String?
 
         abstract val servers: List<Server>
+
+        fun copy(
+            username: String = this.username,
+            errorMessage: String? = this.errorMessage,
+            servers: List<Server> = this.servers,
+        ): LoginScreenState {
+            return when (this) {
+                is EmailState -> this.copy(
+                    username = username,
+                    errorMessage = errorMessage,
+                    servers = servers
+                )
+
+                is LoginState -> this.copy(
+                    username = username,
+                    errorMessage = errorMessage,
+                    servers = servers
+                )
+            }
+        }
 
         data class EmailState(
             override val username: String = "",
@@ -460,9 +484,10 @@ class LoginViewModel(
     }
 
     sealed class LoginEvent {
-        data object NavigateToCodeDialog : LoginEvent()
-        data object NavigateToLogin : LoginEvent()
-        data object NavigateToEmail : LoginEvent()
+        data object ShowCodeDialog : LoginEvent()
+        data object DismissCodeDialog : LoginEvent()
+
+        data object Close: LoginEvent()
 
         data class LoginResult(val accountName: String, val error: String? = null) : LoginEvent()
 
