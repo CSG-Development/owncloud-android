@@ -133,7 +133,14 @@ class LoginViewModel(
     private fun changeServer(selectedServer: Server?, hostUrl: String) {
         _state.update { currentState ->
             when (currentState) {
-                is LoginScreenState.LoginState -> currentState.copy(selectedServer = selectedServer, serverUrl = selectedServer?.hostUrl ?: hostUrl)
+                is LoginScreenState.LoginState -> {
+                    if (selectedServer == null) {
+                        currentState.copy(serverUrl = hostUrl)
+                    } else {
+                        currentState.copy(selectedServer = selectedServer, serverUrl = selectedServer.hostUrl)
+                    }
+                }
+
                 is LoginScreenState.EmailState -> currentState
             }
         }
@@ -199,7 +206,6 @@ class LoginViewModel(
                 }
 
                 is LoginScreenState.EmailState -> {
-                    // do nothing
                     _events.emit(LoginEvent.Close)
                 }
             }
@@ -253,14 +259,13 @@ class LoginViewModel(
                 _state.update { currentState ->
                     when (currentState) {
                         is LoginScreenState.EmailState -> currentState.copy(
-                            username = currentState.username,
                             servers = servers
                         )
 
                         is LoginScreenState.LoginState -> currentState.copy(
-                            username = currentState.username,
                             servers = servers,
-                            selectedServer = servers.firstOrNull()
+                            selectedServer = servers.firstOrNull(),
+                            serverUrl = servers.firstOrNull()?.hostUrl.orEmpty()
                         )
                     }
                 }
@@ -326,9 +331,10 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     val serverInfoResult = withContext(coroutinesDispatcherProvider.io) {
+                        val serverUrl = if (currentState.selectedServer != null) currentState.selectedServer.hostUrl else currentState.serverUrl
                         getServerInfoAsyncUseCase(
                             GetServerInfoAsyncUseCase.Params(
-                                serverPath = currentState.serverUrl,
+                                serverPath = serverUrl,
                                 creatingAccount = false,
                                 enforceOIDC = contextProvider.getBoolean(R.bool.enforce_oidc),
                                 secureConnectionEnforced = contextProvider.getBoolean(R.bool.enforce_secure_connection),
@@ -487,7 +493,7 @@ class LoginViewModel(
         data object ShowCodeDialog : LoginEvent()
         data object DismissCodeDialog : LoginEvent()
 
-        data object Close: LoginEvent()
+        data object Close : LoginEvent()
 
         data class LoginResult(val accountName: String, val error: String? = null) : LoginEvent()
 

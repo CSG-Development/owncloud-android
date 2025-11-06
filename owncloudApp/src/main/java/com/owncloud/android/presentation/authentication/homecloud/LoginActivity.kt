@@ -167,8 +167,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.hostUrlInputLayout.startIconDrawable = if (servers.isEmpty()) null else ContextCompat.getDrawable(this, R.drawable.ic_device)
     }
 
-    private fun showLoginScreen() {
-        binding.loginStateGroup.visibility = View.VISIBLE
+    private fun hideCodeDialog() {
         dialog.dismiss()
     }
 
