@@ -3,6 +3,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 import android.accounts.AccountManager
 import android.content.Intent
 import android.os.Bundle
+import android.text.TextWatcher
 import android.util.Patterns
 import android.view.View
 import androidx.activity.addCallback
@@ -228,7 +229,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 }
                 binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
                 binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-
                 if (state.isLoading) {
                     binding.backButton.visibility = View.GONE
                     binding.loadingLayout.visibility = View.VISIBLE
