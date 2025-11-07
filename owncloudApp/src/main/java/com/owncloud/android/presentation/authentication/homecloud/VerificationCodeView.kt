@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.InputFilter
@@ -12,6 +13,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
+import android.widget.Space
 import android.widget.TextView
 import androidx.core.view.isVisible
 import com.owncloud.android.R
@@ -41,7 +43,7 @@ class VerificationCodeView @JvmOverloads constructor(
     private val editTexts = mutableListOf<PasteAwareEditText>()
     private val digitsContainer: LinearLayout
     private val errorTextView: TextView
-    private val paint = android.graphics.Paint().apply {
+    private val paint = Paint().apply {
         textSize = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_SP,
             digitTextSize,
@@ -58,7 +60,7 @@ class VerificationCodeView @JvmOverloads constructor(
 
         digitsContainer = LinearLayout(context).apply {
             orientation = HORIZONTAL
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         }
         addView(digitsContainer)
 
@@ -100,13 +102,23 @@ class VerificationCodeView @JvmOverloads constructor(
         for (i in 0 until codeLength) {
             val et = createEditText(i)
             digitsContainer.addView(et)
+            if (i < codeLength - 1) {
+                digitsContainer.addView(createSpace())
+            }
             editTexts.add(et)
         }
     }
 
+    private fun createSpace(): Space {
+        val space = Space(context).apply {
+            layoutParams = LayoutParams(0, 56.dpToPx(), 1f)
+        }
+        return space
+    }
+
     private fun createEditText(index: Int): PasteAwareEditText {
         val et = PasteAwareEditText(context).apply {
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, 56.dpToPx()).apply {
+            layoutParams = LayoutParams(40.dpToPx(), LayoutParams.MATCH_PARENT).apply {
                 marginEnd = if (index < codeLength - 1) 8 else 0
             }
 
@@ -114,7 +126,7 @@ class VerificationCodeView @JvmOverloads constructor(
             minHeight = 56.dpToPx()
 
             filters = arrayOf(InputFilter.LengthFilter(1))
-            gravity = Gravity.CENTER   // ✅ Center text and cursor
+            gravity = Gravity.CENTER
             textAlignment = TEXT_ALIGNMENT_CENTER
             isCursorVisible = true
             imeOptions = EditorInfo.IME_ACTION_NEXT
@@ -183,7 +195,7 @@ class VerificationCodeView @JvmOverloads constructor(
     private fun createBorderDrawable(color: Int, width: Float): GradientDrawable {
         return GradientDrawable().apply {
             setStroke(width.toInt(), color)
-            cornerRadius = this@VerificationCodeView.cornerRadius  // ✅ Rounded corners
+            cornerRadius = this@VerificationCodeView.cornerRadius
         }
     }
 
@@ -194,16 +206,10 @@ class VerificationCodeView @JvmOverloads constructor(
         editTexts.firstOrNull()?.requestFocus()
     }
 
-    fun setError(errorMessage: String?) {
-        if (errorMessage.isNullOrBlank()) {
-            errorTextView.isVisible = false
-            errorTextView.text = null
-            resetBorder()
-        } else {
-            errorTextView.text = errorMessage
-            errorTextView.isVisible = true
-            setErrorBorder()
-        }
+    fun setError(errorMessage: String) {
+        errorTextView.isVisible = false
+        errorTextView.text = errorMessage
+        setErrorBorder()
     }
 
     private fun resetBorder() {
@@ -215,7 +221,9 @@ class VerificationCodeView @JvmOverloads constructor(
     }
 
     fun clearError() {
-        setError(null)
+        errorTextView.text = null
+        errorTextView.isVisible = false
+        resetBorder()
     }
 
     private fun calculateMinDigitWidth(): Int {

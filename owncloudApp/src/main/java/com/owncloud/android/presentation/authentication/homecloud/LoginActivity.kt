@@ -209,7 +209,11 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.isEnabled = state.username.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(state.username).matches()
                 binding.serversRefreshButton.visibility = View.INVISIBLE
                 binding.serversRefreshLoading.visibility = View.GONE
-                dialogBinding.codeEditVerification.setError(state.errorCodeMessage)
+                if (state.errorCodeMessage == null) {
+                    dialogBinding.codeEditVerification.clearError()
+                } else {
+                    dialogBinding.codeEditVerification.setError(state.errorCodeMessage)
+                }
                 binding.accountUsername.isEnabled = true
             }
 
