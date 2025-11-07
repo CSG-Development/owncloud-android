@@ -10,7 +10,6 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
-import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -57,14 +56,12 @@ class VerificationCodeView @JvmOverloads constructor(
     init {
         orientation = VERTICAL
 
-        // Create container for digits
         digitsContainer = LinearLayout(context).apply {
             orientation = HORIZONTAL
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
         }
         addView(digitsContainer)
 
-        // Create error TextView
         errorTextView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = 8
@@ -113,13 +110,12 @@ class VerificationCodeView @JvmOverloads constructor(
                 marginEnd = if (index < codeLength - 1) 8 else 0
             }
 
-            // Set minWidth to ensure consistent size for all digits
             minWidth = calculateMinDigitWidth()
             minHeight = 56.dpToPx()
 
             filters = arrayOf(InputFilter.LengthFilter(1))
             gravity = Gravity.CENTER   // ✅ Center text and cursor
-            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            textAlignment = TEXT_ALIGNMENT_CENTER
             isCursorVisible = true
             imeOptions = EditorInfo.IME_ACTION_NEXT
             background = createBorderDrawable(borderColor, borderWidth)
@@ -223,8 +219,6 @@ class VerificationCodeView @JvmOverloads constructor(
     }
 
     private fun calculateMinDigitWidth(): Int {
-        // Measure the widest digit (usually "0" or "8") to ensure consistent width
-
         // Measure width of "0" which is typically one of the widest digits
         val textWidth = paint.measureText("0")
 
