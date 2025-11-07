@@ -23,6 +23,7 @@
         <attr name="focusBorderColor" format="color" />
         <attr name="focusBorderWidth" format="dimension" />
         <attr name="cornerRadius" format="dimension" /> <!-- ✅ New -->
+        <attr name="errorTextColor" format="color" />
     </declare-styleable>
 
 </resources>

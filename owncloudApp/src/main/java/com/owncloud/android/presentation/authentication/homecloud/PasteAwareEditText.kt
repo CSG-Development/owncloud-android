@@ -13,6 +13,7 @@ class PasteAwareEditText @JvmOverloads constructor(
 ) : AppCompatEditText(context, attrs) {
 
     private var pasteListener: ((String) -> Unit)? = null
+    private val clipboard by lazy { context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager }
 
     fun setOnPasteListener(listener: (String) -> Unit) {
         pasteListener = listener
@@ -20,7 +21,6 @@ class PasteAwareEditText @JvmOverloads constructor(
 
     override fun onTextContextMenuItem(id: Int): Boolean {
         if (id == android.R.id.paste || id == android.R.id.pasteAsPlainText) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val clip = clipboard.primaryClip
             if (clip != null && clip.itemCount > 0) {
                 val pastedText = clip.getItemAt(0).coerceToText(context).toString()

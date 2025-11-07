@@ -7,12 +7,14 @@ import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
-import androidx.core.content.withStyledAttributes
+import android.widget.TextView
+import androidx.core.view.isVisible
 import com.owncloud.android.R
 
 class VerificationCodeView @JvmOverloads constructor(
@@ -21,67 +23,126 @@ class VerificationCodeView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
-    private var codeLength: Int = 6
-    private var borderColor: Int = Color.GRAY
-    private var borderWidth: Float = 2f
-    private var focusBorderColor: Int = Color.BLUE
-    private var focusBorderWidth: Float = 3f
-    private var cornerRadius: Float = 12f
+    private val codeLength: Int
+    private val borderColor: Int
+    private val borderWidth: Float
+    private val focusBorderColor: Int
+    private val focusBorderWidth: Float
+
+    private val errorTextColor: Int
+    private val cornerRadius: Float
+    private val digitTextSize: Float = 20f
+
+    private val focusedBorder: GradientDrawable
+
+    private val defaultBorder: GradientDrawable
+
+    private val errorBorder: GradientDrawable
 
     private val editTexts = mutableListOf<PasteAwareEditText>()
+    private val digitsContainer: LinearLayout
+    private val errorTextView: TextView
+    private val paint = android.graphics.Paint().apply {
+        textSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            digitTextSize,
+            context.resources.displayMetrics
+        )
+    }
 
     var onCodeCompleteListener: ((String) -> Unit)? = null
 
+    var onCodeChangedListener: ((String) -> Unit)? = null
+
     init {
-        orientation = HORIZONTAL
-        context.withStyledAttributes(attrs, R.styleable.VerificationCodeView) {
-            codeLength = getInt(R.styleable.VerificationCodeView_codeLength, 6)
-            borderColor = getColor(R.styleable.VerificationCodeView_borderColor, Color.GRAY)
-            focusBorderColor = getColor(R.styleable.VerificationCodeView_focusBorderColor, Color.BLUE)
-            borderWidth = getDimension(R.styleable.VerificationCodeView_borderWidth, 2f)
-            focusBorderWidth = getDimension(R.styleable.VerificationCodeView_focusBorderWidth, 3f)
-            cornerRadius = getDimension(R.styleable.VerificationCodeView_cornerRadius, 12f)
+        orientation = VERTICAL
+
+        // Create container for digits
+        digitsContainer = LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
         }
+        addView(digitsContainer)
+
+        // Create error TextView
+        errorTextView = TextView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = 8
+                leftMargin = 16
+            }
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            isVisible = false
+        }
+        addView(errorTextView)
+
+        val attrs = context.obtainStyledAttributes(attrs, R.styleable.VerificationCodeView)
+
+        try {
+            codeLength = attrs.getInt(R.styleable.VerificationCodeView_codeLength, 6)
+            borderColor = attrs.getColor(R.styleable.VerificationCodeView_borderColor, Color.GRAY)
+            focusBorderColor = attrs.getColor(R.styleable.VerificationCodeView_focusBorderColor, Color.BLUE)
+            borderWidth = attrs.getDimension(R.styleable.VerificationCodeView_borderWidth, 2f)
+            focusBorderWidth = attrs.getDimension(R.styleable.VerificationCodeView_focusBorderWidth, 3f)
+            cornerRadius = attrs.getDimension(R.styleable.VerificationCodeView_cornerRadius, 12f)
+            errorTextColor = attrs.getColor(R.styleable.VerificationCodeView_errorTextColor, Color.RED)
+            defaultBorder = createBorderDrawable(borderColor, borderWidth)
+            focusedBorder = createBorderDrawable(focusBorderColor, focusBorderWidth)
+            errorBorder = createBorderDrawable(errorTextColor, borderWidth)
+        } finally {
+            attrs.recycle()
+        }
+
+        errorTextView.setTextColor(errorTextColor)
         createEditTexts()
     }
 
     private fun createEditTexts() {
-        removeAllViews()
+        digitsContainer.removeAllViews()
         editTexts.clear()
 
         for (i in 0 until codeLength) {
             val et = createEditText(i)
-            addView(et)
+            digitsContainer.addView(et)
             editTexts.add(et)
         }
     }
 
     private fun createEditText(index: Int): PasteAwareEditText {
         val et = PasteAwareEditText(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = 8
+            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, 56.dpToPx()).apply {
+                marginEnd = if (index < codeLength - 1) 8 else 0
             }
+
+            // Set minWidth to ensure consistent size for all digits
+            minWidth = calculateMinDigitWidth()
+            minHeight = 56.dpToPx()
+
             filters = arrayOf(InputFilter.LengthFilter(1))
             gravity = Gravity.CENTER   // ✅ Center text and cursor
             textAlignment = View.TEXT_ALIGNMENT_CENTER
             isCursorVisible = true
             imeOptions = EditorInfo.IME_ACTION_NEXT
-            setBackground(createBorderDrawable(borderColor, borderWidth))
+            background = createBorderDrawable(borderColor, borderWidth)
             inputType = EditorInfo.TYPE_CLASS_NUMBER
-            textSize = 20f
+            textSize = digitTextSize
             setPadding(0, 24, 0, 24)
         }
 
         et.setOnFocusChangeListener { v, hasFocus ->
-            v.background = if (hasFocus)
-                createBorderDrawable(focusBorderColor, focusBorderWidth)
-            else
-                createBorderDrawable(borderColor, borderWidth)
+            if (!errorTextView.isVisible) {
+                v.background = if (hasFocus)
+                    focusedBorder
+                else
+                    defaultBorder
+            }
         }
 
         et.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (!s.isNullOrEmpty()) {
+                    if (errorTextView.isVisible) {
+                        clearError()
+                    }
                     if (index < codeLength - 1) {
                         editTexts[index + 1].requestFocus()
                     } else {
@@ -91,6 +152,7 @@ class VerificationCodeView @JvmOverloads constructor(
                         }
                     }
                 }
+                onCodeChangedListener?.invoke(getCode())
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -131,13 +193,48 @@ class VerificationCodeView @JvmOverloads constructor(
 
     fun getCode(): String = editTexts.joinToString("") { it.text.toString() }
 
-    fun setCodeLength(length: Int) {
-        codeLength = length
-        createEditTexts()
-    }
-
     fun clearCode() {
         editTexts.forEach { it.text?.clear() }
         editTexts.firstOrNull()?.requestFocus()
+    }
+
+    fun setError(errorMessage: String?) {
+        if (errorMessage.isNullOrBlank()) {
+            errorTextView.isVisible = false
+            errorTextView.text = null
+            resetBorder()
+        } else {
+            errorTextView.text = errorMessage
+            errorTextView.isVisible = true
+            setErrorBorder()
+        }
+    }
+
+    private fun resetBorder() {
+        editTexts.forEach { it.background = if (it.hasFocus()) focusedBorder else defaultBorder }
+    }
+
+    private fun setErrorBorder() {
+        editTexts.forEach { it.background = errorBorder }
+    }
+
+    fun clearError() {
+        setError(null)
+    }
+
+    private fun calculateMinDigitWidth(): Int {
+        // Measure the widest digit (usually "0" or "8") to ensure consistent width
+
+        // Measure width of "0" which is typically one of the widest digits
+        val textWidth = paint.measureText("0")
+
+        // Add padding and ensure minimum size
+        val minWidth = (textWidth + 32.dpToPx()).toInt().coerceAtLeast(40.dpToPx())
+
+        return minWidth
+    }
+
+    private fun Int.dpToPx(): Int {
+        return (this * context.resources.displayMetrics.density).toInt()
     }
 }
