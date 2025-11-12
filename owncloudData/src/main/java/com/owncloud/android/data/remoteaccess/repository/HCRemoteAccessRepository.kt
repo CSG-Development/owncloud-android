@@ -100,13 +100,13 @@ class HCRemoteAccessRepository(
                 }
             }
             
-            val finalPreferredServer = preferredDevicePath ?: availablePaths.values.firstOrNull()
+            preferredDevicePath = preferredDevicePath ?: availablePaths.values.firstOrNull()
             
-            if (availablePaths.isNotEmpty() && finalPreferredServer != null) {
+            if (availablePaths.isNotEmpty() && preferredDevicePath != null) {
                 Device(
                     id = deviceResponse.seagateDeviceId,
                     availablePaths = availablePaths,
-                    preferredPath = finalPreferredServer
+                    preferredPath = preferredDevicePath
                 )
             } else {
                 null
