@@ -90,7 +90,7 @@ class RemoveAccountUseCase(
         // Delete saved searches
         localSavedSearchesDataSource.clearForAccount(params.accountName)
 
-        currentDeviceRepository.clearCurrentDevice()
+        currentDeviceRepository.clearCurrentDevicePaths()
     }
 
     data class Params(

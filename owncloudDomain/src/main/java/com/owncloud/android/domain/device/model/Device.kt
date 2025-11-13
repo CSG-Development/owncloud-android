@@ -9,18 +9,12 @@ package com.owncloud.android.domain.device.model
 data class Device(
     val id: String,
     val availablePaths: Map<DevicePathType, DevicePath>,
+    // TODO: remove it once dynamic switching implemented
     val preferredPath: DevicePath,
+    val certificateCommonName: String = "",
 ) {
-    /**
-     * Get the device name from the preferred path
-     */
+
     val name: String
         get() = preferredPath.hostName
-
-    /**
-     * Get the certificate common name from the preferred path
-     */
-    val certificateCommonName: String
-        get() = preferredPath.certificateCommonName
 }
 
