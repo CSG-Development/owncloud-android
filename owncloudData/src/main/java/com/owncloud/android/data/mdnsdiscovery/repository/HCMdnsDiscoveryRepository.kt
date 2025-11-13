@@ -49,6 +49,7 @@ class HCMdnsDiscoveryRepository(
                 val devicePath = DevicePath(
                     hostName = deviceUrl,
                     hostUrl = deviceUrl,
+                    devicePathType = DevicePathType.LOCAL
                 )
 
                 Device(
