@@ -66,53 +66,52 @@ class HCRemoteAccessRepository(
     override suspend fun getAvailableDevices(): List<Device> {
         return remoteAccessService.getDevices().mapNotNull { deviceResponse ->
             val remoteDevicePaths = remoteAccessService.getDeviceById(deviceResponse.seagateDeviceId).paths
-            
+
             // Build all available servers for this device
             val availablePaths = mutableMapOf<DevicePathType, DevicePath>()
             var preferredDevicePath: DevicePath? = null
-            
+            var certificateCommonName = ""
+
             for (remoteDevicePath in remoteDevicePaths) {
                 val baseUrl = getDeviceBaseUrl(remoteDevicePath)
                 val baseFilesUrl = "$baseUrl/files"
                 val devicePathType = remoteDevicePath.type.mapToDomain()
-                
+
                 // Verify device and get certificate
                 val isVerified = deviceVerificationClient.verifyDevice(baseUrl)
-                val certificateCommonName = if (isVerified) {
-                    deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
-                } else {
-                    ""
+                if (isVerified) {
+                    certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
                 }
-                
-                val server = DevicePath(
+
+                val devicePath = DevicePath(
                     hostName = deviceResponse.friendlyName,
                     hostUrl = baseFilesUrl,
-                    certificateCommonName = certificateCommonName,
                     devicePathType = devicePathType
                 )
-                
-                availablePaths[devicePathType] = server
-                
+
+                availablePaths[devicePathType] = devicePath
+
                 // Set preferred server to the first verified one
                 if (preferredDevicePath == null && isVerified) {
-                    preferredDevicePath = server
+                    preferredDevicePath = devicePath
                 }
             }
-            
+
             preferredDevicePath = preferredDevicePath ?: availablePaths.values.firstOrNull()
-            
+
             if (availablePaths.isNotEmpty() && preferredDevicePath != null) {
                 Device(
                     id = deviceResponse.seagateDeviceId,
                     availablePaths = availablePaths,
-                    preferredPath = preferredDevicePath
+                    preferredPath = preferredDevicePath,
+                    certificateCommonName = certificateCommonName
                 )
             } else {
                 null
             }
         }
     }
-    
+
     override fun clearDevicePaths() {
         currentDeviceStorage.clearDevicePaths()
     }

@@ -61,12 +61,12 @@ class GetAvailableDevicesUseCase(
 
                     // Add local server as LOCAL type if not already present
                     if (!updatedPaths.containsKey(DevicePathType.LOCAL)) {
-                        val localServerWithType = localDevice.copy(devicePathType = DevicePathType.LOCAL)
-                        updatedPaths[DevicePathType.LOCAL] = localServerWithType
+                        val localDevicePath = localDevice.preferredPath
+                        updatedPaths[DevicePathType.LOCAL] = localDevicePath
 
                         // Update device with new paths, prefer LOCAL if it's verified
-                        val newPreferredPath = if (localServerWithType.certificateCommonName.isNotEmpty()) {
-                            localServerWithType
+                        val newPreferredPath = if (localDevice.certificateCommonName.isNotEmpty()) {
+                            localDevice.preferredPath
                         } else {
                             existingDevice.preferredPath
                         }
@@ -74,18 +74,19 @@ class GetAvailableDevicesUseCase(
                         mutableDevices[existingDeviceIndex] = Device(
                             id = existingDevice.id,
                             availablePaths = updatedPaths,
-                            preferredPath = newPreferredPath
+                            preferredPath = newPreferredPath,
+                            certificateCommonName = existingDevice.certificateCommonName
                         )
                     }
                 } else {
                     // Create a new device for the local server
-                    val localServerWithType = localDevice.copy(devicePathType = DevicePathType.LOCAL)
-                    val newDevice = Device(
-                        id = localDevice.hostName,
-                        availablePaths = mapOf(DevicePathType.LOCAL to localServerWithType),
-                        preferredPath = localServerWithType
-                    )
-                    mutableDevices.add(newDevice)
+//                    val localServerWithType = localDevice.copy(devicePathType = DevicePathType.LOCAL)
+//                    val newDevice = Device(
+//                        id = localDevice.hostName,
+//                        availablePaths = mapOf(DevicePathType.LOCAL to localServerWithType),
+//                        preferredPath = localServerWithType
+//                    )
+                    mutableDevices.add(localDevice)
                 }
             }
             mutableDevices

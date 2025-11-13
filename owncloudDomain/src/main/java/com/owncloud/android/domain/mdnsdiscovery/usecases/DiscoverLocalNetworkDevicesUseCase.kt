@@ -1,6 +1,6 @@
 package com.owncloud.android.domain.mdnsdiscovery.usecases
 
-import com.owncloud.android.domain.device.model.DevicePath
+import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.mdnsdiscovery.MdnsDiscoveryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
@@ -12,7 +12,7 @@ class DiscoverLocalNetworkDevicesUseCase(
     private val mdnsDiscoveryRepository: MdnsDiscoveryRepository
 ) {
     
-    fun execute(params: Params): Flow<DevicePath> =
+    fun execute(params: Params): Flow<Device> =
         mdnsDiscoveryRepository.discoverAndVerifyDevices(
             serviceType = params.serviceType,
             serviceName = params.serviceName,
