@@ -79,13 +79,6 @@ class GetAvailableDevicesUseCase(
                         )
                     }
                 } else {
-                    // Create a new device for the local server
-//                    val localServerWithType = localDevice.copy(devicePathType = DevicePathType.LOCAL)
-//                    val newDevice = Device(
-//                        id = localDevice.hostName,
-//                        availablePaths = mapOf(DevicePathType.LOCAL to localServerWithType),
-//                        preferredPath = localServerWithType
-//                    )
                     mutableDevices.add(localDevice)
                 }
             }
