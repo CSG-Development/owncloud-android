@@ -4,11 +4,11 @@ import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 
-class CurrentDeviceRepositoryImpl(
+class HCCurrentDeviceRepository(
     private val currentDeviceStorage: CurrentDeviceStorage
 ) : CurrentDeviceRepository {
 
-    override fun saveCurrentDevice(device: Device) {
+    override fun saveCurrentDevicePaths(device: Device) {
         device.availablePaths.forEach {
             currentDeviceStorage.saveDeviceBaseUrl(it.value.hostUrl, it.key.name)
         }
@@ -24,7 +24,7 @@ class CurrentDeviceRepositoryImpl(
         return paths
     }
 
-    override fun clearCurrentDevice() {
+    override fun clearCurrentDevicePaths() {
         currentDeviceStorage.clearDevicePaths()
     }
 }

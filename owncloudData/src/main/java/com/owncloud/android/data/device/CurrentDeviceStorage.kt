@@ -50,7 +50,7 @@ class CurrentDeviceStorage(
     }
 
     companion object {
-        private const val KEY_PREFIX = "KEY_"
+        private const val KEY_PREFIX = "KEY_DEVICE_PATH"
 
     }
 }

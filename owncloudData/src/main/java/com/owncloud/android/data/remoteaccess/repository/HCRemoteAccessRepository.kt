@@ -6,7 +6,6 @@ import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessPath
-import com.owncloud.android.data.remoteaccess.remote.RemoteAccessPathType
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePath
@@ -75,7 +74,7 @@ class HCRemoteAccessRepository(
             for (remoteDevicePath in remoteDevicePaths) {
                 val baseUrl = getDeviceBaseUrl(remoteDevicePath)
                 val baseFilesUrl = "$baseUrl/files"
-                val serverType = mapToServerType(remoteDevicePath.type)
+                val devicePathType = remoteDevicePath.type.mapToDomain()
                 
                 // Verify device and get certificate
                 val isVerified = deviceVerificationClient.verifyDevice(baseUrl)
@@ -89,10 +88,10 @@ class HCRemoteAccessRepository(
                     hostName = deviceResponse.friendlyName,
                     hostUrl = baseFilesUrl,
                     certificateCommonName = certificateCommonName,
-                    devicePathType = serverType
+                    devicePathType = devicePathType
                 )
                 
-                availablePaths[serverType] = server
+                availablePaths[devicePathType] = server
                 
                 // Set preferred server to the first verified one
                 if (preferredDevicePath == null && isVerified) {
@@ -114,14 +113,6 @@ class HCRemoteAccessRepository(
         }
     }
     
-    private fun mapToServerType(pathType: RemoteAccessPathType): DevicePathType {
-        return when (pathType) {
-            RemoteAccessPathType.LOCAL -> DevicePathType.LOCAL
-            RemoteAccessPathType.PUBLIC -> DevicePathType.PUBLIC
-            RemoteAccessPathType.REMOTE -> DevicePathType.REMOTE
-        }
-    }
-
     override fun clearDevicePaths() {
         currentDeviceStorage.clearDevicePaths()
     }

@@ -25,7 +25,7 @@ package com.owncloud.android.dependecyinjection
 import com.owncloud.android.data.appregistry.repository.OCAppRegistryRepository
 import com.owncloud.android.data.authentication.repository.OCAuthenticationRepository
 import com.owncloud.android.data.capabilities.repository.OCCapabilityRepository
-import com.owncloud.android.data.device.CurrentDeviceRepositoryImpl
+import com.owncloud.android.data.device.HCCurrentDeviceRepository
 import com.owncloud.android.data.files.repository.OCFileRepository
 import com.owncloud.android.data.folderbackup.repository.OCFolderBackupRepository
 import com.owncloud.android.data.mdnsdiscovery.repository.HCMdnsDiscoveryRepository
@@ -78,5 +78,5 @@ val repositoryModule = module {
 
     factoryOf(::HCRemoteAccessRepository) bind RemoteAccessRepository::class
     factoryOf(::HCMdnsDiscoveryRepository) bind MdnsDiscoveryRepository::class
-    factoryOf(::CurrentDeviceRepositoryImpl) bind CurrentDeviceRepository::class
+    factoryOf(::HCCurrentDeviceRepository) bind CurrentDeviceRepository::class
 }
