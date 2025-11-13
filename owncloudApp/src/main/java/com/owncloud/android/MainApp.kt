@@ -39,6 +39,7 @@ import android.view.WindowManager
 import android.widget.CheckBox
 import androidx.core.content.pm.PackageInfoCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.owncloud.android.data.connectivity.NetworkStateObserver
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.db.PreferenceManager
@@ -79,6 +80,10 @@ import com.owncloud.android.utils.FILE_SYNC_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.MEDIA_SERVICE_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.UPLOAD_NOTIFICATION_CHANNEL_ID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
@@ -235,7 +240,16 @@ class MainApp : Application() {
             }
         })
 
+        val networkObserver = NetworkStateObserver(this)
+
+        coroutineMainScope.launch {
+            networkObserver.observeNetworkState().flowOn(Dispatchers.IO).collect {
+                Timber.d("Network state changed: $it")
+            }
+        }
     }
+
+    private val coroutineMainScope = MainScope()
 
     private fun startLogsIfEnabled() {
         val preferenceProvider = OCSharedPreferencesProvider(applicationContext)
