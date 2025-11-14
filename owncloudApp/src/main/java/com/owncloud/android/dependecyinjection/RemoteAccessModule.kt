@@ -1,6 +1,7 @@
 package com.owncloud.android.dependecyinjection
 
 import com.owncloud.android.BuildConfig
+import com.owncloud.android.data.device.BaseUrlChooser
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
@@ -44,6 +45,15 @@ val remoteAccessModule = module {
     // Current Device Storage
     single {
         CurrentDeviceStorage(get())
+    }
+
+    // Base URL Chooser - dynamically selects best available base URL
+    single {
+        BaseUrlChooser(
+            networkStateObserver = get(),
+            currentDeviceStorage = get(),
+            deviceVerificationClient = get()
+        )
     }
 
     // Logging interceptor for debugging

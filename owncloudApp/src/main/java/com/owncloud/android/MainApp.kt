@@ -39,7 +39,7 @@ import android.view.WindowManager
 import android.widget.CheckBox
 import androidx.core.content.pm.PackageInfoCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.owncloud.android.data.connectivity.NetworkStateObserver
+import com.owncloud.android.data.device.BaseUrlChooser
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.db.PreferenceManager
@@ -100,6 +100,8 @@ import timber.log.Timber
  * classes
  */
 class MainApp : Application() {
+
+    val baserUrlChooser: BaseUrlChooser by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -240,11 +242,15 @@ class MainApp : Application() {
             }
         })
 
-        val networkObserver = NetworkStateObserver(this)
+//        val networkObserver = NetworkStateObserver(this)
+
 
         coroutineMainScope.launch {
-            networkObserver.observeNetworkState().flowOn(Dispatchers.IO).collect {
-                Timber.d("Network state changed: $it")
+//            networkObserver.observeNetworkState().flowOn(Dispatchers.IO).collect {
+//                Timber.d("Network state changed: $it")
+//            }
+            baserUrlChooser.observeAvailableBaseUrl().flowOn(Dispatchers.IO).collect {
+                Timber.d("Base url changed: $it")
             }
         }
     }
