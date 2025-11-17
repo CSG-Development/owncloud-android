@@ -27,6 +27,7 @@
 
 package com.owncloud.android
 
+import android.accounts.AccountManager
 import android.app.Activity
 import android.app.Application
 import android.app.NotificationManager.IMPORTANCE_LOW
@@ -249,8 +250,11 @@ class MainApp : Application() {
 //            networkObserver.observeNetworkState().flowOn(Dispatchers.IO).collect {
 //                Timber.d("Network state changed: $it")
 //            }
-            baserUrlChooser.observeAvailableBaseUrl().flowOn(Dispatchers.IO).collect {
+            baserUrlChooser.observeRandomBaseUrl().flowOn(Dispatchers.IO).collect {
                 Timber.d("Base url changed: $it")
+                val currentAccount = AccountUtils.getCurrentOwnCloudAccount(applicationContext)
+                val accountMgr = AccountManager.get(applicationContext)
+                accountMgr.setUserData(currentAccount, com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_OC_BASE_URL, it)
             }
         }
     }

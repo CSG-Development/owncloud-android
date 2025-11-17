@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import kotlin.random.Random
 
 /**
  * Dynamically chooses the best available base URL based on network state.
@@ -25,6 +26,19 @@ class BaseUrlChooser(
     private val currentDeviceStorage: CurrentDeviceStorage,
     private val deviceVerificationClient: HCDeviceVerificationClient,
 ) {
+
+    fun observeRandomBaseUrl(): Flow<String?> {
+        return networkStateObserver.observeNetworkState()
+            .map { baseUrl ->
+                val priorityOrder = listOf(
+                    DevicePathType.LOCAL,
+                    DevicePathType.PUBLIC,
+                    DevicePathType.REMOTE
+                )
+                val pathType = priorityOrder[Random.nextInt(2)]
+                currentDeviceStorage.getDeviceBaseUrl(pathType.name)
+            }
+    }
 
     /**
      * Observe the best available base URL based on network state.

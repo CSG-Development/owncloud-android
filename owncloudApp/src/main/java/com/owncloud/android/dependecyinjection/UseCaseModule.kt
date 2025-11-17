@@ -24,6 +24,7 @@
 
 package com.owncloud.android.dependecyinjection
 
+import com.owncloud.android.data.device.usecases.ManageDynamicUrlSwitchingUseCaseImpl
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryWhichAllowCreationAsStreamUseCase
@@ -51,6 +52,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetCapabilitiesAsLiveDa
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.ManageDynamicUrlSwitchingUseCase
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
 import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
 import com.owncloud.android.domain.files.usecases.CopyFileUseCase
@@ -307,6 +309,11 @@ val useCaseModule = module {
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
+
+    // Device Management
+    single<ManageDynamicUrlSwitchingUseCase> { 
+        ManageDynamicUrlSwitchingUseCaseImpl(get()) 
+    }
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
