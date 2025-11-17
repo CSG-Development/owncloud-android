@@ -1,9 +1,13 @@
 package com.owncloud.android.presentation.authentication.homecloud
 
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.EditText
+import android.widget.TextView
 import androidx.annotation.ColorInt
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.DrawableCompat
+import timber.log.Timber
 
 /**
  * Extension function to set the text cursor color for an EditText.
@@ -20,17 +24,17 @@ fun EditText.setTextCursorDrawableCompat(@ColorInt color: Int) {
             }
         } else {
             // For older versions, use reflection
-            val field = android.widget.TextView::class.java.getDeclaredField("mCursorDrawableRes")
+            val field = TextView::class.java.getDeclaredField("mCursorDrawableRes")
             field.isAccessible = true
             val drawableResId = field.getInt(this)
             
-            val editorField = android.widget.TextView::class.java.getDeclaredField("mEditor")
+            val editorField = TextView::class.java.getDeclaredField("mEditor")
             editorField.isAccessible = true
             val editor = editorField.get(this)
             
-            val drawables = arrayOfNulls<android.graphics.drawable.Drawable>(2)
-            drawables[0] = context.getDrawable(drawableResId)
-            drawables[1] = context.getDrawable(drawableResId)
+            val drawables = arrayOfNulls<Drawable>(2)
+            drawables[0] = AppCompatResources.getDrawable(context, drawableResId)
+            drawables[1] = AppCompatResources.getDrawable(context, drawableResId)
             
             drawables.forEach { drawable ->
                 drawable?.let {
@@ -43,8 +47,7 @@ fun EditText.setTextCursorDrawableCompat(@ColorInt color: Int) {
             cursorDrawableField.set(editor, drawables)
         }
     } catch (e: Exception) {
-        // If reflection fails, log the error but don't crash
-        e.printStackTrace()
+        Timber.e(e, "Failed to set cursor color")
     }
 }
 
