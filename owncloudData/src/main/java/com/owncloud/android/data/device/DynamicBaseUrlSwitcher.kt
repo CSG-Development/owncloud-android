@@ -51,7 +51,6 @@ class DynamicBaseUrlSwitcher(
      * @param account The account to manage
      */
     fun startDynamicUrlSwitching(account: Account) {
-        // Cancel previous observation if exists
         stopDynamicUrlSwitching()
         
         currentAccount = account
@@ -59,7 +58,7 @@ class DynamicBaseUrlSwitcher(
         Timber.d("Starting dynamic URL switching for account: ${account.name}")
         
         observationJob = coroutineScope.launch {
-            baseUrlChooser.observeAvailableBaseUrl()
+            baseUrlChooser.observeRandomBaseUrl()
                 .catch { error ->
                     Timber.e(error, "Error observing base URL changes")
                 }
@@ -117,13 +116,13 @@ class DynamicBaseUrlSwitcher(
             account,
             AccountUtils.Constants.KEY_OC_BASE_URL
         )
-        
-        when {
-            newBaseUrl == null -> {
+
+        when (newBaseUrl) {
+            null -> {
                 Timber.w("No base URL available for account: ${account.name}")
                 // Don't update - keep the last known URL
             }
-            newBaseUrl == currentBaseUrl -> {
+            currentBaseUrl -> {
                 Timber.d("Base URL unchanged: $currentBaseUrl")
                 // No change needed
             }

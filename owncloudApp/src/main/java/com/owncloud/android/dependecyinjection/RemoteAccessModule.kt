@@ -65,7 +65,7 @@ val remoteAccessModule = module {
         DynamicBaseUrlSwitcher(
             accountManager = get(),
             baseUrlChooser = get(),
-            coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         )
     }
 

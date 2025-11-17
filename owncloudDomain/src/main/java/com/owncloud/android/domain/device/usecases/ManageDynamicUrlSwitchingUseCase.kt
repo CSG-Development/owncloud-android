@@ -1,7 +1,5 @@
 package com.owncloud.android.domain.device.usecases
 
-import android.accounts.Account
-
 /**
  * Use case for managing dynamic base URL switching for user accounts.
  * 
@@ -11,7 +9,9 @@ import android.accounts.Account
  * - Checking if switching is currently active
  */
 interface ManageDynamicUrlSwitchingUseCase {
-    
+
+    fun initDynamicUrlSwitching()
+
     /**
      * Start dynamic base URL switching for the specified account.
      * 
@@ -20,7 +20,7 @@ interface ManageDynamicUrlSwitchingUseCase {
      * 
      * @param account The account to manage
      */
-    fun startDynamicUrlSwitching(account: Account)
+    fun startDynamicUrlSwitching()
     
     /**
      * Stop dynamic base URL switching.
@@ -31,19 +31,5 @@ interface ManageDynamicUrlSwitchingUseCase {
      * - App is shutting down
      */
     fun stopDynamicUrlSwitching()
-    
-    /**
-     * Check if dynamic URL switching is currently active.
-     * 
-     * @return true if actively managing an account, false otherwise
-     */
-    fun isActive(): Boolean
-    
-    /**
-     * Get the currently managed account, if any.
-     * 
-     * @return The account being managed, or null if not active
-     */
-    fun getCurrentAccount(): Account?
 }
 

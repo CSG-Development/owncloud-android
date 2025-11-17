@@ -100,7 +100,7 @@ class BaseUrlChooser(
             }
         }
 
-        Timber.w("No available base URLs found")
+        Timber.d("No available base URLs found")
         return null
     }
 }

@@ -24,7 +24,6 @@
 
 package com.owncloud.android.dependecyinjection
 
-import com.owncloud.android.data.device.usecases.ManageDynamicUrlSwitchingUseCaseImpl
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryWhichAllowCreationAsStreamUseCase
@@ -126,6 +125,7 @@ import com.owncloud.android.domain.user.usecases.RefreshUserQuotaFromServerAsync
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstanceFromWebFingerUseCase
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstancesFromAuthenticatedWebFingerUseCase
 import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
+import com.owncloud.android.usecases.device.ManageDynamicUrlSwitchingUseCaseImpl
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.files.RemoveLocalFilesForAccountUseCase
 import com.owncloud.android.usecases.files.RemoveLocallyFilesWithLastUsageOlderThanGivenTimeUseCase
@@ -151,6 +151,7 @@ import com.owncloud.android.usecases.transfers.uploads.UploadFileFromSystemUseCa
 import com.owncloud.android.usecases.transfers.uploads.UploadFileInConflictUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromContentUriUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromSystemUseCase
+import kotlinx.coroutines.MainScope
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 
@@ -311,8 +312,14 @@ val useCaseModule = module {
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
 
     // Device Management
-    single<ManageDynamicUrlSwitchingUseCase> { 
-        ManageDynamicUrlSwitchingUseCaseImpl(get()) 
+    single<ManageDynamicUrlSwitchingUseCase> {
+        val mainScope = MainScope()
+        ManageDynamicUrlSwitchingUseCaseImpl(
+            get(),
+            get(),
+            mainScope,
+            get(),
+        )
     }
 
     // Accounts
