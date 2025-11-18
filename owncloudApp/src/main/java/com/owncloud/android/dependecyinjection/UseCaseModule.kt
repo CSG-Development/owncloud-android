@@ -76,7 +76,6 @@ import com.owncloud.android.domain.files.usecases.RenameFileUseCase
 import com.owncloud.android.domain.files.usecases.SaveConflictUseCase
 import com.owncloud.android.domain.files.usecases.SaveDownloadWorkerUUIDUseCase
 import com.owncloud.android.domain.files.usecases.SaveFileOrFolderUseCase
-import com.owncloud.android.domain.files.usecases.SearchFilesUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
@@ -204,7 +203,6 @@ val useCaseModule = module {
     factoryOf(::SortFilesWithSyncInfoUseCase)
     factoryOf(::SynchronizeFileUseCase)
     factoryOf(::SynchronizeFolderUseCase)
-    factoryOf(::SearchFilesUseCase)
 
     // Saved Searches
     factoryOf(::SaveSavedSearchUseCase)

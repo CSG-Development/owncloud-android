@@ -541,18 +541,6 @@ class OCFileRepository(
         localFileDataSource.cleanWorkersUuid(fileId)
     }
 
-    override fun searchFiles(
-        searchPattern: String,
-        ignoreCase: Boolean,
-        minSize: Long,
-        maxSize: Long,
-        mimePrefix: String,
-        minDate: Long,
-        maxDate: Long,
-    ): List<OCFile> {
-        return localFileDataSource.searchFiles(searchPattern, ignoreCase, minSize, maxSize, mimePrefix, minDate, maxDate)
-    }
-
     private fun getFinalRemotePath(
         replace: List<Boolean?>,
         expectedRemotePath: String,
