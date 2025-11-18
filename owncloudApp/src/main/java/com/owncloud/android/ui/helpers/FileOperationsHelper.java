@@ -31,6 +31,7 @@ import android.accounts.AccountManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import com.owncloud.android.R;
@@ -46,6 +47,7 @@ import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase;
 import com.owncloud.android.utils.UriUtilsKt;
 import kotlin.Lazy;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import timber.log.Timber;
 
 import static org.koin.java.KoinJavaComponent.inject;
@@ -53,6 +55,7 @@ import static org.koin.java.KoinJavaComponent.inject;
 public class FileOperationsHelper {
 
     private static final String FTAG_CHOOSER_DIALOG = "CHOOSER_DIALOG";
+    private static final String REMOTE_FILES_SUFFIX = "/files";
 
     private FileActivity mFileActivity;
 
@@ -131,7 +134,7 @@ public class FileOperationsHelper {
      *
      * @param file @param file {@link OCFile} which will be shared with internal users
      */
-    public void copyOrSendPrivateLink(OCFile file) {
+    public void copyOrSendPrivateLink(OCFile file, @Nullable String remoteBaseUrl) {
 
         // Parse remoteId
         String privateLink = file.getPrivateLink();
@@ -143,7 +146,7 @@ public class FileOperationsHelper {
             return;
         }
 
-        shareLink(privateLink);
+        shareLink(applyRemoteBaseUrl(privateLink, remoteBaseUrl));
     }
 
     /**
@@ -152,16 +155,16 @@ public class FileOperationsHelper {
      *
      * @param share {@link OCShare} which link will be sent to the app chosen by the user.
      */
-    public void copyOrSendPublicLink(OCShare share) {
+    public void copyOrSendPublicLink(OCShare share, @Nullable String remoteBaseUrl) {
         String link = share.getShareLink();
-        if (link.length() <= 0) {
+        if (link == null || link.length() <= 0) {
             mFileActivity.showSnackMessage(
                     mFileActivity.getString(R.string.share_no_link_in_this_share)
             );
             return;
         }
 
-        shareLink(link);
+        shareLink(applyRemoteBaseUrl(link, remoteBaseUrl));
     }
 
     /**
@@ -269,5 +272,67 @@ public class FileOperationsHelper {
         );
 
         mFileActivity.startActivity(shareSheetIntent);
+    }
+
+    private String applyRemoteBaseUrl(String originalLink, @Nullable String remoteBaseUrl) {
+        if (TextUtils.isEmpty(originalLink) || TextUtils.isEmpty(remoteBaseUrl)) {
+            return originalLink;
+        }
+
+        String sanitizedBase = remoteBaseUrl.trim();
+        if (sanitizedBase.endsWith(REMOTE_FILES_SUFFIX)) {
+            sanitizedBase = sanitizedBase.substring(0, sanitizedBase.length() - REMOTE_FILES_SUFFIX.length());
+        }
+        if (sanitizedBase.endsWith("/")) {
+            sanitizedBase = sanitizedBase.substring(0, sanitizedBase.length() - 1);
+        }
+
+        if (sanitizedBase.isEmpty()) {
+            return originalLink;
+        }
+
+        try {
+            java.net.URI originalUri = new java.net.URI(originalLink);
+            java.net.URI remoteUri = new java.net.URI(sanitizedBase);
+
+            if (remoteUri.getHost() == null) {
+                return originalLink;
+            }
+
+            String mergedPath = mergePaths(remoteUri.getRawPath(), originalUri.getRawPath());
+
+            java.net.URI rebuiltUri = new java.net.URI(
+                    remoteUri.getScheme() != null ? remoteUri.getScheme() : originalUri.getScheme(),
+                    remoteUri.getUserInfo(),
+                    remoteUri.getHost(),
+                    remoteUri.getPort(),
+                    mergedPath,
+                    originalUri.getRawQuery(),
+                    originalUri.getRawFragment()
+            );
+
+            return rebuiltUri.toString();
+        } catch (java.net.URISyntaxException e) {
+            Timber.w(e, "Unable to rebuild link using remote base url %s", remoteBaseUrl);
+            return originalLink;
+        }
+    }
+
+    private String mergePaths(String basePath, String relativePath) {
+        String sanitizedBasePath = basePath == null ? "" : basePath;
+        String sanitizedRelativePath = relativePath == null ? "" : relativePath;
+
+        if (sanitizedBasePath.endsWith("/")) {
+            sanitizedBasePath = sanitizedBasePath.substring(0, sanitizedBasePath.length() - 1);
+        }
+        if (!sanitizedRelativePath.isEmpty() && !sanitizedRelativePath.startsWith("/")) {
+            sanitizedRelativePath = "/" + sanitizedRelativePath;
+        }
+
+        if (sanitizedBasePath.isEmpty()) {
+            return sanitizedRelativePath.isEmpty() ? "/" : sanitizedRelativePath;
+        }
+
+        return sanitizedRelativePath.isEmpty() ? sanitizedBasePath : sanitizedBasePath + sanitizedRelativePath;
     }
 }
