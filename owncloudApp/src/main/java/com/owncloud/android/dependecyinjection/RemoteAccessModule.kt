@@ -4,10 +4,12 @@ import com.owncloud.android.BuildConfig
 import com.owncloud.android.data.device.BaseUrlChooser
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.device.DynamicBaseUrlSwitcher
+import com.owncloud.android.data.device.HCDeviceUrlResolver
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessAuthInterceptor
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessTokenRefreshInterceptor
+import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,12 +53,19 @@ val remoteAccessModule = module {
         CurrentDeviceStorage(get())
     }
 
+    // Device URL Resolver - resolves available device URLs by priority
+    single<DeviceUrlResolver> {
+        HCDeviceUrlResolver(
+            deviceVerificationClient = get()
+        )
+    }
+
     // Base URL Chooser - dynamically selects best available base URL
     single {
         BaseUrlChooser(
             networkStateObserver = get(),
             currentDeviceStorage = get(),
-            deviceVerificationClient = get()
+            deviceUrlResolver = get()
         )
     }
 

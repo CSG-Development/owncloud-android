@@ -3,8 +3,8 @@ package com.owncloud.android.data.device
 import app.cash.turbine.test
 import com.owncloud.android.data.connectivity.Connectivity
 import com.owncloud.android.data.connectivity.NetworkStateObserver
-import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,12 +21,12 @@ class BaseUrlChooserTest {
 
     private val networkStateObserver: NetworkStateObserver = mockk()
     private val currentDeviceStorage: CurrentDeviceStorage = mockk()
-    private val deviceVerificationClient: HCDeviceVerificationClient = mockk()
+    private val deviceUrlResolver: DeviceUrlResolver = mockk()
 
     private val chooser = BaseUrlChooser(
         networkStateObserver,
         currentDeviceStorage,
-        deviceVerificationClient
+        deviceUrlResolver
     )
 
     @Test
@@ -47,9 +47,10 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
+        every { currentDeviceStorage.getDeviceBaseUrl(any()) } returns null
         every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns true
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns "https://192.168.1.100/files"
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
@@ -57,7 +58,14 @@ class BaseUrlChooserTest {
             awaitComplete()
         }
         
-        coVerify { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
+        coVerify { 
+            deviceUrlResolver.resolveAvailableBaseUrl(
+                match { paths ->
+                    paths.size == 1 && 
+                    paths[DevicePathType.LOCAL] == "https://192.168.1.100/files"
+                }
+            ) 
+        }
     }
 
     @Test
@@ -66,11 +74,11 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns null
         every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns "https://public.example.com/files"
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://public.example.com") } returns true
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns null
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns "https://public.example.com/files"
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
@@ -78,8 +86,14 @@ class BaseUrlChooserTest {
             awaitComplete()
         }
         
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://public.example.com") }
+        coVerify { 
+            deviceUrlResolver.resolveAvailableBaseUrl(
+                match { paths ->
+                    paths.size == 1 && 
+                    paths[DevicePathType.PUBLIC] == "https://public.example.com/files"
+                }
+            ) 
+        }
     }
 
     @Test
@@ -88,13 +102,11 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.CELLULAR))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns "https://public.example.com/files"
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns null
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns null
         every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns "https://remote.example.com/files"
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://public.example.com") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://remote.example.com") } returns true
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns "https://remote.example.com/files"
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
@@ -102,9 +114,14 @@ class BaseUrlChooserTest {
             awaitComplete()
         }
         
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://public.example.com") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://remote.example.com") }
+        coVerify { 
+            deviceUrlResolver.resolveAvailableBaseUrl(
+                match { paths ->
+                    paths.size == 1 && 
+                    paths[DevicePathType.REMOTE] == "https://remote.example.com/files"
+                }
+            ) 
+        }
     }
 
     @Test
@@ -113,11 +130,9 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
+        every { currentDeviceStorage.getDeviceBaseUrl(any()) } returns "https://example.com/files"
         
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns "https://public.example.com/files"
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns "https://remote.example.com/files"
-        coEvery { deviceVerificationClient.verifyDevice(any()) } returns false
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns null
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
@@ -132,8 +147,9 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
         every { currentDeviceStorage.getDeviceBaseUrl(any()) } returns null
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns null
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
@@ -141,31 +157,39 @@ class BaseUrlChooserTest {
             awaitComplete()
         }
         
-        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice(any()) }
+        coVerify { 
+            deviceUrlResolver.resolveAvailableBaseUrl(emptyMap())
+        }
     }
 
     @Test
-    fun `observeAvailableBaseUrl skips missing URLs in priority order`() = runTest {
+    fun `observeAvailableBaseUrl builds correct priority order`() = runTest {
         val connectivityFlow = flowOf(
             Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
-        // LOCAL is missing
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns null
-        // PUBLIC is available
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
         every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns "https://public.example.com/files"
-        coEvery { deviceVerificationClient.verifyDevice("https://public.example.com") } returns true
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns "https://remote.example.com/files"
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns "https://192.168.1.100/files"
 
         chooser.observeAvailableBaseUrl().test {
             val result = awaitItem()
-            assertEquals("https://public.example.com/files", result)
+            assertEquals("https://192.168.1.100/files", result)
             awaitComplete()
         }
         
-        // LOCAL was not verified since it's missing
-        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://public.example.com") }
+        coVerify { 
+            deviceUrlResolver.resolveAvailableBaseUrl(
+                match { paths ->
+                    paths.size == 3 && 
+                    paths[DevicePathType.LOCAL] == "https://192.168.1.100/files" &&
+                    paths[DevicePathType.PUBLIC] == "https://public.example.com/files" &&
+                    paths[DevicePathType.REMOTE] == "https://remote.example.com/files"
+                }
+            ) 
+        }
     }
 
     @Test
@@ -176,9 +200,11 @@ class BaseUrlChooserTest {
             Connectivity(setOf(Connectivity.ConnectionType.WIFI)) // Same result expected
         )
         every { networkStateObserver.observeNetworkState() } returns connectivityFlow
-        
         every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns "https://192.168.1.100/files"
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns true
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns null
+        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns null
+        
+        coEvery { deviceUrlResolver.resolveAvailableBaseUrl(any()) } returns "https://192.168.1.100/files"
 
         chooser.observeAvailableBaseUrl().test {
             // Should emit only once due to distinctUntilChanged

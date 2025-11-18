@@ -13,7 +13,8 @@ data class Connectivity(
         NONE,
         WIFI,
         CELLULAR,
-        ETHERNET
+        ETHERNET,
+        VPN,
     }
 
     companion object {
@@ -21,6 +22,7 @@ data class Connectivity(
         fun fromNetworkCapabilities(networkCapabilities: NetworkCapabilities): Connectivity {
             val networkTypes = mutableSetOf<ConnectionType>()
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }?.run { networkTypes.add(ConnectionType.CELLULAR) }
+            networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_VPN) }?.run { networkTypes.add(ConnectionType.VPN) }
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) }?.run { networkTypes.add(ConnectionType.WIFI) }
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) }?.run { networkTypes.add(ConnectionType.ETHERNET) }
             networkTypes.takeIf { it.isEmpty() }?.run { networkTypes.add(ConnectionType.NONE) }

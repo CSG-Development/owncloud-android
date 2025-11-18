@@ -47,17 +47,16 @@ class HCMdnsDiscoveryRepository(
                 Timber.d("Device certificate common name: $certificateCommonName")
 
                 val devicePath = DevicePath(
-                    hostName = deviceUrl,
                     hostUrl = deviceUrl,
                     devicePathType = DevicePathType.LOCAL
                 )
 
                 Device(
                     id = deviceUrl,
+                    name = deviceUrl,
                     availablePaths = mapOf(
                         DevicePathType.LOCAL to devicePath
                     ),
-                    preferredPath = devicePath,
                     certificateCommonName = certificateCommonName
                 )
             } else {

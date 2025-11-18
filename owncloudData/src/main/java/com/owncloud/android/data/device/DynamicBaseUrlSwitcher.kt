@@ -58,7 +58,7 @@ class DynamicBaseUrlSwitcher(
         Timber.d("Starting dynamic URL switching for account: ${account.name}")
         
         observationJob = coroutineScope.launch {
-            baseUrlChooser.observeRandomBaseUrl()
+            baseUrlChooser.observeAvailableBaseUrl()
                 .catch { error ->
                     Timber.e(error, "Error observing base URL changes")
                 }
@@ -94,15 +94,6 @@ class DynamicBaseUrlSwitcher(
      */
     fun isActive(): Boolean {
         return observationJob?.isActive == true
-    }
-
-    /**
-     * Get the currently managed account, if any.
-     * 
-     * @return The account being managed, or null if not active
-     */
-    fun getCurrentAccount(): Account? {
-        return currentAccount
     }
 
     /**

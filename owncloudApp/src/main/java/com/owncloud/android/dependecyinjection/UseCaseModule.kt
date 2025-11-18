@@ -92,6 +92,7 @@ import com.owncloud.android.domain.searches.usecases.GetSavedSearchesForAccountU
 import com.owncloud.android.domain.searches.usecases.RemoveSavedSearchUseCase
 import com.owncloud.android.domain.searches.usecases.SaveSavedSearchUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
+import com.owncloud.android.domain.server.usecases.GetAvailableServerInfoUseCase
 import com.owncloud.android.domain.server.usecases.GetServerInfoAsyncUseCase
 import com.owncloud.android.domain.sharing.sharees.GetShareesAsyncUseCase
 import com.owncloud.android.domain.sharing.shares.usecases.CreatePrivateShareAsyncUseCase
@@ -321,6 +322,8 @@ val useCaseModule = module {
             get(),
         )
     }
+
+    factoryOf(::GetAvailableServerInfoUseCase)
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
