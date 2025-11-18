@@ -9,11 +9,6 @@ import com.owncloud.android.presentation.authentication.AccountUtils.getCurrentO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/**
- * Implementation of ManageDynamicUrlSwitchingUseCase.
- *
- * Delegates all operations to DynamicBaseUrlSwitcher.
- */
 class ManageDynamicUrlSwitchingUseCaseImpl(
     private val appContext: Context,
     private val dynamicBaseUrlSwitcher: DynamicBaseUrlSwitcher,

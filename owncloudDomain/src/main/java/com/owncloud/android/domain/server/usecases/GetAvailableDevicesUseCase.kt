@@ -63,17 +63,10 @@ class GetAvailableDevicesUseCase(
                         if (localDevicePath != null) {
                             updatedPaths[DevicePathType.LOCAL] = localDevicePath
 
-//                        val newPreferredPath = if (localDevice.certificateCommonName.isNotEmpty()) {
-//                            localDevice.preferredPath
-//                        } else {
-//                            existingDevice.preferredPath
-//                        }
-
                             mutableDevices[existingDeviceIndex] = Device(
                                 id = existingDevice.id,
                                 name = localDevice.name,
                                 availablePaths = updatedPaths,
-//                            preferredPath = newPreferredPath,
                                 certificateCommonName = existingDevice.certificateCommonName
                             )
                         }

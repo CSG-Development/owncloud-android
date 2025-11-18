@@ -26,10 +26,6 @@ import timber.log.Timber
  * // On logout
  * dynamicBaseUrlSwitcher.stopDynamicUrlSwitching()
  * ```
- *
- * @property accountManager Android AccountManager for updating account data
- * @property baseUrlChooser Provides the best available base URL based on network state
- * @property coroutineScope Scope for running the URL observation (injected for testability)
  */
 class DynamicBaseUrlSwitcher(
     private val accountManager: AccountManager,

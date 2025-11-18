@@ -15,7 +15,6 @@ import timber.log.Timber
  * Can be reused in any context where device URL resolution is needed.
  * Does not depend on any storage - receives URLs as input parameters.
  *
- * @property deviceVerificationClient Client for verifying device availability
  */
 class HCDeviceUrlResolver(
     private val deviceVerificationClient: HCDeviceVerificationClient,
