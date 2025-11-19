@@ -23,8 +23,7 @@ class GetAvailableServerInfoUseCase(
         enforceOIDC: Boolean,
         secureConnectionEnforced: Boolean
     ): UseCaseResult<ServerInfo> {
-        val devicesPaths = device.availablePaths.asIterable().associate { it.key to it.value.hostUrl }
-        val availableDeviceUrl = deviceUrlResolver.resolveAvailableBaseUrl(devicesPaths)
+        val availableDeviceUrl = deviceUrlResolver.resolveAvailableBaseUrl(device.availablePaths)
         return if (availableDeviceUrl == null) {
             UseCaseResult.Error(UnknownErrorException())
         } else {

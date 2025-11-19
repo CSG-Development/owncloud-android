@@ -2,7 +2,6 @@ package com.owncloud.android.domain.server.usecases
 
 import app.cash.turbine.test
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.device.model.DevicePath
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
@@ -30,7 +29,7 @@ class GetAvailableDevicesUseCaseTest {
 
     @Test
     fun `getServersUpdates should return a merged list of remote and local devices`() = runTest {
-        val device1DevicePath = DevicePath("https://remote1.com", DevicePathType.REMOTE)
+        val device1DevicePath = "https://remote1.com"
         val devices = listOf(
             Device(
                 id = "id1",
@@ -39,7 +38,7 @@ class GetAvailableDevicesUseCaseTest {
             )
         )
         
-        val device2DevicePath = DevicePath("https://remote2.com", DevicePathType.PUBLIC)
+        val device2DevicePath = "https://remote2.com"
         val devices2 = listOf(
             Device(
                 id = "id1",
@@ -54,7 +53,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returnsMany(devices, devices2)
 
-        val localDevicePath = DevicePath(hostUrl = "https://local.com", devicePathType = DevicePathType.LOCAL)
+        val localDevicePath = "https://local.com"
         val localDevice = Device(
             id = "local-id",
             name = "https://local.com",
@@ -90,8 +89,8 @@ class GetAvailableDevicesUseCaseTest {
 
     @Test
     fun `getServersUpdates should merge local server into existing device by certificate`() = runTest {
-        val remoteDevicePath1 = DevicePath("https://remote1.com", DevicePathType.REMOTE)
-        val remoteDevicePath2 = DevicePath("https://remote2.com", DevicePathType.PUBLIC)
+        val remoteDevicePath1 = "https://remote1.com"
+        val remoteDevicePath2 = "https://remote2.com"
         val devices = listOf(
             Device(
                 id = "id1",
@@ -108,10 +107,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val localDevicePath = DevicePath(
-            hostUrl = "https://local.com",
-            devicePathType = DevicePathType.LOCAL
-        )
+        val localDevicePath = "https://local.com"
         val localDevice = Device(
             id = "local-id",
             name = "https://local.com",
@@ -137,8 +133,7 @@ class GetAvailableDevicesUseCaseTest {
             assertEquals(2, finalEmission[0].availablePaths.size) // Now has both REMOTE and LOCAL
             assertEquals(true, finalEmission[0].availablePaths.containsKey(DevicePathType.REMOTE))
             assertEquals(true, finalEmission[0].availablePaths.containsKey(DevicePathType.LOCAL))
-            assertEquals(DevicePathType.LOCAL, finalEmission[0].availablePaths[DevicePathType.LOCAL]?.devicePathType)
-            
+
             assertEquals("Device 2", finalEmission[1].name)
             assertEquals(true, finalEmission[1].availablePaths.containsKey(DevicePathType.PUBLIC))
             assertEquals(1, finalEmission[1].availablePaths.size) // Only has PUBLIC
@@ -151,8 +146,8 @@ class GetAvailableDevicesUseCaseTest {
 
     @Test
     fun `getServersUpdates should create separate device for local server with different certificate`() = runTest {
-        val remoteDevicePath1 = DevicePath("https://remote1.com", DevicePathType.REMOTE)
-        val remoteDevicePath2 = DevicePath("https://remote2.com", DevicePathType.PUBLIC)
+        val remoteDevicePath1 = "https://remote1.com"
+        val remoteDevicePath2 = "https://remote2.com"
         val devices = listOf(
             Device(
                 id = "id1",
@@ -169,10 +164,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val localDevicePath = DevicePath(
-            hostUrl = "https://local.com",
-            devicePathType = DevicePathType.LOCAL
-        )
+        val localDevicePath = "https://local.com"
         val localDevice = Device(
             id = "local-id",
             name = "https://local.com",
@@ -197,7 +189,6 @@ class GetAvailableDevicesUseCaseTest {
             assertEquals("Device 1", finalEmission[0].name)
             assertEquals("Device 2", finalEmission[1].name)
             assertEquals("https://local.com", finalEmission[2].name)
-            assertEquals(DevicePathType.LOCAL, finalEmission[2].availablePaths[DevicePathType.LOCAL]?.devicePathType)
 
             cancelAndConsumeRemainingEvents()
         }
@@ -207,8 +198,8 @@ class GetAvailableDevicesUseCaseTest {
 
     @Test
     fun `getServersUpdates should create separate device for local server with empty certificate`() = runTest {
-        val remoteDevicePath1 = DevicePath("https://remote1.com", DevicePathType.REMOTE)
-        val remoteDevicePath2 = DevicePath("https://remote2.com", DevicePathType.PUBLIC)
+        val remoteDevicePath1 = "https://remote1.com"
+        val remoteDevicePath2 = "https://remote2.com"
         val devices = listOf(
             Device(
                 id = "id1",
@@ -225,10 +216,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val localDevicePath = DevicePath(
-            hostUrl = "https://local.com",
-            devicePathType = DevicePathType.LOCAL
-        )
+        val localDevicePath = "https://local.com"
         val localDevice = Device(
             id = "local-id",
             name = "https://local.com",

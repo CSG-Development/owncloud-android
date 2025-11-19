@@ -1,7 +1,6 @@
 package com.owncloud.android.data.device
 
 import com.owncloud.android.data.connectivity.NetworkStateObserver
-import com.owncloud.android.domain.device.model.DevicePath
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import kotlinx.coroutines.flow.Flow
@@ -63,10 +62,10 @@ class BaseUrlChooser(
         )
 
         return priorityOrder.mapNotNull { pathType ->
-            currentDeviceStorage.getDeviceBaseUrl(pathType.name)?.let { url ->
-                DevicePath(url, pathType)
+            currentDeviceStorage.getDeviceBaseUrl(pathType.name)?.let {
+                pathType to it
             }
-        }.associate { it.devicePathType to it.hostUrl }
+        }.associate { it.first to it.second }
     }
 }
 

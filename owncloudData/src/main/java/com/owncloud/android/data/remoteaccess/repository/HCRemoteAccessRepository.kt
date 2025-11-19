@@ -7,7 +7,6 @@ import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.device.model.DevicePath
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
@@ -66,17 +65,17 @@ class HCRemoteAccessRepository(
         return remoteAccessService.getDevices().mapNotNull { deviceResponse ->
             val remoteDevicePaths = remoteAccessService.getDeviceById(deviceResponse.seagateDeviceId).paths
 
-            val availablePaths = mutableMapOf<DevicePathType, DevicePath>()
+            val availablePaths = mutableMapOf<DevicePathType, String>()
             var certificateCommonName = ""
 
             for (remoteDevicePath in remoteDevicePaths) {
-                val devicePath = remoteDevicePath.mapToDomain()
-                val baseUrl = devicePath.hostUrl.removeSuffix("/files")
+                val devicePathType = remoteDevicePath.type.mapToDomain()
+                val baseUrl = remoteDevicePath.getDeviceBaseUrl().removeSuffix("/files")
                 if (certificateCommonName.isEmpty()) {
                     certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
                 }
 
-                availablePaths[devicePath.devicePathType] = devicePath
+                availablePaths[devicePathType] = baseUrl
 
             }
 
