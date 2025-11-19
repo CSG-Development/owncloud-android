@@ -19,7 +19,8 @@ class GetAvailableServerInfoUseCase(
     }
 
     suspend fun getAvailableServerInfo(
-        device: Device, enforceOIDC: Boolean,
+        device: Device,
+        enforceOIDC: Boolean,
         secureConnectionEnforced: Boolean
     ): UseCaseResult<ServerInfo> {
         val devicesPaths = device.availablePaths.asIterable().associate { it.key to it.value.hostUrl }

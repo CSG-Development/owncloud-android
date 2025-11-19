@@ -2,6 +2,7 @@ package com.owncloud.android.data.device
 
 import android.accounts.Account
 import android.accounts.AccountManager
+import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -133,6 +134,7 @@ class DynamicBaseUrlSwitcher(
                 AccountUtils.Constants.KEY_OC_BASE_URL,
                 newBaseUrl
             )
+            SingleSessionManager.getDefaultSingleton().cancelAllRequests()
             Timber.d("Successfully updated base URL to: $newBaseUrl")
         } catch (e: Exception) {
             Timber.e(e, "Failed to update base URL for account: ${account.name}")

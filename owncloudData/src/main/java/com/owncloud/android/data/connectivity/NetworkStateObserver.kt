@@ -24,22 +24,43 @@ class NetworkStateObserver(
     private val powerManager: PowerManager by lazy { appContext.getSystemService(PowerManager::class.java) }
     private val connectivityManager: ConnectivityManager by lazy { appContext.getSystemService(ConnectivityManager::class.java) }
 
-    fun observeNetworkState(): Flow<Connectivity> = channelFlow {
-        sendIfUnavailable(this@channelFlow)
-
-        val connectivityCallback = object : ConnectivityManager.NetworkCallback() {
+    private fun obtainNetworkCallback(sendChannel: SendChannel<Connectivity>): ConnectivityManager.NetworkCallback {
+        return object : ConnectivityManager.NetworkCallback() {
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                trySendBlocking(Connectivity.fromNetworkCapabilities(networkCapabilities))
+                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(networkCapabilities))
             }
 
             override fun onLost(network: Network) {
-                sendIfUnavailable(this@channelFlow)
+                sendIfUnavailable(sendChannel)
             }
         }
+    }
+
+    private fun obtainVpnCallback(sendChannel: SendChannel<Connectivity>): ConnectivityManager.NetworkCallback {
+        return object : ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
+                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(networkCapabilities))
+            }
+
+            override fun onLost(network: Network) {
+                val capabilities = connectivityManager.allNetworks.mapNotNull { connectivityManager.getNetworkCapabilities(it) }
+                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(capabilities))
+            }
+        }
+    }
+
+    fun observeNetworkState(): Flow<Connectivity> = channelFlow {
+        sendIfUnavailable(this@channelFlow)
+
+        val connectivityCallback = obtainNetworkCallback(this@channelFlow)
+        val vpnCallback = obtainVpnCallback(this@channelFlow)
 
         val idleReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -52,12 +73,16 @@ class NetworkStateObserver(
 
         val request =
             networkRequestFactory.createNetworkRequest(
-                NetworkCapabilities.NET_CAPABILITY_INTERNET,
-                NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED
+                    NetworkCapabilities.NET_CAPABILITY_INTERNET,
+                    NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED,
             )
+        val vpnRequest = networkRequestFactory.createVpnRequest()
+
         connectivityManager.registerNetworkCallback(request, connectivityCallback)
+        connectivityManager.registerNetworkCallback(vpnRequest, vpnCallback)
         awaitClose {
             connectivityManager.unregisterNetworkCallback(connectivityCallback)
+            connectivityManager.unregisterNetworkCallback(vpnCallback)
             appContext.unregisterReceiver(idleReceiver)
         }
     }.distinctUntilChanged()
@@ -74,4 +99,5 @@ class NetworkStateObserver(
             powerManager.isIgnoringBatteryOptimizations(packageName)
         return powerManager.isDeviceIdleMode && !isIgnoringOptimizations
     }
+
 }
