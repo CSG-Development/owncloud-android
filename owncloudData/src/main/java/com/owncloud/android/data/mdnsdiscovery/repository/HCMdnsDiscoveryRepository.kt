@@ -3,7 +3,6 @@ package com.owncloud.android.data.mdnsdiscovery.repository
 import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
 import com.owncloud.android.data.mdnsdiscovery.datasources.LocalMdnsDiscoveryDataSource
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.device.model.DevicePath
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.mdnsdiscovery.MdnsDiscoveryRepository
 import kotlinx.coroutines.flow.Flow
@@ -33,35 +32,32 @@ class HCMdnsDiscoveryRepository(
             serviceType = serviceType,
             serviceName = serviceName,
             duration = duration
-        ).mapNotNull { deviceUrl ->
+        ).mapNotNull { baseUrl ->
             // Verify each discovered device independently
-            Timber.d("Device discovered via mDNS: $deviceUrl - verifying...")
+            Timber.d("Device discovered via mDNS: $baseUrl - verifying...")
 
-            val isVerified = deviceVerificationClient.verifyDevice(deviceUrl)
+            val isVerified = deviceVerificationClient.verifyDevice(baseUrl)
 
             if (isVerified) {
-                Timber.d("Device verified: $deviceUrl")
+                Timber.d("Device verified: $baseUrl")
 
                 // Get certificate common name
-                val certificateCommonName = deviceVerificationClient.getCertificateCommonName(deviceUrl).orEmpty()
+                val certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
                 Timber.d("Device certificate common name: $certificateCommonName")
+                val deviceUrl = "$baseUrl/files"
 
-                val devicePath = DevicePath(
-                    hostName = deviceUrl,
-                    hostUrl = deviceUrl,
-                    devicePathType = DevicePathType.LOCAL
-                )
+                // Emit device
 
                 Device(
                     id = deviceUrl,
+                    name = deviceUrl,
                     availablePaths = mapOf(
-                        DevicePathType.LOCAL to devicePath
+                        DevicePathType.LOCAL to deviceUrl
                     ),
-                    preferredPath = devicePath,
                     certificateCommonName = certificateCommonName
                 )
             } else {
-                Timber.d("Device verification failed, skipping: $deviceUrl")
+                Timber.d("Device verification failed, skipping: $baseUrl")
                 null
             }
         }
