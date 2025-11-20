@@ -365,6 +365,8 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
         shareViewModel.remoteBaseUrl.observe(viewLifecycleOwner) { remoteBaseUrl ->
             this.remoteBaseUrl = remoteBaseUrl
             showOrHidePrivateLink()
+            updateShareViaLinkVisibility()
+            updatePublicLinkButton()
         }
     }
 
@@ -415,7 +417,7 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
         // Update view depending on updated capabilities
         binding.shareHeaderDivider.isVisible = isShareApiEnabled
         binding.shareWithUsersSection.isVisible = isShareApiEnabled
-        binding.shareViaLinkSection.isVisible = isShareApiEnabled && isPublicShareEnabled
+        updateShareViaLinkVisibility()
     }
 
     /**************************************************************************************************************
@@ -490,6 +492,11 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
             return
         }
 
+        if (remoteBaseUrl.isNullOrEmpty()) {
+            binding.addPublicLinkButton.visibility = View.INVISIBLE
+            return
+        }
+
         if (!enableMultiplePublicSharing()) {
             if (publicLinks.isNullOrEmpty()) {
                 binding.addPublicLinkButton.visibility = View.VISIBLE
@@ -497,6 +504,11 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
             }
             binding.addPublicLinkButton.visibility = View.INVISIBLE
         }
+    }
+
+    private fun updateShareViaLinkVisibility() {
+        val shouldShowShareViaLinkSection = isShareApiEnabled && isPublicShareEnabled && !remoteBaseUrl.isNullOrEmpty()
+        binding.shareViaLinkSection.isVisible = shouldShowShareViaLinkSection
     }
 
     /**
