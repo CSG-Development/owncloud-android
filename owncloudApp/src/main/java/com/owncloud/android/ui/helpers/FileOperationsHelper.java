@@ -50,12 +50,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import timber.log.Timber;
 
+import java.net.URI;
+
 import static org.koin.java.KoinJavaComponent.inject;
 
 public class FileOperationsHelper {
 
     private static final String FTAG_CHOOSER_DIALOG = "CHOOSER_DIALOG";
-    private static final String REMOTE_FILES_SUFFIX = "/files";
 
     private FileActivity mFileActivity;
 
@@ -279,34 +280,20 @@ public class FileOperationsHelper {
             return originalLink;
         }
 
-        String sanitizedBase = remoteBaseUrl.trim();
-        if (sanitizedBase.endsWith(REMOTE_FILES_SUFFIX)) {
-            sanitizedBase = sanitizedBase.substring(0, sanitizedBase.length() - REMOTE_FILES_SUFFIX.length());
-        }
-        if (sanitizedBase.endsWith("/")) {
-            sanitizedBase = sanitizedBase.substring(0, sanitizedBase.length() - 1);
-        }
-
-        if (sanitizedBase.isEmpty()) {
-            return originalLink;
-        }
-
         try {
-            java.net.URI originalUri = new java.net.URI(originalLink);
-            java.net.URI remoteUri = new java.net.URI(sanitizedBase);
+            URI originalUri = new URI(originalLink);
+            URI remoteUri = new URI(remoteBaseUrl);
 
             if (remoteUri.getHost() == null) {
                 return originalLink;
             }
 
-            String mergedPath = mergePaths(remoteUri.getRawPath(), originalUri.getRawPath());
-
-            java.net.URI rebuiltUri = new java.net.URI(
+            URI rebuiltUri = new URI(
                     remoteUri.getScheme() != null ? remoteUri.getScheme() : originalUri.getScheme(),
                     remoteUri.getUserInfo(),
                     remoteUri.getHost(),
                     remoteUri.getPort(),
-                    mergedPath,
+                    originalUri.getPath(),
                     originalUri.getRawQuery(),
                     originalUri.getRawFragment()
             );
@@ -316,23 +303,5 @@ public class FileOperationsHelper {
             Timber.w(e, "Unable to rebuild link using remote base url %s", remoteBaseUrl);
             return originalLink;
         }
-    }
-
-    private String mergePaths(String basePath, String relativePath) {
-        String sanitizedBasePath = basePath == null ? "" : basePath;
-        String sanitizedRelativePath = relativePath == null ? "" : relativePath;
-
-        if (sanitizedBasePath.endsWith("/")) {
-            sanitizedBasePath = sanitizedBasePath.substring(0, sanitizedBasePath.length() - 1);
-        }
-        if (!sanitizedRelativePath.isEmpty() && !sanitizedRelativePath.startsWith("/")) {
-            sanitizedRelativePath = "/" + sanitizedRelativePath;
-        }
-
-        if (sanitizedBasePath.isEmpty()) {
-            return sanitizedRelativePath.isEmpty() ? "/" : sanitizedRelativePath;
-        }
-
-        return sanitizedRelativePath.isEmpty() ? sanitizedBasePath : sanitizedBasePath + sanitizedRelativePath;
     }
 }
