@@ -122,8 +122,8 @@ class UploadFileFromFileSystemWorker(
             Result.success()
         } catch (throwable: Throwable) {
             Timber.e(throwable)
-            if (throwable is CancelledException || throwable is NoNetworkConnectionException) {
-                Timber.i("Upload cancelled externally, scheduling retry")
+            if (throwable is NoNetworkConnectionException) {
+                Timber.i("Upload network error, scheduling retry")
                 Result.retry()
             } else {
                 showNotification(throwable)

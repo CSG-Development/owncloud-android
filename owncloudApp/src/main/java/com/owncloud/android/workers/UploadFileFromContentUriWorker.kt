@@ -126,8 +126,8 @@ class UploadFileFromContentUriWorker(
             Result.success()
         } catch (throwable: Throwable) {
             Timber.e(throwable)
-            if (throwable is CancelledException || throwable is NetworkErrorException) {
-                Timber.i("Upload cancelled externally, scheduling retry")
+            if (throwable is NetworkErrorException) {
+                Timber.i("Upload network error, scheduling retry")
                 Result.retry()
             } else {
                 showNotification(throwable)
