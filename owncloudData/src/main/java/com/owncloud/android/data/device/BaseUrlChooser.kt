@@ -42,10 +42,14 @@ class BaseUrlChooser(
                     return@map null
                 }
 
-                val devicePaths = buildDevicePathsList()
-                deviceUrlResolver.resolveAvailableBaseUrl(devicePaths)
+                chooseBestAvailableBaseUrl()
             }
             .distinctUntilChanged()
+    }
+
+    suspend fun chooseBestAvailableBaseUrl(): String? {
+        val devicePaths = buildDevicePathsList()
+        return deviceUrlResolver.resolveAvailableBaseUrl(devicePaths)
     }
 
     /**

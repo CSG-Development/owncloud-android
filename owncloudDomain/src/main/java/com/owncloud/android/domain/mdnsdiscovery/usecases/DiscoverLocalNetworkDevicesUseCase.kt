@@ -18,7 +18,14 @@ class DiscoverLocalNetworkDevicesUseCase(
             serviceName = params.serviceName,
             duration = params.duration
         )
-    
+
+    suspend fun oneShot(params: Params): Device? =
+        mdnsDiscoveryRepository.discoverAndVerifyDevice(
+            serviceType = params.serviceType,
+            serviceName = params.serviceName,
+            duration = params.duration
+        )
+
     data class Params(
         val serviceType: String,
         val serviceName: String,

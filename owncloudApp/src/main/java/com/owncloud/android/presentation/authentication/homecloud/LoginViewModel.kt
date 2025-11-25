@@ -11,7 +11,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUs
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.device.usecases.ManageDynamicUrlSwitchingUseCase
+import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -57,7 +57,7 @@ class LoginViewModel(
     private val getServersUseCase: GetAvailableDevicesUseCase,
     private val getExistingRemoveAccessUserUseCase: GetExistingRemoveAccessUserUseCase,
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
-    private val manageDynamicUrlSwitchingUseCase: ManageDynamicUrlSwitchingUseCase,
+    private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -364,7 +364,7 @@ class LoginViewModel(
 
                         if (accountNameResult.isSuccess) {
                             val accountName = accountNameResult.getDataOrNull().orEmpty()
-                            manageDynamicUrlSwitchingUseCase.startDynamicUrlSwitching()
+                            dynamicUrlSwitchingController.startDynamicUrlSwitching()
                             discoverAccount(accountName, loginAction == ACTION_CREATE)
                             currentState.selectedDevice?.let { saveCurrentDeviceUseCase(it) }
                             _events.emit(LoginEvent.LoginResult(accountName = accountName))

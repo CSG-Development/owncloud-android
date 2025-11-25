@@ -52,7 +52,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUs
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
-import com.owncloud.android.domain.device.usecases.ManageDynamicUrlSwitchingUseCase
+import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
 import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
 import com.owncloud.android.domain.files.usecases.CopyFileUseCase
@@ -127,7 +127,7 @@ import com.owncloud.android.domain.user.usecases.RefreshUserQuotaFromServerAsync
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstanceFromWebFingerUseCase
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstancesFromAuthenticatedWebFingerUseCase
 import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
-import com.owncloud.android.usecases.device.ManageDynamicUrlSwitchingUseCaseImpl
+import com.owncloud.android.usecases.device.DynamicUrlSwitchingControllerImpl
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.files.RemoveLocalFilesForAccountUseCase
 import com.owncloud.android.usecases.files.RemoveLocallyFilesWithLastUsageOlderThanGivenTimeUseCase
@@ -313,17 +313,6 @@ val useCaseModule = module {
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
-
-    // Device Management
-    single<ManageDynamicUrlSwitchingUseCase> {
-        val mainScope = MainScope()
-        ManageDynamicUrlSwitchingUseCaseImpl(
-            get(),
-            get(),
-            mainScope,
-            get(),
-        )
-    }
 
     factoryOf(::GetAvailableServerInfoUseCase)
 
