@@ -9,6 +9,7 @@ import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
+import okio.IOException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -62,8 +63,11 @@ class BaseUrlUpdateWorker(
             }
 
             Result.success()
+        } catch (e: IOException) {
+            Timber.e(e, "Base URL update worker failed with ${e.message}")
+            Result.retry()
         } catch (e: Exception) {
-            Timber.e(e, "Base URL update worker failed")
+            Timber.e(e, "Base URL update worker failed ${e.message}")
             Result.failure()
         }
     }
