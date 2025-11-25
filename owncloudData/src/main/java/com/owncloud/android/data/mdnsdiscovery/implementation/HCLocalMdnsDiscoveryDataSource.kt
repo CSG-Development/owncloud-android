@@ -75,9 +75,9 @@ class HCLocalMdnsDiscoveryDataSource(
         serviceName: String,
         timeout: Duration,
     ): String? {
-        return withTimeoutOrNull(timeout, {
+        return withTimeoutOrNull(timeout) {
             getDeviceBaseUrl(serviceName, serviceType)
-        })
+        }
     }
 
     private suspend fun getDeviceBaseUrl(serviceName: String, serviceType: String): String = suspendCancellableCoroutine { continuation ->
