@@ -13,7 +13,6 @@ import okio.IOException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Worker responsible for updating base URLs by combining mDNS discovery
@@ -35,11 +34,7 @@ class BaseUrlUpdateWorker(
 
             // 1. Get device from mDNS discovery (one-shot)
             val localDevice = discoverLocalNetworkDevicesUseCase.oneShot(
-                DiscoverLocalNetworkDevicesUseCase.Params(
-                    serviceType = MDNS_SERVICE_TYPE,
-                    serviceName = MDNS_SERVICE_NAME,
-                    duration = MDNS_DISCOVERY_TIMEOUT
-                )
+                DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS
             )
             Timber.d("Local mDNS device discovered: $localDevice")
 
@@ -111,10 +106,6 @@ class BaseUrlUpdateWorker(
 
     companion object {
         const val BASE_URL_UPDATE_WORKER = "BASE_URL_UPDATE_WORKER"
-
-        private const val MDNS_SERVICE_TYPE = "_https._tcp"
-        private const val MDNS_SERVICE_NAME = "HomeCloud"
-        private val MDNS_DISCOVERY_TIMEOUT = 10.seconds
     }
 }
 

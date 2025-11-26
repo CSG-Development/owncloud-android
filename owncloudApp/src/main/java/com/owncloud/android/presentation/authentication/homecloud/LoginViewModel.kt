@@ -252,11 +252,7 @@ class LoginViewModel(
         serversJob = viewModelScope.launch {
             getServersUseCase.getServersUpdates(
                 this@launch,
-                DiscoverLocalNetworkDevicesUseCase.Params(
-                    serviceType = "_https._tcp",
-                    serviceName = "HomeCloud",
-                    duration = 30.seconds
-                )
+                DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS
             ).collect { devices ->
                 Timber.d("DEBUG devices: $devices")
                 _state.update { currentState ->
