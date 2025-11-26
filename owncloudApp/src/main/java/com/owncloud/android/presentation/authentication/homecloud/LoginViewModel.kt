@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 class LoginViewModel(
     private val loginBasicAsyncUseCase: LoginBasicAsyncUseCase,
