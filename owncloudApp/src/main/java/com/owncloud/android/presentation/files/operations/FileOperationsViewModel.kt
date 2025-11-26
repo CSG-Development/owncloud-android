@@ -33,7 +33,11 @@ import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
+import com.owncloud.android.domain.exceptions.NoConnectionWithServerException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
+import com.owncloud.android.domain.exceptions.ServerConnectionTimeoutException
+import com.owncloud.android.domain.exceptions.ServerNotReachableException
+import com.owncloud.android.domain.exceptions.ServerResponseTimeoutException
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.usecases.CopyFileUseCase
 import com.owncloud.android.domain.files.usecases.CreateFolderAsyncUseCase
@@ -45,10 +49,12 @@ import com.owncloud.android.domain.files.usecases.RenameFileUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
+import com.owncloud.android.lib.common.utils.isOneOf
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
+import com.owncloud.android.usecases.device.UpdateBaseUrlUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -73,9 +79,14 @@ class FileOperationsViewModel(
     private val manageDeepLinkUseCase: ManageDeepLinkUseCase,
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
     private val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
+
+    companion object {
+        private const val NETWORK_ERRORS_FOR_BASE_URLS_UPDATE = 2
+    }
 
     private val _createFolder = MediatorLiveData<Event<UIResult<Unit>>>()
     val createFolder: LiveData<Event<UIResult<Unit>>> = _createFolder
@@ -118,6 +129,30 @@ class FileOperationsViewModel(
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
+    private var networkErrorCounter = 0
+
+    private val networkErrorHandler: (Throwable) -> Unit = { throwable ->
+        val throwableTypes = listOf(
+            NoNetworkConnectionException::class.java,
+            ServerResponseTimeoutException::class.java,
+            ServerConnectionTimeoutException::class.java,
+            NoConnectionWithServerException::class.java,
+            ServerNotReachableException::class.java
+        )
+
+        if (throwableTypes.any { it.isInstance(throwable) }) {
+            networkErrorCounter++
+            if (networkErrorCounter >= NETWORK_ERRORS_FOR_BASE_URLS_UPDATE) {
+                updateBaseUrlUseCase.execute()
+                networkErrorCounter = 0
+            }
+        }
+    }
+
+    private val successNetworkRequestHandler: () -> Unit = {
+        networkErrorCounter = 0
+    }
+
     fun performOperation(fileOperation: FileOperation) {
         when (fileOperation) {
             is FileOperation.MoveOperation -> moveOperation(fileOperation)
@@ -141,7 +176,7 @@ class FileOperationsViewModel(
             sharedFlow = _checkIfFileIsLocalAndNotAvailableOfflineSharedFlow,
             useCase = isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
             useCaseParams = IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase.Params(filesToRemove),
-            requiresConnection = false
+            requiresConnection = false,
         )
     }
 
@@ -196,6 +231,8 @@ class FileOperationsViewModel(
                     isUserLogged = fileOperation.isUserLogged,
                 ),
                 showLoading = true,
+                errorHandler = networkErrorHandler,
+                successHandler = successNetworkRequestHandler,
             )
         }
     }
@@ -219,6 +256,8 @@ class FileOperationsViewModel(
                     isUserLogged = fileOperation.isUserLogged,
                 ),
                 showLoading = true,
+                errorHandler = networkErrorHandler,
+                successHandler = successNetworkRequestHandler,
             )
         }
     }
@@ -251,7 +290,9 @@ class FileOperationsViewModel(
             requiresConnection = true,
             liveData = _syncFileLiveData,
             useCase = synchronizeFileUseCase,
-            useCaseParams = SynchronizeFileUseCase.Params(fileOperation.fileToSync)
+            useCaseParams = SynchronizeFileUseCase.Params(fileOperation.fileToSync),
+            errorHandler = networkErrorHandler,
+            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -267,7 +308,9 @@ class FileOperationsViewModel(
                 spaceId = fileOperation.folderToSync.spaceId,
                 syncMode = SynchronizeFolderUseCase.SyncFolderMode.SYNC_FOLDER_RECURSIVELY,
                 isActionSetFolderAvailableOfflineOrSynchronize = fileOperation.isActionSetFolderAvailableOfflineOrSynchronize,
-            )
+            ),
+            errorHandler = networkErrorHandler,
+            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -283,7 +326,9 @@ class FileOperationsViewModel(
                 spaceId = fileOperation.folderToRefresh.spaceId,
                 syncMode = if (fileOperation.shouldSyncContents) SynchronizeFolderUseCase.SyncFolderMode.SYNC_CONTENTS
                 else SynchronizeFolderUseCase.SyncFolderMode.REFRESH_FOLDER
-            )
+            ),
+            errorHandler = networkErrorHandler,
+            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -336,10 +381,12 @@ class FileOperationsViewModel(
 
             when (useCaseResult) {
                 is UseCaseResult.Success -> {
+                    successNetworkRequestHandler()
                     liveData.postValue(Event(UIResult.Success(postValue)))
                 }
 
                 is UseCaseResult.Error -> {
+                    networkErrorHandler(useCaseResult.throwable)
                     liveData.postValue(Event(UIResult.Error(error = useCaseResult.throwable)))
                 }
             }

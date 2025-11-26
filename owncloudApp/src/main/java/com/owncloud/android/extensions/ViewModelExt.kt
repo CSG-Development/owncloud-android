@@ -50,7 +50,9 @@ object ViewModelExt : KoinComponent {
         useCase: BaseUseCaseWithResult<T, Params>,
         useCaseParams: Params,
         postSuccess: Boolean = true,
-        postSuccessWithData: Boolean = true
+        postSuccessWithData: Boolean = true,
+        errorHandler: ((Throwable) -> Unit)? = null,
+        successHandler: (() -> Unit)? = null
     ) {
         viewModelScope.launch(coroutineDispatcher) {
             if (showLoading) {
@@ -58,24 +60,29 @@ object ViewModelExt : KoinComponent {
             }
 
             // If use case requires connection and is not connected, it is not needed to execute use case.
-//            if (requiresConnection and !contextProvider.isConnected()) {
-//                liveData.postValue(Event(UIResult.Error(error = NoNetworkConnectionException())))
-//                Timber.w("${useCase.javaClass.simpleName} will not be executed due to lack of network connection")
-//                return@launch
-//            }
+            if (requiresConnection and !contextProvider.isConnected()) {
+                liveData.postValue(Event(UIResult.Error(error = NoNetworkConnectionException())))
+                Timber.w("${useCase.javaClass.simpleName} will not be executed due to lack of network connection")
+                return@launch
+            }
 
             val useCaseResult = useCase(useCaseParams)
 
             Timber.d("Use case executed: ${useCase.javaClass.simpleName} with result: $useCaseResult")
 
             if (useCaseResult.isSuccess && postSuccess) {
+                successHandler?.invoke()
                 if (postSuccessWithData) {
                     liveData.postValue(Event(UIResult.Success(useCaseResult.getDataOrNull())))
                 } else {
                     liveData.postValue(Event(UIResult.Success()))
                 }
             } else if (useCaseResult.isError) {
-                liveData.postValue(Event(UIResult.Error(error = useCaseResult.getThrowableOrNull())))
+                val throwable = useCaseResult.getThrowableOrNull()
+                if (errorHandler != null && throwable != null) {
+                    errorHandler.invoke(throwable)
+                }
+                liveData.postValue(Event(UIResult.Error(error = throwable)))
             }
         }
     }
@@ -126,7 +133,7 @@ object ViewModelExt : KoinComponent {
         useCase: BaseUseCaseWithResult<T, Params>,
         useCaseParams: Params,
         postSuccess: Boolean = true,
-        postSuccessWithData: Boolean = true
+        postSuccessWithData: Boolean = true,
     ) {
         viewModelScope.launch(coroutineDispatcher) {
             if (showLoading) {
