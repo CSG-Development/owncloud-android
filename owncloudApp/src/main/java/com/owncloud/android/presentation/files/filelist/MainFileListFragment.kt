@@ -121,14 +121,12 @@ import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
-import com.owncloud.android.usecases.device.UpdateBaseUrlUseCase
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
-import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -194,8 +192,6 @@ class MainFileListFragment : Fragment(),
     private var fileOptionsBottomSheetSingleFileLayout: LinearLayout? = null
     private var succeededTransfers: List<OCTransfer>? = null
     private var numberOfUploadsRefreshed: Int = 0
-
-    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase by inject()
 
     private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
 
@@ -1121,10 +1117,9 @@ class MainFileListFragment : Fragment(),
      */
     private fun registerFabNewShortcutListener() {
         binding.fabNewshortcut.setOnClickListener {
-//            val dialog = CreateShortcutDialogFragment.newInstance(mainFileListViewModel.getFile(), this)
-//            dialog.show(requireActivity().supportFragmentManager, DIALOG_CREATE_SHORTCUT)
-//            collapseFab()
-            updateBaseUrlUseCase.execute()
+            val dialog = CreateShortcutDialogFragment.newInstance(mainFileListViewModel.getFile(), this)
+            dialog.show(requireActivity().supportFragmentManager, DIALOG_CREATE_SHORTCUT)
+            collapseFab()
         }
     }
 
