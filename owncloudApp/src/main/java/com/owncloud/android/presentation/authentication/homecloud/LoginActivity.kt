@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 
 import android.accounts.AccountManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.TextWatcher
@@ -151,7 +152,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     //TODO: The styling of description and text is a subject to change in nearest future. To be defined....
     private fun setupUnableToConnectContent() {
-        val linkColor = ContextCompat.getColor(this, R.color.homecloud_blue_darken_2)
+        val linkColor = ContextCompat.getColor(this, R.color.homecloud_color_accent)
 
         val description = getString(R.string.homecloud_unable_to_connect_description)
         val items = listOf(
@@ -185,13 +186,13 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         val linkStart = builder.length
         builder.append(supportLink)
-        builder.setSpan(ForegroundColorSpan(linkColor), linkStart, builder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(object : ClickableSpan() {
             override fun onClick(widget: View) {
-                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(supportUrl))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(supportUrl))
                 startActivity(intent)
             }
         }, linkStart, builder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
+        builder.setSpan(ForegroundColorSpan(linkColor), linkStart, builder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         builder.append(" ")
         builder.append(supportSuffix)
