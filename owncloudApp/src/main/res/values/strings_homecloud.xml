@@ -11,6 +11,7 @@
     <string name="homecloud_login_server_address_input_hint">No device detected</string>
     <string name="homecloud_login_password_input_hint">Enter password</string>
     <string name="homecloud_reset_password">Reset Password</string>
+    <string name="homecloud_cant_find_device">Can’t find your device?</string>
     <string name="homecloud_login_loading">Logging in to your account</string>
     <string name="homecloud_login_auth_unauthorized">Incorrect email or password</string>
     <string name="homecloud_login_server_connection_error">An error occurred while connecting to the server.</string>

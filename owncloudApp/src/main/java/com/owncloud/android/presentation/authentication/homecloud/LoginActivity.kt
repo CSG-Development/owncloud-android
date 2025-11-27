@@ -126,6 +126,9 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.resetPasswordLink.setOnClickListener {
             showMessageInSnackbar(message = "Not implemented yet")
         }
+        binding.cantFindDevice.setOnClickListener {
+            showMessageInSnackbar(message = "Not implemented yet")
+        }
         binding.actionButton.setOnClickListener {
             loginViewModel.onActionClicked()
         }
