@@ -169,7 +169,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         val supportPrefix = getString(R.string.homecloud_unable_to_connect_support)
         val supportLink = getString(R.string.homecloud_unable_to_connect_support_link)
         val supportSuffix = getString(R.string.homecloud_unable_to_connect_support_suffix)
-        val supportUrl = "https://www.seagate.com/es/es/support/"
 
         val builder = SpannableStringBuilder()
         builder.append(description)
@@ -191,7 +190,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         builder.append(supportLink)
         builder.setSpan(object : ClickableSpan() {
             override fun onClick(widget: View) {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(supportUrl))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SUPPORT_LINK))
                 startActivity(intent)
             }
         }, linkStart, builder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -378,5 +377,9 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     override fun optionLockSelected(type: LockType) {
         manageOptionLockSelected(type)
+    }
+
+    companion object {
+        private const val SUPPORT_LINK = "https://www.seagate.com/es/es/support/"
     }
 }
