@@ -133,7 +133,8 @@ class LoginViewModel(
         changeDevice(hostUrl = serverUrl)
     }
 
-    private fun changeDevice(selectedDevice: Device? = null, hostUrl: String = "") { _state.update { currentState ->
+    private fun changeDevice(selectedDevice: Device? = null, hostUrl: String = "") {
+        _state.update { currentState ->
             when (currentState) {
                 is LoginScreenState.LoginState -> {
                     if (selectedDevice == null) {
@@ -199,11 +200,16 @@ class LoginViewModel(
 
     fun onBackPressed() {
         viewModelScope.launch {
-            val currentState = _state.value
-            when (currentState) {
+            when (val currentState = _state.value) {
                 is LoginScreenState.LoginState -> {
-                    _state.update {
-                        LoginScreenState.EmailState(username = currentState.username)
+                    if (currentState.isUnableToConnect) {
+                        _state.update {
+                            currentState.copy(isUnableToConnect = false)
+                        }
+                    } else {
+                        _state.update {
+                            LoginScreenState.EmailState(username = currentState.username)
+                        }
                     }
                 }
 
@@ -262,7 +268,8 @@ class LoginViewModel(
 
                         is LoginScreenState.LoginState -> currentState.copy(
                             devices = devices,
-                            selectedDevice = devices.firstOrNull(),
+                            selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice,
+                            isUnableToConnect = devices.isEmpty()
                         )
                     }
                 }
@@ -277,7 +284,7 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true)
+                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, isUnableToConnect = false)
                         }
                     }
                     withContext(coroutinesDispatcherProvider.io) {
@@ -291,12 +298,22 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = false)
+                            is LoginScreenState.LoginState -> currentState.copy(
+                                isRefreshServersLoading = false,
+                                isUnableToConnect = currentState.devices.isEmpty()
+                            )
                         }
                     }
                 }
             )
 
+        }
+    }
+
+    fun onRetryClicked() {
+        val currentState = _state.value
+        if (currentState is LoginScreenState.LoginState && currentState.isUnableToConnect) {
+            refreshServers()
         }
     }
 
@@ -487,6 +504,7 @@ class LoginViewModel(
             val password: String = "",
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
+            val isUnableToConnect: Boolean = false,
             val selectedDevice: Device? = null,
             val serverUrl: String = "",
             override val errorMessage: String? = null,
