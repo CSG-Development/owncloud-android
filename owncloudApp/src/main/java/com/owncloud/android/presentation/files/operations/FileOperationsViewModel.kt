@@ -125,6 +125,10 @@ class FileOperationsViewModel(
     private val _disableSelectionModeEvent = MutableSharedFlow<Unit>()
     val disableSelectionModeEvent: SharedFlow<Unit> = _disableSelectionModeEvent
 
+    private val _updateBaseUrlDialog = MutableSharedFlow<Unit>()
+    val updateBaseUrlDialog: SharedFlow<Unit> = _updateBaseUrlDialog
+
+
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
@@ -142,7 +146,9 @@ class FileOperationsViewModel(
         if (throwableTypes.any { it.isInstance(throwable) }) {
             networkErrorCounter++
             if (networkErrorCounter >= NETWORK_ERRORS_FOR_BASE_URLS_UPDATE) {
-                updateBaseUrlUseCase.execute()
+                viewModelScope.launch {
+                    _updateBaseUrlDialog.emit(Unit)
+                }
                 networkErrorCounter = 0
             }
         }
@@ -166,6 +172,10 @@ class FileOperationsViewModel(
             is FileOperation.RefreshFolderOperation -> refreshFolderOperation(fileOperation)
             is FileOperation.CreateFileWithAppProviderOperation -> createFileWithAppProvider(fileOperation)
         }
+    }
+
+    fun handleBaseUrlUpdate() {
+        updateBaseUrlUseCase.execute()
     }
 
     fun showRemoveDialog(filesToRemove: List<OCFile>) {
