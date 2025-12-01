@@ -92,15 +92,6 @@ public class HttpClient {
         if (mOkHttpClient == null) {
             try {
                 initKeyStore();
-//                KeyStore keyStore = NetworkUtils.getKnownServersStore(mContext);
-//                final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-//                String[] files = mContext.getAssets().list("cert");
-//                for (String fileName : files) {
-//                    try (InputStream inputStream = mContext.getAssets().open("cert/" + fileName)) {
-//                        X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
-//                        NetworkUtils.addCertToKnownServersStore(certificate, mContext);
-//                    }
-//                }
                 final X509TrustManager trustManager = new AdvancedX509TrustManager(NetworkUtils.getKnownServersStore(mContext));
 
                 final SSLContext sslContext = buildSSLContext();
