@@ -45,7 +45,6 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
@@ -79,9 +78,9 @@ public class HttpClient {
 
     private void initKeyStore() {
         try {
-            List<Certificate> certificates = certificateReader.readCertificates();
-            for (Certificate certificate : certificates) {
-                NetworkUtils.addCertToKnownServersStore((X509Certificate) certificate, mContext);
+            List<X509Certificate> certificates = certificateReader.readCertificates();
+            for (X509Certificate certificate : certificates) {
+                NetworkUtils.addCertToKnownServersStore(certificate, mContext);
             }
         } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
             Timber.e(e, "Could not read certificates from assets.");
