@@ -11,6 +11,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUs
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.model.Device
+import com.owncloud.android.domain.device.usecases.ManageDynamicUrlSwitchingUseCase
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -22,7 +23,7 @@ import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoveAccess
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
-import com.owncloud.android.domain.server.usecases.GetServerInfoAsyncUseCase
+import com.owncloud.android.domain.server.usecases.GetAvailableServerInfoUseCase
 import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncUseCase
 import com.owncloud.android.extensions.parseError
 import com.owncloud.android.lib.common.network.CertificateCombinedException
@@ -45,7 +46,6 @@ import kotlin.time.Duration.Companion.seconds
 
 class LoginViewModel(
     private val loginBasicAsyncUseCase: LoginBasicAsyncUseCase,
-    private val getServerInfoAsyncUseCase: GetServerInfoAsyncUseCase,
     private val refreshCapabilitiesFromServerAsyncUseCase: RefreshCapabilitiesFromServerAsyncUseCase,
     private val getStoredCapabilitiesUseCase: GetStoredCapabilitiesUseCase,
     private val refreshSpacesFromServerAsyncUseCase: RefreshSpacesFromServerAsyncUseCase,
@@ -57,6 +57,8 @@ class LoginViewModel(
     private val getServersUseCase: GetAvailableDevicesUseCase,
     private val getExistingRemoveAccessUserUseCase: GetExistingRemoveAccessUserUseCase,
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
+    private val manageDynamicUrlSwitchingUseCase: ManageDynamicUrlSwitchingUseCase,
+    private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -125,21 +127,21 @@ class LoginViewModel(
     }
 
     fun onDeviceSelected(selectedDevice: Device) {
-        changeDevice(selectedDevice, selectedDevice.preferredPath.hostUrl)
+        changeDevice(selectedDevice)
     }
 
     fun onServerUrlChanged(serverUrl: String) {
-        changeDevice(null, serverUrl)
+        changeDevice(hostUrl = serverUrl)
     }
 
-    private fun changeDevice(selectedDevice: Device?, hostUrl: String) {
+    private fun changeDevice(selectedDevice: Device? = null, hostUrl: String = "") {
         _state.update { currentState ->
             when (currentState) {
                 is LoginScreenState.LoginState -> {
                     if (selectedDevice == null) {
-                        currentState.copy(serverUrl = hostUrl)
+                        currentState.copy(serverUrl = hostUrl, selectedDevice = null)
                     } else {
-                        currentState.copy(selectedDevice = selectedDevice, serverUrl = selectedDevice.preferredPath.hostUrl)
+                        currentState.copy(selectedDevice = selectedDevice, serverUrl = "")
                     }
                 }
 
@@ -199,11 +201,16 @@ class LoginViewModel(
 
     fun onBackPressed() {
         viewModelScope.launch {
-            val currentState = _state.value
-            when (currentState) {
+            when (val currentState = _state.value) {
                 is LoginScreenState.LoginState -> {
-                    _state.update {
-                        LoginScreenState.EmailState(username = currentState.username)
+                    if (currentState.isUnableToConnect) {
+                        _state.update {
+                            currentState.copy(isUnableToConnect = false)
+                        }
+                    } else {
+                        _state.update {
+                            LoginScreenState.EmailState(username = currentState.username)
+                        }
                     }
                 }
 
@@ -266,8 +273,8 @@ class LoginViewModel(
 
                         is LoginScreenState.LoginState -> currentState.copy(
                             devices = devices,
-                            selectedDevice = devices.firstOrNull(),
-                            serverUrl = devices.firstOrNull()?.preferredPath?.hostUrl.orEmpty()
+                            selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice,
+                            isUnableToConnect = devices.isEmpty()
                         )
                     }
                 }
@@ -282,7 +289,7 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true)
+                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, isUnableToConnect = false)
                         }
                     }
                     withContext(coroutinesDispatcherProvider.io) {
@@ -296,12 +303,22 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = false)
+                            is LoginScreenState.LoginState -> currentState.copy(
+                                isRefreshServersLoading = false,
+                                isUnableToConnect = currentState.devices.isEmpty()
+                            )
                         }
                     }
                 }
             )
 
+        }
+    }
+
+    fun onRetryClicked() {
+        val currentState = _state.value
+        if (currentState is LoginScreenState.LoginState && currentState.isUnableToConnect) {
+            refreshServers()
         }
     }
 
@@ -333,15 +350,21 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     val serverInfoResult = withContext(coroutinesDispatcherProvider.io) {
-                        val serverUrl = if (currentState.selectedDevice != null) currentState.selectedDevice.preferredPath.hostUrl else currentState.serverUrl
-                        getServerInfoAsyncUseCase(
-                            GetServerInfoAsyncUseCase.Params(
-                                serverPath = serverUrl,
-                                creatingAccount = false,
-                                enforceOIDC = contextProvider.getBoolean(R.bool.enforce_oidc),
-                                secureConnectionEnforced = contextProvider.getBoolean(R.bool.enforce_secure_connection),
+                        val enforceOIDC = contextProvider.getBoolean(R.bool.enforce_oidc)
+                        val secureConnectionEnforced = contextProvider.getBoolean(R.bool.enforce_secure_connection)
+                        if (currentState.selectedDevice == null) {
+                            getAvailableServerInfoUseCase.getAvailableServerInfo(
+                                currentState.serverUrl,
+                                enforceOIDC = enforceOIDC,
+                                secureConnectionEnforced = secureConnectionEnforced
                             )
-                        )
+                        } else {
+                            getAvailableServerInfoUseCase.getAvailableServerInfo(
+                                currentState.selectedDevice,
+                                enforceOIDC = enforceOIDC,
+                                secureConnectionEnforced = secureConnectionEnforced
+                            )
+                        }
                     }
 
                     if (serverInfoResult.isSuccess) {
@@ -358,6 +381,7 @@ class LoginViewModel(
 
                         if (accountNameResult.isSuccess) {
                             val accountName = accountNameResult.getDataOrNull().orEmpty()
+                            manageDynamicUrlSwitchingUseCase.startDynamicUrlSwitching()
                             discoverAccount(accountName, loginAction == ACTION_CREATE)
                             currentState.selectedDevice?.let { saveCurrentDeviceUseCase(it) }
                             _events.emit(LoginEvent.LoginResult(accountName = accountName))
@@ -485,6 +509,7 @@ class LoginViewModel(
             val password: String = "",
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
+            val isUnableToConnect: Boolean = false,
             val selectedDevice: Device? = null,
             val serverUrl: String = "",
             override val errorMessage: String? = null,
