@@ -1,11 +1,11 @@
-package com.owncloud.android.usecases.device
+package com.owncloud.android.domain.device.usecases
 
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.owncloud.android.workers.BaseUrlUpdateWorker
+import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import timber.log.Timber
 import java.util.UUID
 
@@ -13,7 +13,7 @@ import java.util.UUID
  * Use case to trigger base URL update by combining mDNS discovery
  * and remote access devices, then performing dynamic URL switching.
  *
- * Uses [WorkManager] to run [BaseUrlUpdateWorker] which:
+ * Uses [androidx.work.WorkManager] to run [com.owncloud.android.domain.device.BaseUrlUpdateWorker] which:
  * 1. Discovers local device via mDNS
  * 2. Fetches remote devices from API
  * 3. Combines and saves the device paths
@@ -43,4 +43,3 @@ class UpdateBaseUrlUseCase(
         return baseUrlUpdateWork.id
     }
 }
-

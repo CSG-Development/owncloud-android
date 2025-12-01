@@ -2,6 +2,7 @@ package com.owncloud.android.data.device
 
 import android.accounts.Account
 import android.accounts.AccountManager
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class DynamicBaseUrlSwitcher(
     private val accountManager: AccountManager,
     private val baseUrlChooser: BaseUrlChooser,
     private val coroutineScope: CoroutineScope,
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
 ) {
 
     private var observationJob: Job? = null
@@ -60,7 +62,11 @@ class DynamicBaseUrlSwitcher(
                     Timber.e(error, "Error observing base URL changes")
                 }
                 .collect { newBaseUrl ->
-                    handleBaseUrlChange(account, newBaseUrl)
+                    if (newBaseUrl == null) {
+                        updateBaseUrlUseCase.execute()
+                    } else {
+                        handleBaseUrlChange(account, newBaseUrl)
+                    }
                 }
         }
     }

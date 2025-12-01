@@ -99,7 +99,7 @@ class HCRemoteAccessRepository(
 
     override suspend fun getCurrentDevice(): Device? {
         val deviceResponse = remoteAccessService.getDevices().firstOrNull { deviceResponse ->
-            deviceResponse.seagateDeviceId == currentDeviceStorage.getCurrentDeviceId()
+            deviceResponse.certificateCommonName == currentDeviceStorage.getCertificateCommonName()
         }
         return deviceResponse?.let { getVerifiedDevice(deviceResponse = it) }
     }
