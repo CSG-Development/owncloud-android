@@ -12,7 +12,7 @@ import javax.net.ssl.X509TrustManager
  * Only certificates stored in this folder will be trusted for SSL connections.
  */
 class PinnedCertificateTrustManager(
-    private val assetsCertificateReader: AssetsCertificateReader
+    private val assetsCertificateReader: CertificateReader
 ) {
 
     val trustManager: X509TrustManager by lazy {

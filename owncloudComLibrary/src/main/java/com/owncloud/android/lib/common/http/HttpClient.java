@@ -29,6 +29,7 @@ import android.content.Context;
 import com.owncloud.android.lib.common.http.logging.LogInterceptor;
 import com.owncloud.android.lib.common.network.AdvancedX509TrustManager;
 import com.owncloud.android.lib.common.network.AssetsCertificateReader;
+import com.owncloud.android.lib.common.network.CertificateReader;
 import com.owncloud.android.lib.common.network.NetworkUtils;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
@@ -65,7 +66,7 @@ public class HttpClient {
 
     private OkHttpClient mOkHttpClient = null;
 
-    private final AssetsCertificateReader certificateReader;
+    private final CertificateReader certificateReader;
 
     protected HttpClient(Context context) {
         if (context == null) {
