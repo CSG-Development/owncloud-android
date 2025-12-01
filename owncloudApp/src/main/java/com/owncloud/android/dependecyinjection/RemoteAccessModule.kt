@@ -65,7 +65,8 @@ val remoteAccessModule = module {
         BaseUrlChooser(
             networkStateObserver = get(),
             currentDeviceStorage = get(),
-            deviceUrlResolver = get()
+            deviceUrlResolver = get(),
+            updateBaseUrlUseCase = get(),
         )
     }
 

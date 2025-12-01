@@ -42,4 +42,9 @@ class UpdateBaseUrlUseCase(
 
         return baseUrlUpdateWork.id
     }
+
+    fun hasScheduled(): Boolean {
+        val state = workManager.getWorkInfosForUniqueWork(BaseUrlUpdateWorker.BASE_URL_UPDATE_WORKER).get().firstOrNull()?.state
+        return state == androidx.work.WorkInfo.State.ENQUEUED || state == androidx.work.WorkInfo.State.RUNNING
+    }
 }
