@@ -52,7 +52,6 @@ object ViewModelExt : KoinComponent {
         postSuccess: Boolean = true,
         postSuccessWithData: Boolean = true,
         errorHandler: ((Throwable) -> Unit)? = null,
-        successHandler: (() -> Unit)? = null
     ) {
         viewModelScope.launch(coroutineDispatcher) {
             if (showLoading) {
@@ -71,7 +70,6 @@ object ViewModelExt : KoinComponent {
             Timber.d("Use case executed: ${useCase.javaClass.simpleName} with result: $useCaseResult")
 
             if (useCaseResult.isSuccess && postSuccess) {
-                successHandler?.invoke()
                 if (postSuccessWithData) {
                     liveData.postValue(Event(UIResult.Success(useCaseResult.getDataOrNull())))
                 } else {

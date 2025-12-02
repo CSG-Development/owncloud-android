@@ -132,8 +132,6 @@ class FileOperationsViewModel(
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
-    private var networkErrorCounter = 0
-
     private val networkErrorHandler: (Throwable) -> Unit = { throwable ->
         val throwableTypes = listOf(
             NoNetworkConnectionException::class.java,
@@ -144,19 +142,11 @@ class FileOperationsViewModel(
         )
 
         if (throwableTypes.any { it.isInstance(throwable) }) {
-            networkErrorCounter++
-            if (networkErrorCounter >= NETWORK_ERRORS_FOR_BASE_URLS_UPDATE) {
                 viewModelScope.launch {
                     _updateBaseUrlDialog.emit(Unit)
                 }
-                networkErrorCounter = 0
             }
         }
-    }
-
-    private val successNetworkRequestHandler: () -> Unit = {
-        networkErrorCounter = 0
-    }
 
     fun performOperation(fileOperation: FileOperation) {
         when (fileOperation) {
@@ -241,7 +231,6 @@ class FileOperationsViewModel(
                 ),
                 showLoading = true,
                 errorHandler = networkErrorHandler,
-                successHandler = successNetworkRequestHandler,
             )
         }
     }
@@ -266,7 +255,6 @@ class FileOperationsViewModel(
                 ),
                 showLoading = true,
                 errorHandler = networkErrorHandler,
-                successHandler = successNetworkRequestHandler,
             )
         }
     }
@@ -301,7 +289,6 @@ class FileOperationsViewModel(
             useCase = synchronizeFileUseCase,
             useCaseParams = SynchronizeFileUseCase.Params(fileOperation.fileToSync),
             errorHandler = networkErrorHandler,
-            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -319,7 +306,6 @@ class FileOperationsViewModel(
                 isActionSetFolderAvailableOfflineOrSynchronize = fileOperation.isActionSetFolderAvailableOfflineOrSynchronize,
             ),
             errorHandler = networkErrorHandler,
-            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -337,7 +323,6 @@ class FileOperationsViewModel(
                 else SynchronizeFolderUseCase.SyncFolderMode.REFRESH_FOLDER
             ),
             errorHandler = networkErrorHandler,
-            successHandler = successNetworkRequestHandler,
         )
     }
 
@@ -390,7 +375,6 @@ class FileOperationsViewModel(
 
             when (useCaseResult) {
                 is UseCaseResult.Success -> {
-                    successNetworkRequestHandler()
                     liveData.postValue(Event(UIResult.Success(postValue)))
                 }
 
