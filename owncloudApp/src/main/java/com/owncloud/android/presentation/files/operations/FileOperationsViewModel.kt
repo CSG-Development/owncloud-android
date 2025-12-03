@@ -83,10 +83,6 @@ class FileOperationsViewModel(
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
 
-    companion object {
-        private const val NETWORK_ERRORS_FOR_BASE_URLS_UPDATE = 2
-    }
-
     private val _createFolder = MediatorLiveData<Event<UIResult<Unit>>>()
     val createFolder: LiveData<Event<UIResult<Unit>>> = _createFolder
 
