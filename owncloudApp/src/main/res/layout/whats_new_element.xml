@@ -26,7 +26,7 @@
             android:layout_gravity="center_horizontal"
             android:gravity="start"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textSize="24sp"
+            android:textSize="34sp"
             android:textStyle="bold"
             tools:text="@string/welcome_feature_6_title" />
 
@@ -40,6 +40,13 @@
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textSize="16sp"
             tools:text="@string/welcome_feature_6_text" />
+
+        <ImageView
+            android:id="@+id/whatsNewExtraImage"
+            android:layout_width="150dp"
+            android:layout_height="50dp"
+            android:layout_gravity="start"
+            android:visibility="gone" />
 
     </LinearLayout>
 </ScrollView>
