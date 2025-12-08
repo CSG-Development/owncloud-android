@@ -19,7 +19,7 @@ import com.owncloud.android.domain.exceptions.SSLErrorException
 import com.owncloud.android.domain.exceptions.UnknownErrorException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
-import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoveAccessUserUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
@@ -54,7 +54,7 @@ class LoginViewModel(
     private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val getServersUseCase: GetAvailableDevicesUseCase,
-    private val getExistingRemoveAccessUserUseCase: GetExistingRemoveAccessUserUseCase,
+    private val getExistingRemoteAccessUserUseCase: GetExistingRemoteAccessUserUseCase,
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
     private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
@@ -231,12 +231,16 @@ class LoginViewModel(
     }
 
     private fun restorePreviousUserIfExists() {
-        val existingUserName = getExistingRemoveAccessUserUseCase.execute()
+        val existingUserName = getExistingRemoteAccessUserUseCase.execute()
         if (existingUserName != null) {
-            onPreviousUserRestore(existingUserName)
-            startObserveServers()
-            refreshServers()
+            restorePreviousUser(existingUserName)
         }
+    }
+
+    private fun restorePreviousUser(userName: String) {
+        onPreviousUserRestore(userName)
+        startObserveServers()
+        refreshServers()
     }
 
     private fun onPreviousUserRestore(existingUserName: String) {
@@ -324,7 +328,17 @@ class LoginViewModel(
         when (currentState) {
             is LoginScreenState.EmailState -> {
                 if (isEmailValid) {
-                    initiateToken()
+                    val previousUser = getExistingRemoteAccessUserUseCase.execute()
+                    if (currentState.username == previousUser) {
+                        restorePreviousUser(previousUser)
+                    } else {
+                        initiateToken()
+                        _state.update {
+                            currentState.copy(
+                                devices = emptyList(),
+                            )
+                        }
+                    }
                 } else {
                     // Show validation error if somehow the button was clicked with invalid email
                     _state.update {
