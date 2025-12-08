@@ -102,6 +102,11 @@ class LoginViewModel(
                     _state.update {
                         it.copyState(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
                     }
+                },
+                completeBlock = {
+                    _state.update {
+                        it.copyState(isActionButtonLoading = false)
+                    }
                 }
             )
         }
@@ -332,12 +337,13 @@ class LoginViewModel(
                     if (currentState.username == previousUser) {
                         restorePreviousUser(previousUser)
                     } else {
-                        initiateToken()
                         _state.update {
                             currentState.copy(
                                 devices = emptyList(),
+                                isActionButtonLoading = true
                             )
                         }
+                        initiateToken()
                     }
                 } else {
                     // Show validation error if somehow the button was clicked with invalid email
@@ -482,22 +488,27 @@ class LoginViewModel(
 
         abstract val devices: List<Device>
 
+        abstract val isActionButtonLoading: Boolean
+
         fun copyState(
             username: String = this.username,
             errorMessage: String? = this.errorMessage,
             devices: List<Device> = this.devices,
+            isActionButtonLoading: Boolean = this.isActionButtonLoading
         ): LoginScreenState {
             return when (this) {
                 is EmailState -> copy(
                     username = username,
                     errorMessage = errorMessage,
-                    devices = devices
+                    devices = devices,
+                    isActionButtonLoading = isActionButtonLoading
                 )
 
                 is LoginState -> copy(
                     username = username,
                     errorMessage = errorMessage,
-                    devices = devices
+                    devices = devices,
+                    isActionButtonLoading = isActionButtonLoading
                 )
             }
         }
@@ -510,6 +521,7 @@ class LoginViewModel(
             val errorCodeMessage: String? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
+            override val isActionButtonLoading: Boolean = false
         ) : LoginScreenState()
 
         data class LoginState(
@@ -522,6 +534,7 @@ class LoginViewModel(
             val serverUrl: String = "",
             override val errorMessage: String? = null,
             override val devices: List<Device> = emptyList(),
+            override val isActionButtonLoading: Boolean = false
         ) : LoginScreenState()
     }
 

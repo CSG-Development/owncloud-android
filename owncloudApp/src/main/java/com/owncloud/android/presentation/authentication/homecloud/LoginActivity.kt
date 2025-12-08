@@ -278,6 +278,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private fun updateLoginState(state: LoginScreenState) {
         binding.errorMessage.text = state.errorMessage
         binding.errorMessage.isVisible = !state.errorMessage.isNullOrBlank()
+        binding.actionButton.setLoading(state.isActionButtonLoading)
 
         when (state) {
             is LoginScreenState.EmailState -> {
