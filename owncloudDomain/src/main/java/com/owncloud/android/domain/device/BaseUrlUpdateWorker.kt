@@ -41,7 +41,7 @@ class BaseUrlUpdateWorker(
 
             // Step 1: Try to choose best available base URL from current paths
             val updatedFromCurrentPaths = chooseBestAvailableBaseUrlAndUpdate()
-            
+
             if (updatedFromCurrentPaths) {
                 // Successfully updated from current paths, no need to sync
                 Timber.d("BaseUrlUpdateWorker: Base URL updated from current paths, done")
@@ -50,10 +50,10 @@ class BaseUrlUpdateWorker(
 
             // Step 2: Current paths didn't work, sync new base URLs from mDNS and remote API
             Timber.d("BaseUrlUpdateWorker: No valid URL from current paths, syncing new paths")
-            syncDevicePaths()
-
-            // Step 3: Try to choose best available base URL again with updated paths
-            chooseBestAvailableBaseUrlAndUpdate()
+            if (syncDevicePaths()) {
+                // Step 3: Try to choose best available base URL again with updated paths
+                chooseBestAvailableBaseUrlAndUpdate()
+            }
 
             Timber.d("BaseUrlUpdateWorker: Base URL update completed successfully")
             Result.success()
@@ -69,7 +69,7 @@ class BaseUrlUpdateWorker(
     /**
      * Syncs device paths from mDNS discovery and remote API.
      */
-    private suspend fun syncDevicePaths() {
+    private suspend fun syncDevicePaths(): Boolean {
         Timber.d("BaseUrlUpdateWorker: Syncing device paths from mDNS and remote API")
 
         val localDevice = discoverLocalNetworkDevicesUseCase.oneShot(
@@ -86,13 +86,15 @@ class BaseUrlUpdateWorker(
                 saveCurrentDeviceUseCase(remoteCurrentDevice)
             } else {
                 Timber.d("BaseUrlUpdateWorker: No device found from mDNS or remote API")
+                return false
             }
         }
+        return true
     }
 
     /**
      * Chooses the best available base URL and updates the account if changed.
-     * 
+     *
      * @return true if base URL was successfully updated (or unchanged), false if no valid URL found
      */
     private suspend fun chooseBestAvailableBaseUrlAndUpdate(): Boolean {
@@ -111,6 +113,7 @@ class BaseUrlUpdateWorker(
                 Timber.d("BaseUrlUpdateWorker: Base URL unchanged: $currentBaseUrl")
                 true
             }
+
             else -> {
                 Timber.i("BaseUrlUpdateWorker: Updating base URL: $currentBaseUrl -> $bestBaseUrl")
                 accountBaseUrlManager.updateBaseUrl(bestBaseUrl)
