@@ -341,7 +341,6 @@
         <item name="loadingIndicatorColor">@color/homecloud_button_primary_text</item>
         <item name="loadingIndicatorSize">@dimen/loading_button_indicator_size</item>
         <item name="loadingBackgroundColor">@color/homecloud_button_primary_background_loading</item>
-        <item name="backgroundColor">@color/homecloud_button_primary_background</item>
     </style>
 
     <style name="homeCloud.TextInputLayout.InputShape" parent="ShapeAppearance.Material3.Corner.None">

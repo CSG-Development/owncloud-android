@@ -26,6 +26,12 @@ class LoadingButton @JvmOverloads constructor(
     private val loadingBackgroundColor: Int
     private val defaultBackgroundTint: ColorStateList?
 
+    enum class State {
+        ENABLED,
+        LOADING,
+        DISABLED,
+    }
+
     init {
         LayoutInflater.from(context).inflate(R.layout.view_loading_button, this, true)
 
@@ -76,14 +82,26 @@ class LoadingButton @JvmOverloads constructor(
         setText(context.getString(resId))
     }
 
-    fun setLoading(loading: Boolean) {
+    private fun setLoading(loading: Boolean) {
         isLoading = loading
         updateLoadingState()
     }
 
-    override fun setEnabled(enabled: Boolean) {
-        super.setEnabled(enabled)
-        button.isEnabled = enabled && !isLoading
+    fun setState(state: State) {
+        when(state) {
+            State.ENABLED -> {
+                isEnabled = true
+                setLoading(false)
+            }
+            State.LOADING -> {
+                isEnabled = true
+                setLoading(true)
+            }
+            State.DISABLED -> {
+                setLoading(false)
+                isEnabled = false
+            }
+        }
     }
 
     override fun setOnClickListener(listener: OnClickListener?) {
