@@ -37,11 +37,4 @@ class DynamicUrlSwitchingControllerImpl(
     override fun stopDynamicUrlSwitching() {
         dynamicBaseUrlSwitcher.stopDynamicUrlSwitching()
     }
-
-    override suspend fun oneShotDynamicUrlSwitching() {
-        val account = getCurrentOwnCloudAccount(appContext)
-        account?.let {
-            dynamicBaseUrlSwitcher.oneShotDynamicUrlSwitching(it)
-        }
-    }
 }

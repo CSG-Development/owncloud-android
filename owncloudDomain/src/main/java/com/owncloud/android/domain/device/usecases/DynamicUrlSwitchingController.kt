@@ -7,7 +7,5 @@ interface DynamicUrlSwitchingController {
     fun startDynamicUrlSwitching()
     
     fun stopDynamicUrlSwitching()
-
-    suspend fun oneShotDynamicUrlSwitching()
 }
 
