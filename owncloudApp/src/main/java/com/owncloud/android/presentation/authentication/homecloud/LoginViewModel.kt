@@ -9,7 +9,7 @@ import com.owncloud.android.R
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
-import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException

@@ -4,7 +4,7 @@ package com.owncloud.android.domain.device
  * Interface for managing account base URL.
  * 
  * This abstraction allows the domain layer to update account base URLs
- * without depending on AccountManager, SingleSessionManager, or other
+ * without depending on AccountManager or other
  * Android-specific implementations.
  */
 interface AccountBaseUrlManager {
@@ -21,8 +21,7 @@ interface AccountBaseUrlManager {
      * 
      * This will:
      * - Update the account's stored base URL
-     * - Cancel any pending network requests
-     * 
+     *
      * @param newBaseUrl The new base URL to set
      * @return true if update was successful, false otherwise
      */

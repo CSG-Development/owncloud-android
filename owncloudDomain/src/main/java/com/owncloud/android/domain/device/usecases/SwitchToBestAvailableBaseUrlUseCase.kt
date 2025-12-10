@@ -2,14 +2,16 @@ package com.owncloud.android.domain.device.usecases
 
 import com.owncloud.android.domain.device.AccountBaseUrlManager
 import com.owncloud.android.domain.device.BaseUrlChooser
+import com.owncloud.android.domain.device.NetworkRequestDispatcher
 import timber.log.Timber
 
-class GetBestAvailableBaseUrlUseCase(
+class SwitchToBestAvailableBaseUrlUseCase(
     private val baseUrlChooser: BaseUrlChooser,
     private val accountBaseUrlManager: AccountBaseUrlManager,
+    private val networkRequestDispatcher: NetworkRequestDispatcher
 ) {
 
-    suspend fun updateBestAvailableBaseUrl(): Boolean {
+    suspend fun execute(): Boolean {
         val bestBaseUrl = baseUrlChooser.chooseBestAvailableBaseUrl()
         Timber.d("BaseUrlUpdateWorker: Best available base URL: $bestBaseUrl")
 
@@ -28,7 +30,11 @@ class GetBestAvailableBaseUrlUseCase(
 
             else -> {
                 Timber.i("BaseUrlUpdateWorker: Updating base URL: $currentBaseUrl -> $bestBaseUrl")
-                accountBaseUrlManager.updateBaseUrl(bestBaseUrl)
+                val updated = accountBaseUrlManager.updateBaseUrl(bestBaseUrl)
+                if (updated) {
+                    networkRequestDispatcher.cancelAllRequests()
+                }
+                return updated
             }
         }
     }

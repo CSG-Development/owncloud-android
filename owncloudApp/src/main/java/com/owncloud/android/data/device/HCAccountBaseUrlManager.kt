@@ -35,7 +35,6 @@ class HCAccountBaseUrlManager(
                 AccountUtils.Constants.KEY_OC_BASE_URL,
                 newBaseUrl
             )
-            SingleSessionManager.getDefaultSingleton().cancelAllRequests()
             Timber.d("HCAccountBaseUrlManager: Successfully updated base URL to: $newBaseUrl")
             true
         } catch (e: Exception) {

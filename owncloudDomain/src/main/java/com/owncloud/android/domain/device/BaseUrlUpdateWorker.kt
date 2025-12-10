@@ -3,7 +3,8 @@ package com.owncloud.android.domain.device
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.owncloud.android.domain.device.usecases.GetBestAvailableBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import org.koin.core.component.KoinComponent
@@ -30,7 +31,7 @@ class BaseUrlUpdateWorker(
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase by inject()
     private val accountBaseUrlManager: AccountBaseUrlManager by inject()
 
-    private val getBestAvailableBaseUrlUseCase: GetBestAvailableBaseUrlUseCase by inject()
+    private val switchToBestAvailableBaseUrlUseCase: SwitchToBestAvailableBaseUrlUseCase by inject()
 
     override suspend fun doWork(): Result {
         return try {
@@ -42,7 +43,7 @@ class BaseUrlUpdateWorker(
             }
 
             // Step 1: Try to choose best available base URL from current paths
-            val updatedFromCurrentPaths = getBestAvailableBaseUrlUseCase.updateBestAvailableBaseUrl()
+            val updatedFromCurrentPaths = switchToBestAvailableBaseUrlUseCase.execute()
 
             if (updatedFromCurrentPaths) {
                 // Successfully updated from current paths, no need to sync
@@ -54,7 +55,7 @@ class BaseUrlUpdateWorker(
             Timber.d("BaseUrlUpdateWorker: No valid URL from current paths, syncing new paths")
             if (syncDevicePaths()) {
                 // Step 3: Try to choose best available base URL again with updated paths
-                getBestAvailableBaseUrlUseCase.updateBestAvailableBaseUrl()
+                switchToBestAvailableBaseUrlUseCase.execute()
             }
 
             Timber.d("BaseUrlUpdateWorker: Base URL update completed successfully")
