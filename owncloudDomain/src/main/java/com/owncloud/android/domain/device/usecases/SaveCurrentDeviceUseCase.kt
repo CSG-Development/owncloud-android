@@ -1,5 +1,6 @@
-package com.owncloud.android.domain.device
+package com.owncloud.android.domain.device.usecases
 
+import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 
 class SaveCurrentDeviceUseCase(

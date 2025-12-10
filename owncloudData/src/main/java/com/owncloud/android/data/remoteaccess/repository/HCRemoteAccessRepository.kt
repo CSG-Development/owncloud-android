@@ -64,6 +64,10 @@ class HCRemoteAccessRepository(
         return tokenStorage.getUserName()
     }
 
+    override fun getAccessToken(): String? {
+        return tokenStorage.getAccessToken()
+    }
+
     override suspend fun getAvailableDevices(): List<Device> {
         return remoteAccessService.getDevices().mapNotNull { deviceResponse ->
             getVerifiedDevice(deviceResponse)

@@ -28,7 +28,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.capabilities.model.OCCapability
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
-import com.owncloud.android.domain.device.GetCurrentDevicePathsUseCase
+import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.sharing.shares.model.OCShare
 import com.owncloud.android.domain.sharing.shares.model.ShareType

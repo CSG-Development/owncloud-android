@@ -1,14 +1,14 @@
 package com.owncloud.android.data.device
 
 import android.accounts.Account
-import android.accounts.AccountManager
-import com.owncloud.android.lib.common.accounts.AccountUtils
+import com.owncloud.android.data.connectivity.Connectivity
+import com.owncloud.android.data.connectivity.NetworkStateObserver
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -20,53 +20,47 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class DynamicBaseUrlSwitcherTest {
 
-    private val accountManager: AccountManager = mockk(relaxed = true)
-    private val baseUrlChooser: BaseUrlChooser = mockk()
+    private val networkStateObserver: NetworkStateObserver = mockk()
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
     private val switcher = DynamicBaseUrlSwitcher(
-        accountManager = accountManager,
-        baseUrlChooser = baseUrlChooser,
-        coroutineScope = testScope
+        networkStateObserver = networkStateObserver,
+        coroutineScope = testScope,
+        updateBaseUrlUseCase = updateBaseUrlUseCase
     )
 
-    private val testAccount: Account = mockk(relaxed = true)// Account("test@example.com", "owncloud")
+    private val testAccount: Account = mockk(relaxed = true)
 
     @Test
-    fun `startDynamicUrlSwitching starts observing base URL changes`() = runTest(testDispatcher) {
-        val baseUrlFlow = MutableStateFlow("https://192.168.1.100/files")
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow
-        every { accountManager.getUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL) } returns null
+    fun `startDynamicUrlSwitching triggers update when network available`() = runTest(testDispatcher) {
+        val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         switcher.startDynamicUrlSwitching(testAccount)
         advanceUntilIdle()
 
         assertTrue(switcher.isActive())
-        verify { accountManager.setUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL, "https://192.168.1.100/files") }
+        verify { updateBaseUrlUseCase.execute() }
     }
 
     @Test
-    fun `startDynamicUrlSwitching does not update when URL is unchanged`() = runTest(testDispatcher) {
-        val baseUrl = "https://192.168.1.100/files"
-        val baseUrlFlow = flowOf(baseUrl, baseUrl, baseUrl)
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow
-        every { accountManager.getUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL) } returns baseUrl
+    fun `startDynamicUrlSwitching does not trigger update when no network`() = runTest(testDispatcher) {
+        val networkFlow = MutableStateFlow(Connectivity.unavailable())
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         switcher.startDynamicUrlSwitching(testAccount)
         advanceUntilIdle()
 
-        // Should not update since URL hasn't changed
-        verify(exactly = 0) { 
-            accountManager.setUserData(any(), any(), any()) 
-        }
+        assertTrue(switcher.isActive())
+        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
     }
 
     @Test
     fun `stopDynamicUrlSwitching stops observing and clears state`() = runTest(testDispatcher) {
-        val baseUrlFlow = MutableStateFlow("https://192.168.1.100/files")
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow
-        every { accountManager.getUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL) } returns null
+        val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         switcher.startDynamicUrlSwitching(testAccount)
         advanceUntilIdle()
@@ -80,11 +74,8 @@ class DynamicBaseUrlSwitcherTest {
 
     @Test
     fun `startDynamicUrlSwitching cancels previous observation`() = runTest(testDispatcher) {
-        val baseUrlFlow1 = flowOf("https://192.168.1.100/files")
-        val baseUrlFlow2 = flowOf("https://public.example.com/files")
-        
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow1 andThen baseUrlFlow2
-        every { accountManager.getUserData(any(), any()) } returns null
+        val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         val account1 = Account("user1@example.com", "owncloud")
         val account2 = Account("user2@example.com", "owncloud")
@@ -92,10 +83,13 @@ class DynamicBaseUrlSwitcherTest {
         switcher.startDynamicUrlSwitching(account1)
         advanceUntilIdle()
         
+        assertTrue(switcher.isActive())
 
         // Start with a different account - should cancel previous
         switcher.startDynamicUrlSwitching(account2)
         advanceUntilIdle()
+        
+        assertTrue(switcher.isActive())
     }
 
     @Test
@@ -105,9 +99,8 @@ class DynamicBaseUrlSwitcherTest {
 
     @Test
     fun `dispose cleans up resources`() = runTest(testDispatcher) {
-        val baseUrlFlow = MutableStateFlow("https://192.168.1.100/files")
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow
-        every { accountManager.getUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL) } returns null
+        val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         switcher.startDynamicUrlSwitching(testAccount)
         advanceUntilIdle()
@@ -120,19 +113,21 @@ class DynamicBaseUrlSwitcherTest {
     }
 
     @Test
-    fun `handleBaseUrlChange handles AccountManager exceptions gracefully`() = runTest(testDispatcher) {
-        val baseUrlFlow = MutableStateFlow("https://192.168.1.100/files")
-        every { baseUrlChooser.observeAvailableBaseUrl() } returns baseUrlFlow
-        every { accountManager.getUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL) } returns null
-        every { 
-            accountManager.setUserData(testAccount, AccountUtils.Constants.KEY_OC_BASE_URL, any()) 
-        } throws SecurityException("Permission denied")
+    fun `network state change triggers update`() = runTest(testDispatcher) {
+        val networkFlow = MutableStateFlow(Connectivity.unavailable())
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
 
         switcher.startDynamicUrlSwitching(testAccount)
         advanceUntilIdle()
 
-        // Should not crash, just log the error
-        assertTrue(switcher.isActive())
+        // Initially no network - no update
+        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
+
+        // Network becomes available
+        networkFlow.value = Connectivity(setOf(Connectivity.ConnectionType.WIFI))
+        advanceUntilIdle()
+
+        // Should trigger update
+        verify(exactly = 1) { updateBaseUrlUseCase.execute() }
     }
 }
-
