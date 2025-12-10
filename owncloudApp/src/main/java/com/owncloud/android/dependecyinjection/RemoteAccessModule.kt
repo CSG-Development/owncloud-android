@@ -1,20 +1,24 @@
 package com.owncloud.android.dependecyinjection
 
 import com.owncloud.android.BuildConfig
-import com.owncloud.android.data.device.BaseUrlChooser
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.device.DynamicBaseUrlSwitcher
+import com.owncloud.android.data.device.HCAccountBaseUrlManager
+import com.owncloud.android.data.device.HCBaseUrlChooser
 import com.owncloud.android.data.device.HCDeviceUrlResolver
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessAuthInterceptor
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessTokenRefreshInterceptor
+import com.owncloud.android.domain.device.AccountBaseUrlManager
+import com.owncloud.android.domain.device.BaseUrlChooser
 import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -60,21 +64,26 @@ val remoteAccessModule = module {
         )
     }
 
-    // Base URL Chooser - dynamically selects best available base URL
-    single {
-        BaseUrlChooser(
-            networkStateObserver = get(),
+    // Base URL Chooser - selects best available base URL
+    single<BaseUrlChooser> {
+        HCBaseUrlChooser(
             currentDeviceStorage = get(),
-            deviceUrlResolver = get(),
-            updateBaseUrlUseCase = get(),
+            deviceUrlResolver = get()
+        )
+    }
+
+    // Account Base URL Manager - manages account base URL updates
+    single<AccountBaseUrlManager> {
+        HCAccountBaseUrlManager(
+            appContext = androidContext(),
+            accountManager = get()
         )
     }
 
     // Dynamic Base URL Switcher - manages automatic base URL switching for accounts
     single {
         DynamicBaseUrlSwitcher(
-            accountManager = get(),
-            baseUrlChooser = get(),
+            networkStateObserver = get(),
             coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
             updateBaseUrlUseCase = get()
         )

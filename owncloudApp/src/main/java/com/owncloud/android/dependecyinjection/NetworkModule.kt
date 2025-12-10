@@ -1,7 +1,9 @@
 package com.owncloud.android.dependecyinjection
 
 import com.owncloud.android.data.connectivity.NetworkStateObserver
+import com.owncloud.android.data.device.HCNetworkRequestDispatcher
 import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
+import com.owncloud.android.domain.device.NetworkRequestDispatcher
 import com.owncloud.android.lib.common.http.HttpClient
 import com.owncloud.android.lib.common.network.AssetsCertificateReader
 import com.owncloud.android.lib.common.network.PinnedCertificateTrustManager
@@ -18,6 +20,8 @@ internal object NetworkModuleQualifiers {
 }
 
 val networkModule = module {
+
+    single<NetworkRequestDispatcher> { HCNetworkRequestDispatcher() }
 
     factory {
         PinnedCertificateTrustManager(AssetsCertificateReader(androidContext().assets))
