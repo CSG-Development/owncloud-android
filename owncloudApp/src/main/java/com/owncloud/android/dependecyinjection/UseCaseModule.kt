@@ -52,6 +52,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUs
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.GetBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
 import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
@@ -316,6 +317,7 @@ val useCaseModule = module {
     factoryOf(::UpdateBaseUrlUseCase)
 
     factoryOf(::GetAvailableServerInfoUseCase)
+    factoryOf(::GetBestAvailableBaseUrlUseCase)
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)

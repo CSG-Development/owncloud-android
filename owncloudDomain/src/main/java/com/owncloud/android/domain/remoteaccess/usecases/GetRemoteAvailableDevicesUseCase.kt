@@ -12,5 +12,8 @@ class GetRemoteAvailableDevicesUseCase(
 
     suspend fun currentDevice(): Device? =
         remoteAccessRepository.getCurrentDevice()
+
+    fun hasToken(): Boolean =
+        remoteAccessRepository.getAccessToken() != null
 }
 

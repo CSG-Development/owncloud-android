@@ -3,6 +3,7 @@ package com.owncloud.android.domain.device
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.owncloud.android.domain.device.usecases.GetBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import org.koin.core.component.KoinComponent
@@ -27,8 +28,9 @@ class BaseUrlUpdateWorker(
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase by inject()
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase by inject()
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase by inject()
-    private val baseUrlChooser: BaseUrlChooser by inject()
     private val accountBaseUrlManager: AccountBaseUrlManager by inject()
+
+    private val getBestAvailableBaseUrlUseCase: GetBestAvailableBaseUrlUseCase by inject()
 
     override suspend fun doWork(): Result {
         return try {
@@ -40,7 +42,7 @@ class BaseUrlUpdateWorker(
             }
 
             // Step 1: Try to choose best available base URL from current paths
-            val updatedFromCurrentPaths = chooseBestAvailableBaseUrlAndUpdate()
+            val updatedFromCurrentPaths = getBestAvailableBaseUrlUseCase.updateBestAvailableBaseUrl()
 
             if (updatedFromCurrentPaths) {
                 // Successfully updated from current paths, no need to sync
@@ -52,7 +54,7 @@ class BaseUrlUpdateWorker(
             Timber.d("BaseUrlUpdateWorker: No valid URL from current paths, syncing new paths")
             if (syncDevicePaths()) {
                 // Step 3: Try to choose best available base URL again with updated paths
-                chooseBestAvailableBaseUrlAndUpdate()
+                getBestAvailableBaseUrlUseCase.updateBestAvailableBaseUrl()
             }
 
             Timber.d("BaseUrlUpdateWorker: Base URL update completed successfully")
@@ -70,6 +72,9 @@ class BaseUrlUpdateWorker(
      * Syncs device paths from mDNS discovery and remote API.
      */
     private suspend fun syncDevicePaths(): Boolean {
+        if (!getRemoteAvailableDevicesUseCase.hasToken()) {
+            return false
+        }
         Timber.d("BaseUrlUpdateWorker: Syncing device paths from mDNS and remote API")
 
         val localDevice = discoverLocalNetworkDevicesUseCase.oneShot(
@@ -90,35 +95,6 @@ class BaseUrlUpdateWorker(
             }
         }
         return true
-    }
-
-    /**
-     * Chooses the best available base URL and updates the account if changed.
-     *
-     * @return true if base URL was successfully updated (or unchanged), false if no valid URL found
-     */
-    private suspend fun chooseBestAvailableBaseUrlAndUpdate(): Boolean {
-        val bestBaseUrl = baseUrlChooser.chooseBestAvailableBaseUrl()
-        Timber.d("BaseUrlUpdateWorker: Best available base URL: $bestBaseUrl")
-
-        if (bestBaseUrl == null) {
-            Timber.d("BaseUrlUpdateWorker: No valid base URL available")
-            return false
-        }
-
-        val currentBaseUrl = accountBaseUrlManager.getCurrentBaseUrl()
-
-        return when {
-            currentBaseUrl == bestBaseUrl -> {
-                Timber.d("BaseUrlUpdateWorker: Base URL unchanged: $currentBaseUrl")
-                true
-            }
-
-            else -> {
-                Timber.i("BaseUrlUpdateWorker: Updating base URL: $currentBaseUrl -> $bestBaseUrl")
-                accountBaseUrlManager.updateBaseUrl(bestBaseUrl)
-            }
-        }
     }
 
     companion object {

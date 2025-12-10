@@ -29,6 +29,8 @@ interface RemoteAccessRepository {
 
     fun getUserName(): String?
 
+    fun getAccessToken(): String?
+
     /**
      * Get all available devices with their access paths
      * @return a list of available devices
