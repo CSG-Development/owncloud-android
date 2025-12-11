@@ -1,9 +1,9 @@
 package com.owncloud.android.lib.common.network
 
 import timber.log.Timber
+import java.security.GeneralSecurityException
 import java.security.KeyStore
-import java.security.SecureRandom
-import javax.net.ssl.SSLContext
+import java.security.cert.X509Certificate
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
@@ -13,16 +13,20 @@ import javax.net.ssl.X509TrustManager
  */
 class PinnedCertificateTrustManager(
     private val assetsCertificateReader: CertificateReader
-) {
+) : X509TrustManager {
 
-    val trustManager: X509TrustManager by lazy {
-        createTrustManager()
-    }
+    private val trustManagers: List<X509TrustManager> = listOf(
+        createTrustManager(),
+        createSystemTrustManager(),
+    )
 
-    fun createSSLContext(): SSLContext {
-        return SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf(trustManager), SecureRandom())
-        }
+    private fun createSystemTrustManager(): X509TrustManager {
+        val trustManagerFactory = TrustManagerFactory.getInstance(
+            TrustManagerFactory.getDefaultAlgorithm()
+        )
+        trustManagerFactory.init(null as KeyStore?)
+        val trustManagers = trustManagerFactory.trustManagers
+        return trustManagers.first { it is X509TrustManager } as X509TrustManager
     }
 
     private fun createTrustManager(): X509TrustManager {
@@ -54,6 +58,36 @@ class PinnedCertificateTrustManager(
         keyStore.setCertificateEntry(alias, certificate)
         Timber.d("Loaded certificate: (Subject: ${certificate.subjectX500Principal.name})")
         return keyStore
+    }
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        for (trustManager in trustManagers) {
+            try {
+                trustManager.checkClientTrusted(chain, authType)
+                return
+            } catch (e: GeneralSecurityException) {
+                Timber.e(e, "checkClientTrusted failed with ${e.message}")
+            }
+        }
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        for (trustManager in trustManagers) {
+            try {
+                trustManager.checkServerTrusted(chain, authType)
+                return
+            } catch (e: GeneralSecurityException) {
+                Timber.e(e, "checkServerTrusted failed with ${e.message}")
+            }
+        }
+    }
+
+    override fun getAcceptedIssuers(): Array<out X509Certificate?> {
+        val issuers = mutableListOf<X509Certificate?>()
+        for (trustManager in trustManagers) {
+            issuers.addAll(trustManager.acceptedIssuers)
+        }
+        return issuers.toTypedArray()
     }
 
 }

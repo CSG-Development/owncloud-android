@@ -113,7 +113,7 @@ public class HttpClient {
         return mOkHttpClient;
     }
 
-    private SSLContext buildSSLContext() throws NoSuchAlgorithmException {
+    public static SSLContext buildSSLContext() throws NoSuchAlgorithmException {
         try {
             return SSLContext.getInstance(TlsVersion.TLS_1_3.javaName());
         } catch (NoSuchAlgorithmException tlsv13Exception) {
