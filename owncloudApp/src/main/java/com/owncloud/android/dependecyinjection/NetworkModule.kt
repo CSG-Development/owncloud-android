@@ -13,6 +13,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.security.SecureRandom
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 internal object NetworkModuleQualifiers {
@@ -48,7 +49,11 @@ val networkModule = module {
 
     // OkHttpClient for device access
     single(named(NetworkModuleQualifiers.OKHTTP_CLIENT_PINNED_DEVICE_CERTS)) {
-        HttpClient(androidContext()).okHttpClient
+        HttpClient(androidContext()).getOkHttpClient(
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(10),
+            Duration.ofSeconds(10),
+        )
     }
 
     // Device Verification Client for mDNS

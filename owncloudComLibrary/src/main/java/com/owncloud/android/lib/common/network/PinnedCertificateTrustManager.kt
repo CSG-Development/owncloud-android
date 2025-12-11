@@ -1,8 +1,8 @@
 package com.owncloud.android.lib.common.network
 
 import timber.log.Timber
-import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
@@ -61,25 +61,31 @@ class PinnedCertificateTrustManager(
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        val exceptions = mutableListOf<CertificateException>()
         for (trustManager in trustManagers) {
             try {
                 trustManager.checkClientTrusted(chain, authType)
                 return
-            } catch (e: GeneralSecurityException) {
+            } catch (e: CertificateException) {
                 Timber.e(e, "checkClientTrusted failed with ${e.message}")
+                exceptions.add(e)
             }
         }
+        throw CertificateChainedException(exceptions)
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        val exceptions = mutableListOf<CertificateException>()
         for (trustManager in trustManagers) {
             try {
                 trustManager.checkServerTrusted(chain, authType)
                 return
-            } catch (e: GeneralSecurityException) {
+            } catch (e: CertificateException) {
                 Timber.e(e, "checkServerTrusted failed with ${e.message}")
+                exceptions.add(e)
             }
         }
+        throw CertificateChainedException(exceptions)
     }
 
     override fun getAcceptedIssuers(): Array<out X509Certificate?> {
