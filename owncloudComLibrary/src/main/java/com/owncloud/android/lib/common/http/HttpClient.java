@@ -48,10 +48,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Client used to perform network operations
@@ -89,6 +89,18 @@ public class HttpClient {
     }
 
     public OkHttpClient getOkHttpClient() {
+        return getOkHttpClient(
+                Duration.ofSeconds(HttpConstants.DEFAULT_CONNECTION_TIMEOUT),
+                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT),
+                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT)
+        );
+    }
+
+    public OkHttpClient getOkHttpClient(
+            Duration connectionTimeOut,
+            Duration readTimeOut,
+            Duration writeTimeOut
+    ) {
         if (mOkHttpClient == null) {
             try {
                 initKeyStore();
@@ -100,7 +112,9 @@ public class HttpClient {
 
                 // Automatic cookie handling, NOT PERSISTENT
                 final CookieJar cookieJar = new CookieJarImpl(mCookieStore);
-                mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar);
+                mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar,
+                        connectionTimeOut, readTimeOut, writeTimeOut
+                );
 
             } catch (NoSuchAlgorithmException nsae) {
                 Timber.e(nsae, "Could not setup SSL system.");
@@ -113,7 +127,7 @@ public class HttpClient {
         return mOkHttpClient;
     }
 
-    private SSLContext buildSSLContext() throws NoSuchAlgorithmException {
+    public static SSLContext buildSSLContext() throws NoSuchAlgorithmException {
         try {
             return SSLContext.getInstance(TlsVersion.TLS_1_3.javaName());
         } catch (NoSuchAlgorithmException tlsv13Exception) {
@@ -135,14 +149,18 @@ public class HttpClient {
     }
 
     private OkHttpClient buildNewOkHttpClient(SSLSocketFactory sslSocketFactory, X509TrustManager trustManager,
-                                              CookieJar cookieJar) {
+                                              CookieJar cookieJar,
+                                              Duration connectionTimeOut,
+                                              Duration readTimeOut,
+                                              Duration writeTimeOut
+    ) {
         return new OkHttpClient.Builder()
                 .addNetworkInterceptor(getLogInterceptor())
                 .addNetworkInterceptor(DebugInterceptorFactory.INSTANCE.getInterceptor())
                 .protocols(Collections.singletonList(Protocol.HTTP_1_1))
-                .readTimeout(HttpConstants.DEFAULT_DATA_TIMEOUT, TimeUnit.MILLISECONDS)
-                .writeTimeout(HttpConstants.DEFAULT_DATA_TIMEOUT, TimeUnit.MILLISECONDS)
-                .connectTimeout(HttpConstants.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(readTimeOut)
+                .writeTimeout(writeTimeOut)
+                .connectTimeout(connectionTimeOut)
                 .followRedirects(false)
                 .sslSocketFactory(sslSocketFactory, trustManager)
                 .hostnameVerifier((asdf, usdf) -> true)

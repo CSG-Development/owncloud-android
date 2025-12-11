@@ -12,6 +12,8 @@ import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import java.security.SecureRandom
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 internal object NetworkModuleQualifiers {
@@ -32,11 +34,12 @@ val networkModule = module {
     // OkHttpClient for Remote Access API
     single(named(NetworkModuleQualifiers.OKHTTP_CLIENT_PINNED_HC_CERT)) {
         val certificateTrustManager = get<PinnedCertificateTrustManager>()
-        val sslContext = certificateTrustManager.createSSLContext()
-        val trustManager = certificateTrustManager.trustManager
+        val sslContext = HttpClient.buildSSLContext().apply {
+            init(null, arrayOf(certificateTrustManager), SecureRandom())
+        }
 
         OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
+            .sslSocketFactory(sslContext.socketFactory, certificateTrustManager)
             .hostnameVerifier { _, _ -> true }
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -46,7 +49,11 @@ val networkModule = module {
 
     // OkHttpClient for device access
     single(named(NetworkModuleQualifiers.OKHTTP_CLIENT_PINNED_DEVICE_CERTS)) {
-        HttpClient(androidContext()).okHttpClient
+        HttpClient(androidContext()).getOkHttpClient(
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(10),
+            Duration.ofSeconds(10),
+        )
     }
 
     // Device Verification Client for mDNS
