@@ -29,7 +29,11 @@ interface RemoteAccessRepository {
 
     fun getUserName(): String?
 
-    fun getAccessToken(): String?
+    /**
+     * Check if access token exists in storage
+     * @return true if access token exists, false otherwise
+     */
+    fun hasAccessToken(): Boolean
 
     /**
      * Get all available devices with their access paths

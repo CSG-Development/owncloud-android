@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -28,6 +29,8 @@ class BaseUrlUpdateWorker(
 
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase by inject()
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase by inject()
+
+    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase by inject()
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase by inject()
     private val accountBaseUrlManager: AccountBaseUrlManager by inject()
 
@@ -73,7 +76,7 @@ class BaseUrlUpdateWorker(
      * Syncs device paths from mDNS discovery and remote API.
      */
     private suspend fun syncDevicePaths(): Boolean {
-        if (!getRemoteAvailableDevicesUseCase.hasToken()) {
+        if (!getRemoteAccessTokenUseCase.hasToken()) {
             return false
         }
         Timber.d("BaseUrlUpdateWorker: Syncing device paths from mDNS and remote API")

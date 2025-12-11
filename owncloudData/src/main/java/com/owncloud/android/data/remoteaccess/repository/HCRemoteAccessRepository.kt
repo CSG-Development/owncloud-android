@@ -64,8 +64,8 @@ class HCRemoteAccessRepository(
         return tokenStorage.getUserName()
     }
 
-    override fun getAccessToken(): String? {
-        return tokenStorage.getAccessToken()
+    override fun hasAccessToken(): Boolean {
+        return !tokenStorage.getAccessToken().isNullOrEmpty()
     }
 
     override suspend fun getAvailableDevices(): List<Device> {
