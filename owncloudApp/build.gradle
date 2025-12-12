@@ -133,7 +133,7 @@ android {
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""
         buildConfigField "String", "REMOTE_ACCESS_BASE_URL", "\"https://hc-remote-access-env-https.eba-a2nvhpbm.us-west-2.elasticbeanstalk.com/api/\""
 
-        setProperty("archivesBaseName", "CuratorFiles_${versionName}")
+        setProperty("archivesBaseName", "PersonalCloudFiles_${versionName}")
         setAppIdResources(delegate, applicationId)
     }
 
@@ -200,7 +200,7 @@ android {
             applicationIdSuffix ".preprod"
             versionNameSuffix "-preprod"
             setAppIdResources(delegate, applicationId)
-            resValue "string", "app_name", "CuratorFiles-preprod"
+            resValue "string", "app_name", "PersonalCloudFiles-preprod"
         }
     }
 
@@ -264,7 +264,7 @@ def setOutputFileName(variant, appName, callerProject) {
     if (appName) {
         newName += appName
     } else {
-        newName += "CuratorFiles"
+        newName += "PersonalCloudFiles"
     }
 
     def versionName = "$variant.mergedFlavor.versionName"
