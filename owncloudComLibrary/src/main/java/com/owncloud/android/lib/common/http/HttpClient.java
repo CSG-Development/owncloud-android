@@ -28,6 +28,8 @@ import android.content.Context;
 
 import com.owncloud.android.lib.common.http.logging.LogInterceptor;
 import com.owncloud.android.lib.common.network.AdvancedX509TrustManager;
+import com.owncloud.android.lib.common.network.AssetsCertificateReader;
+import com.owncloud.android.lib.common.network.CertificateReader;
 import com.owncloud.android.lib.common.network.NetworkUtils;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
@@ -41,11 +43,15 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.io.IOException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Client used to perform network operations
@@ -60,19 +66,45 @@ public class HttpClient {
 
     private OkHttpClient mOkHttpClient = null;
 
-    protected HttpClient(Context context) {
+    private final CertificateReader certificateReader;
+
+    public HttpClient(Context context) {
         if (context == null) {
             Timber.e("Context may not be NULL!");
             throw new NullPointerException("Context may not be NULL!");
         }
         mContext = context;
+        certificateReader = new AssetsCertificateReader(mContext.getAssets());
+    }
+
+    private void initKeyStore() {
+        try {
+            List<X509Certificate> certificates = certificateReader.readCertificates();
+            for (X509Certificate certificate : certificates) {
+                NetworkUtils.addCertToKnownServersStore(certificate, mContext);
+            }
+        } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
+            Timber.e(e, "Could not read certificates from assets.");
+        }
     }
 
     public OkHttpClient getOkHttpClient() {
+        return getOkHttpClient(
+                Duration.ofSeconds(HttpConstants.DEFAULT_CONNECTION_TIMEOUT),
+                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT),
+                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT)
+        );
+    }
+
+    public OkHttpClient getOkHttpClient(
+            Duration connectionTimeOut,
+            Duration readTimeOut,
+            Duration writeTimeOut
+    ) {
         if (mOkHttpClient == null) {
             try {
-                final X509TrustManager trustManager = new AdvancedX509TrustManager(
-                        NetworkUtils.getKnownServersStore(mContext));
+                initKeyStore();
+                final X509TrustManager trustManager = new AdvancedX509TrustManager(NetworkUtils.getKnownServersStore(mContext));
 
                 final SSLContext sslContext = buildSSLContext();
                 sslContext.init(null, new TrustManager[]{trustManager}, null);
@@ -80,7 +112,9 @@ public class HttpClient {
 
                 // Automatic cookie handling, NOT PERSISTENT
                 final CookieJar cookieJar = new CookieJarImpl(mCookieStore);
-                mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar);
+                mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar,
+                        connectionTimeOut, readTimeOut, writeTimeOut
+                );
 
             } catch (NoSuchAlgorithmException nsae) {
                 Timber.e(nsae, "Could not setup SSL system.");
@@ -93,7 +127,7 @@ public class HttpClient {
         return mOkHttpClient;
     }
 
-    private SSLContext buildSSLContext() throws NoSuchAlgorithmException {
+    public static SSLContext buildSSLContext() throws NoSuchAlgorithmException {
         try {
             return SSLContext.getInstance(TlsVersion.TLS_1_3.javaName());
         } catch (NoSuchAlgorithmException tlsv13Exception) {
@@ -115,14 +149,18 @@ public class HttpClient {
     }
 
     private OkHttpClient buildNewOkHttpClient(SSLSocketFactory sslSocketFactory, X509TrustManager trustManager,
-                                              CookieJar cookieJar) {
+                                              CookieJar cookieJar,
+                                              Duration connectionTimeOut,
+                                              Duration readTimeOut,
+                                              Duration writeTimeOut
+    ) {
         return new OkHttpClient.Builder()
                 .addNetworkInterceptor(getLogInterceptor())
                 .addNetworkInterceptor(DebugInterceptorFactory.INSTANCE.getInterceptor())
                 .protocols(Collections.singletonList(Protocol.HTTP_1_1))
-                .readTimeout(HttpConstants.DEFAULT_DATA_TIMEOUT, TimeUnit.MILLISECONDS)
-                .writeTimeout(HttpConstants.DEFAULT_DATA_TIMEOUT, TimeUnit.MILLISECONDS)
-                .connectTimeout(HttpConstants.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(readTimeOut)
+                .writeTimeout(writeTimeOut)
+                .connectTimeout(connectionTimeOut)
                 .followRedirects(false)
                 .sslSocketFactory(sslSocketFactory, trustManager)
                 .hostnameVerifier((asdf, usdf) -> true)

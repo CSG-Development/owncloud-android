@@ -37,7 +37,7 @@
     <string name="welcome_feature_6_title">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore aliqua. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore aliqua. THE END.</string>
     <string name="welcome_feature_6_text">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. THE END.</string>
     <string name="homecloud_code_dialog_title">Allow remote access</string>
-    <string name="homecloud_code_dialog_description">We have sent a one-time code to authorize this device to access your Curator. Check your email for the code and enter it here. If you do not see it in your inbox, please check your spam folder.</string>
+    <string name="homecloud_code_dialog_description">We have sent a one-time code to authorize this device to access your Personal Cloud Files. Check your email for the code and enter it here. If you do not see it in your inbox, please check your spam folder.</string>
     <string name="homecloud_enter_code_hint">Enter code</string>
     <string name="homecloud_button_allow_access">Allow access</string>
     <string name="homecloud_button_resend">Resend code</string>
@@ -48,6 +48,7 @@
     <string name="homecloud_login_invalid_email_message">Incorrect email</string>
 
     <!-- Unable to connect state -->
+    <string name="homecloud_unable_to_detect_title">Unable to detect</string>
     <string name="homecloud_unable_to_connect_title">Unable to connect</string>
     <string name="homecloud_unable_to_connect_description">We are unable to detect your device. Please ensure the following:</string>
     <string name="homecloud_unable_to_connect_item_1">Verify that Personal Cloud is properly connected to your home network</string>
@@ -60,4 +61,6 @@
     <string name="homecloud_unable_to_connect_support_link">Support team</string>
     <string name="homecloud_unable_to_connect_support_suffix">for further assistance.</string>
     <string name="homecloud_retry">Retry</string>
+    <string name="homecloud_device_update">Device update</string>
+    <string name="homecloud_device_sync_error">Your device may be disconnected or address has changed. Do you want to try to sync device?</string>
 </resources>

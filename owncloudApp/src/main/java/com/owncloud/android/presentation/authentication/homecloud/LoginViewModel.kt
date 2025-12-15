@@ -9,9 +9,9 @@ import com.owncloud.android.R
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
-import com.owncloud.android.domain.device.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.device.usecases.ManageDynamicUrlSwitchingUseCase
+import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -19,7 +19,7 @@ import com.owncloud.android.domain.exceptions.SSLErrorException
 import com.owncloud.android.domain.exceptions.UnknownErrorException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
-import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoveAccessUserUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 class LoginViewModel(
     private val loginBasicAsyncUseCase: LoginBasicAsyncUseCase,
@@ -55,9 +54,9 @@ class LoginViewModel(
     private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val getServersUseCase: GetAvailableDevicesUseCase,
-    private val getExistingRemoveAccessUserUseCase: GetExistingRemoveAccessUserUseCase,
+    private val getExistingRemoteAccessUserUseCase: GetExistingRemoteAccessUserUseCase,
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
-    private val manageDynamicUrlSwitchingUseCase: ManageDynamicUrlSwitchingUseCase,
+    private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -84,25 +83,64 @@ class LoginViewModel(
 
     private fun initiateToken() {
         viewModelScope.launch {
+            val currentState = _state.value
             runCatchingException(
                 block = {
-                    val currentState = _state.value as LoginScreenState.EmailState
-                    val reference = initiateRemoteAccessAuthenticationUseCase.execute(currentState.username)
+                    when (currentState) {
+                        is LoginScreenState.EmailState -> {
+                            _state.update {
+                                currentState.copy(
+                                    devices = emptyList(),
+                                    isActionButtonLoading = true
+                                )
+                            }
+                        }
+
+                        is LoginScreenState.LoginState -> {
+                            _state.update {
+                                currentState.copy(
+                                    devices = emptyList(),
+                                    isRefreshServersLoading = true
+                                )
+                            }
+                        }
+                    }
+
+                    initiateRemoteAccessAuthenticationUseCase.execute(currentState.username)
+                },
+                exceptionHandlerBlock = {
+                    when (currentState) {
+                        is LoginScreenState.EmailState -> {
+                            _state.update {
+                                currentState.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
+                            }
+                        }
+
+                        is LoginScreenState.LoginState -> {
+                            _state.update {
+                                currentState.copy(
+                                    isRefreshServersLoading = false,
+                                    isActionButtonLoading = false,
+                                    isUnableToDetect = true
+                                )
+                            }
+
+                        }
+                    }
+
+                },
+                completeBlock = { reference ->
                     _state.update {
                         LoginScreenState.EmailState(
                             username = currentState.username,
                             reference = reference,
                             errorEmailInvalidMessage = null,
                             errorMessage = null,
+                            isActionButtonLoading = false,
                         )
                     }
                     _events.emit(LoginEvent.ShowCodeDialog)
                     startObserveServers()
-                },
-                exceptionHandlerBlock = {
-                    _state.update {
-                        it.copyState(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
-                    }
                 }
             )
         }
@@ -163,8 +201,7 @@ class LoginViewModel(
                     handleCodeError(it)
                 },
                 completeBlock = {
-                    val currentState = _state.value
-                    when (currentState) {
+                    when (val currentState = _state.value) {
                         is LoginScreenState.EmailState -> _state.update { currentState.copy(isAllowLoading = false) }
                         is LoginScreenState.LoginState -> {} // Already switched
                     }
@@ -203,13 +240,23 @@ class LoginViewModel(
         viewModelScope.launch {
             when (val currentState = _state.value) {
                 is LoginScreenState.LoginState -> {
-                    if (currentState.isUnableToConnect) {
-                        _state.update {
-                            currentState.copy(isUnableToConnect = false)
+                    when {
+                        currentState.isUnableToDetect -> {
+                            _state.update {
+                                currentState.copy(isUnableToDetect = false)
+                            }
                         }
-                    } else {
-                        _state.update {
-                            LoginScreenState.EmailState(username = currentState.username)
+
+                        !currentState.errorMessage.isNullOrEmpty() -> {
+                            _state.update {
+                                currentState.copy(errorMessage = null)
+                            }
+                        }
+
+                        else -> {
+                            _state.update {
+                                LoginScreenState.EmailState(username = currentState.username)
+                            }
                         }
                     }
                 }
@@ -233,12 +280,16 @@ class LoginViewModel(
     }
 
     private fun restorePreviousUserIfExists() {
-        val existingUserName = getExistingRemoveAccessUserUseCase.execute()
+        val existingUserName = getExistingRemoteAccessUserUseCase.execute()
         if (existingUserName != null) {
-            onPreviousUserRestore(existingUserName)
-            startObserveServers()
-            refreshServers()
+            restorePreviousUser(existingUserName)
         }
+    }
+
+    private fun restorePreviousUser(userName: String) {
+        onPreviousUserRestore(userName)
+        startObserveServers()
+        refreshServers()
     }
 
     private fun onPreviousUserRestore(existingUserName: String) {
@@ -258,11 +309,7 @@ class LoginViewModel(
         serversJob = viewModelScope.launch {
             getServersUseCase.getServersUpdates(
                 this@launch,
-                DiscoverLocalNetworkDevicesUseCase.Params(
-                    serviceType = "_https._tcp",
-                    serviceName = "HomeCloud",
-                    duration = 30.seconds
-                )
+                DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS
             ).collect { devices ->
                 Timber.d("DEBUG devices: $devices")
                 _state.update { currentState ->
@@ -274,7 +321,7 @@ class LoginViewModel(
                         is LoginScreenState.LoginState -> currentState.copy(
                             devices = devices,
                             selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice,
-                            isUnableToConnect = devices.isEmpty()
+                            isUnableToDetect = devices.isEmpty()
                         )
                     }
                 }
@@ -289,7 +336,7 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, isUnableToConnect = false)
+                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, isUnableToDetect = false)
                         }
                     }
                     withContext(coroutinesDispatcherProvider.io) {
@@ -297,7 +344,7 @@ class LoginViewModel(
                     }
                 },
                 exceptionHandlerBlock = {
-
+                    Timber.e(it, it.message)
                 },
                 completeBlock = {
                     _state.update { currentState ->
@@ -305,7 +352,7 @@ class LoginViewModel(
                             is LoginScreenState.EmailState -> currentState
                             is LoginScreenState.LoginState -> currentState.copy(
                                 isRefreshServersLoading = false,
-                                isUnableToConnect = currentState.devices.isEmpty()
+                                isUnableToDetect = currentState.devices.isEmpty()
                             )
                         }
                     }
@@ -317,8 +364,26 @@ class LoginViewModel(
 
     fun onRetryClicked() {
         val currentState = _state.value
-        if (currentState is LoginScreenState.LoginState && currentState.isUnableToConnect) {
+        if (currentState is LoginScreenState.LoginState) {
+            when {
+                currentState.isUnableToDetect -> {
+                    refreshServers()
+                }
+                !currentState.errorMessage.isNullOrEmpty() -> {
+                    performLogin()
+                }
+            }
+        }
+    }
+
+    fun onCantFindDeviceClicked() {
+        val currentState = _state.value
+        if (currentState !is LoginScreenState.LoginState) return
+
+        if (getRemoteAccessTokenUseCase.hasToken()) {
             refreshServers()
+        } else {
+            initiateToken()
         }
     }
 
@@ -330,7 +395,12 @@ class LoginViewModel(
         when (currentState) {
             is LoginScreenState.EmailState -> {
                 if (isEmailValid) {
-                    initiateToken()
+                    val previousUser = getExistingRemoteAccessUserUseCase.execute()
+                    if (currentState.username == previousUser) {
+                        restorePreviousUser(previousUser)
+                    } else {
+                        initiateToken()
+                    }
                 } else {
                     // Show validation error if somehow the button was clicked with invalid email
                     _state.update {
@@ -381,7 +451,7 @@ class LoginViewModel(
 
                         if (accountNameResult.isSuccess) {
                             val accountName = accountNameResult.getDataOrNull().orEmpty()
-                            manageDynamicUrlSwitchingUseCase.startDynamicUrlSwitching()
+                            dynamicUrlSwitchingController.startDynamicUrlSwitching()
                             discoverAccount(accountName, loginAction == ACTION_CREATE)
                             currentState.selectedDevice?.let { saveCurrentDeviceUseCase(it) }
                             _events.emit(LoginEvent.LoginResult(accountName = accountName))
@@ -474,22 +544,27 @@ class LoginViewModel(
 
         abstract val devices: List<Device>
 
+        abstract val isActionButtonLoading: Boolean
+
         fun copyState(
             username: String = this.username,
             errorMessage: String? = this.errorMessage,
             devices: List<Device> = this.devices,
+            isActionButtonLoading: Boolean = this.isActionButtonLoading,
         ): LoginScreenState {
             return when (this) {
                 is EmailState -> copy(
                     username = username,
                     errorMessage = errorMessage,
-                    devices = devices
+                    devices = devices,
+                    isActionButtonLoading = isActionButtonLoading
                 )
 
                 is LoginState -> copy(
                     username = username,
                     errorMessage = errorMessage,
-                    devices = devices
+                    devices = devices,
+                    isActionButtonLoading = isActionButtonLoading,
                 )
             }
         }
@@ -502,6 +577,7 @@ class LoginViewModel(
             val errorCodeMessage: String? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
+            override val isActionButtonLoading: Boolean = false
         ) : LoginScreenState()
 
         data class LoginState(
@@ -509,11 +585,12 @@ class LoginViewModel(
             val password: String = "",
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
-            val isUnableToConnect: Boolean = false,
+            val isUnableToDetect: Boolean = false,
             val selectedDevice: Device? = null,
             val serverUrl: String = "",
             override val errorMessage: String? = null,
             override val devices: List<Device> = emptyList(),
+            override val isActionButtonLoading: Boolean = false
         ) : LoginScreenState()
     }
 

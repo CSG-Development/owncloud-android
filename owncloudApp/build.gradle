@@ -68,6 +68,7 @@ dependencies {
     // Miscellaneous
     implementation libs.disklrucache
     implementation libs.media3.exoplayer
+    implementation libs.media3.datasource.okhttp
     implementation libs.media3.ui
     implementation libs.floatingactionbutton
     implementation libs.material
@@ -125,14 +126,14 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_00_13_0
-        versionName = "1.0.13"
+        versionCode = 1_00_14_0
+        versionName = "1.0.14"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""
         buildConfigField "String", "REMOTE_ACCESS_BASE_URL", "\"https://hc-remote-access-env-https.eba-a2nvhpbm.us-west-2.elasticbeanstalk.com/api/\""
 
-        setProperty("archivesBaseName", "CuratorFiles_${versionName}")
+        setProperty("archivesBaseName", "PersonalCloudFiles_${versionName}")
         setAppIdResources(delegate, applicationId)
     }
 
@@ -199,7 +200,7 @@ android {
             applicationIdSuffix ".preprod"
             versionNameSuffix "-preprod"
             setAppIdResources(delegate, applicationId)
-            resValue "string", "app_name", "CuratorFiles-preprod"
+            resValue "string", "app_name", "PersonalCloudFiles-preprod"
         }
     }
 
@@ -263,7 +264,7 @@ def setOutputFileName(variant, appName, callerProject) {
     if (appName) {
         newName += appName
     } else {
-        newName += "CuratorFiles"
+        newName += "PersonalCloudFiles"
     }
 
     def versionName = "$variant.mergedFlavor.versionName"
