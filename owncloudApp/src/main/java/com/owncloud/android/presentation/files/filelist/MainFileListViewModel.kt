@@ -40,6 +40,7 @@ import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
+import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase.*
 import com.owncloud.android.domain.files.usecases.GetFolderContentAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.GetSharedByLinkForAccountAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
@@ -172,10 +173,7 @@ class MainFileListViewModel(
                 )
             )
         }
-        /*
-        TODO: Investigate why folders are duplicated in the list.
-         */
-//        startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
+        startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
     }
 
     fun navigateToFolderId(folderId: Long) {
@@ -235,7 +233,7 @@ class MainFileListViewModel(
                         val fileById = fileByIdResult.getDataOrNull()
                         parentDir =
                             if (fileById != null && (!fileById.sharedByLink || fileById.sharedWithSharee != true) && fileById.spaceId == null) {
-                                getFileByRemotePathUseCase(GetFileByRemotePathUseCase.Params(fileById.owner, ROOT_PATH)).getDataOrNull()
+                                getFileByRemotePathUseCase(Params(fileById.owner, ROOT_PATH)).getDataOrNull()
                             } else {
                                 fileById
                             }
@@ -244,7 +242,7 @@ class MainFileListViewModel(
                     FileListOption.AV_OFFLINE -> {
                         val fileById = fileByIdResult.getDataOrNull()
                         parentDir = if (fileById != null && (!fileById.isAvailableOffline)) {
-                            getFileByRemotePathUseCase(GetFileByRemotePathUseCase.Params(fileById.owner, ROOT_PATH)).getDataOrNull()
+                            getFileByRemotePathUseCase(Params(fileById.owner, ROOT_PATH)).getDataOrNull()
                         } else {
                             fileById
                         }
@@ -257,6 +255,10 @@ class MainFileListViewModel(
                     FileListOption.UPLOADS_LIST -> {
                         parentDir = null
                         // do nothing
+                    }
+
+                    FileListOption.GLOBAL_SEARCH -> {
+                        parentDir = null
                     }
                 }
             } else if (parentId == ROOT_PARENT_ID) {
@@ -399,6 +401,7 @@ class MainFileListViewModel(
             FileListOption.AV_OFFLINE -> retrieveFlowForAvailableOffline(currentFolderDisplayed, currentFolderDisplayed.owner)
             FileListOption.SPACES_LIST -> flowOf()
             FileListOption.UPLOADS_LIST -> flowOf()
+            FileListOption.GLOBAL_SEARCH -> flowOf()
         }.toFileListUiState(
             currentFolderDisplayed,
             fileListOption,

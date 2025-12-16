@@ -27,11 +27,12 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 enum class FileListOption : Parcelable {
-    ALL_FILES, SPACES_LIST, SHARED_BY_LINK, AV_OFFLINE, UPLOADS_LIST;
+    ALL_FILES, SPACES_LIST, SHARED_BY_LINK, AV_OFFLINE, UPLOADS_LIST, GLOBAL_SEARCH;
 
     fun isAllFiles() = this == ALL_FILES
     fun isSpacesList() = this == SPACES_LIST
     fun isSharedByLink() = this == SHARED_BY_LINK
     fun isAvailableOffline() = this == AV_OFFLINE
     fun isUploadList() = this == UPLOADS_LIST
+    fun isGlobalSearch() = this == GLOBAL_SEARCH
 }
