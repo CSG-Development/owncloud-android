@@ -66,7 +66,8 @@
 
     <string name="homecloud_bottom_nav_search">Search</string>
 
-    <string name="homecloud_global_search_initial_title">Search for you files</string>
+    <string name="homecloud_global_search_view_title">Search files</string>
+    <string name="homecloud_global_search_initial_title">Search for your files</string>
     <string name="homecloud_global_search_empty_title">No matches</string>
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
 </resources>

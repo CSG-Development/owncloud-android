@@ -74,6 +74,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -379,9 +380,10 @@ class MainFileListViewModel(
     }
 
     private fun startPeriodicalFoldersUpdate(accountName: String) {
+        // TODO: move to background job worker
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             delay(10.seconds) // initial delay to not interfere with the current folder refresh
-            while (true) {
+            while (isActive) {
                 updateFoldersRecursivelyUseCase(params = UpdateFoldersRecursivelyUseCase.Params(accountName = accountName))
                 delay(5.minutes) // delay between updates
             }
@@ -482,7 +484,7 @@ class MainFileListViewModel(
     }
 
     companion object {
-        private const val RECYCLER_VIEW_PREFERRED = "RECYCLER_VIEW_PREFERRED"
+        internal const val RECYCLER_VIEW_PREFERRED = "RECYCLER_VIEW_PREFERRED"
     }
 }
 

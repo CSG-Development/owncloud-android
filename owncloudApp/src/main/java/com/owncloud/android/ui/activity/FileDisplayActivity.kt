@@ -1804,6 +1804,7 @@ class FileDisplayActivity : FileActivity(),
         val previousFileListOption = fileListOption
         when (newFileListOption) {
             FileListOption.ALL_FILES -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (isLightUser) {
                     file = null
                     fileListOption = newFileListOption
@@ -1822,6 +1823,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.SPACES_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = null
                     initAndShowListOfSpaces()
@@ -1830,6 +1832,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.SHARED_BY_LINK -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     val rootFolderForShares = storageManager.getRootSharesFolder()
                     val personalFolder = storageManager.getRootPersonalFolder()
@@ -1848,6 +1851,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.AV_OFFLINE -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = storageManager.getRootPersonalFolder()
                     fileListOption = newFileListOption
@@ -1857,6 +1861,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.UPLOADS_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowListOfUploads()
@@ -1872,6 +1877,7 @@ class FileDisplayActivity : FileActivity(),
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowGlobalSearch()
+                    binding.navCoordinatorLayout.appBarLayout.isVisible = false
                 }
             }
         }
@@ -1978,7 +1984,7 @@ class FileDisplayActivity : FileActivity(),
         startDownloadForSending(file)
     }
 
-    override fun cancelFileTransference(files: ArrayList<OCFile>) {
+    override fun cancelFileTransference(files: List<OCFile>) {
         transfersViewModel.cancelTransfersRecursively(files, account.name)
     }
 

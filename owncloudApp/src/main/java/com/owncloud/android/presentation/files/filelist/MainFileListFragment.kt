@@ -1651,7 +1651,7 @@ class MainFileListFragment : Fragment(),
         fun syncFile(file: OCFile)
         fun openFile(file: OCFile)
         fun sendDownloadedFile(file: OCFile)
-        fun cancelFileTransference(files: ArrayList<OCFile>)
+        fun cancelFileTransference(files: List<OCFile>)
         fun setBottomBarVisibility(isVisible: Boolean)
     }
 
