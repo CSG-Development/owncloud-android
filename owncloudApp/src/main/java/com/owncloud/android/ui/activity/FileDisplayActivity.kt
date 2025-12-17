@@ -1020,7 +1020,7 @@ class FileDisplayActivity : FileActivity(),
                     FileListOption.ALL_FILES -> getString(R.string.default_display_name_for_root_folder)
                     FileListOption.SPACES_LIST -> getString(R.string.bottom_nav_spaces)
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
-                    else -> ""
+                    FileListOption.GLOBAL_SEARCH -> ""
                 }
             setTitle(title)
             val showBackArrow = fileListOption.isSharedByLink()
