@@ -101,6 +101,7 @@ import com.owncloud.android.presentation.conflicts.ConflictsResolveActivity
 import com.owncloud.android.presentation.files.details.FileDetailsFragment
 import com.owncloud.android.presentation.files.filelist.MainEmptyListFragment
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
+import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.security.LockType
@@ -470,6 +471,14 @@ class FileDisplayActivity : FileActivity(),
         } else {
             Timber.e("initFragmentsWithFile() called with invalid nulls! account is $account, file is $file")
         }
+    }
+
+    private fun initAndShowGlobalSearch() {
+        val listOfSpaces = GlobalSearchFragment()
+        this.fileListOption = FileListOption.GLOBAL_SEARCH
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.left_fragment_container, listOfSpaces, TAG_GLOBAL_SEARCH)
+        transaction.commit()
     }
 
     /**
@@ -1011,6 +1020,7 @@ class FileDisplayActivity : FileActivity(),
                     FileListOption.ALL_FILES -> getString(R.string.default_display_name_for_root_folder)
                     FileListOption.SPACES_LIST -> getString(R.string.bottom_nav_spaces)
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
+                    FileListOption.GLOBAL_SEARCH -> ""
                 }
             setTitle(title)
             val showBackArrow = fileListOption.isSharedByLink()
@@ -1794,6 +1804,7 @@ class FileDisplayActivity : FileActivity(),
         val previousFileListOption = fileListOption
         when (newFileListOption) {
             FileListOption.ALL_FILES -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (isLightUser) {
                     file = null
                     fileListOption = newFileListOption
@@ -1812,6 +1823,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.SPACES_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = null
                     initAndShowListOfSpaces()
@@ -1820,6 +1832,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.SHARED_BY_LINK -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     val rootFolderForShares = storageManager.getRootSharesFolder()
                     val personalFolder = storageManager.getRootPersonalFolder()
@@ -1838,6 +1851,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.AV_OFFLINE -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = storageManager.getRootPersonalFolder()
                     fileListOption = newFileListOption
@@ -1847,6 +1861,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.UPLOADS_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowListOfUploads()
@@ -1855,6 +1870,14 @@ class FileDisplayActivity : FileActivity(),
                         homeButtonDisplayed = true,
                         showBackArrow = false,
                     )
+                }
+            }
+
+            FileListOption.GLOBAL_SEARCH -> {
+                if (previousFileListOption != newFileListOption || initialState) {
+                    fileListOption = newFileListOption
+                    initAndShowGlobalSearch()
+                    binding.navCoordinatorLayout.appBarLayout.isVisible = false
                 }
             }
         }
@@ -1870,6 +1893,7 @@ class FileDisplayActivity : FileActivity(),
         FileListOption.AV_OFFLINE -> R.id.nav_available_offline_files
         FileListOption.ALL_FILES -> R.id.nav_all_files
         FileListOption.UPLOADS_LIST -> R.id.nav_uploads
+        FileListOption.GLOBAL_SEARCH -> R.id.nav_global_search
         null -> R.id.nav_all_files
     }
 
@@ -1960,7 +1984,7 @@ class FileDisplayActivity : FileActivity(),
         startDownloadForSending(file)
     }
 
-    override fun cancelFileTransference(files: ArrayList<OCFile>) {
+    override fun cancelFileTransference(files: List<OCFile>) {
         transfersViewModel.cancelTransfersRecursively(files, account.name)
     }
 
@@ -2077,6 +2101,7 @@ class FileDisplayActivity : FileActivity(),
     companion object {
         private const val TAG_LIST_OF_FILES = "LIST_OF_FILES"
         private const val TAG_LIST_OF_SPACES = "LIST_OF_SPACES"
+        private const val TAG_GLOBAL_SEARCH = "TAG_GLOBAL_SEARCH"
         private const val TAG_SECOND_FRAGMENT = "SECOND_FRAGMENT"
 
         private const val KEY_WAITING_TO_PREVIEW = "WAITING_TO_PREVIEW"

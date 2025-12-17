@@ -28,7 +28,7 @@
 
     <string name="homecloud_new_shortcut_url_edit_text_hint">Enter URL</string>
     <string name="homecloud_new_shortcut_name_edit_text_hint">Enter Name (without .url)</string>
-    
+
     <string name="homecloud_drawer_storage_label">Storage space</string>
     <string name="homecloud_drawer_quota">%1$s of %2$s used</string>
 
@@ -63,4 +63,11 @@
     <string name="homecloud_retry">Retry</string>
     <string name="homecloud_device_update">Device update</string>
     <string name="homecloud_device_sync_error">Your device may be disconnected or address has changed. Do you want to try to sync device?</string>
+
+    <string name="homecloud_bottom_nav_search">Search</string>
+
+    <string name="homecloud_global_search_view_title">Search files</string>
+    <string name="homecloud_global_search_initial_title">Search for your files</string>
+    <string name="homecloud_global_search_empty_title">No matches</string>
+    <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
 </resources>

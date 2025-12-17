@@ -208,7 +208,7 @@ open class FolderPickerActivity : FileActivity(),
         // Nothing to do. Downloading files is not allowed.
     }
 
-    override fun cancelFileTransference(files: ArrayList<OCFile>) {
+    override fun cancelFileTransference(files: List<OCFile>) {
         // Nothing to do. Transferring files is not allowed.
     }
 

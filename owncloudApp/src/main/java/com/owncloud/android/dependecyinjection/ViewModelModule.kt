@@ -35,6 +35,7 @@ import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.conflicts.ConflictsResolveViewModel
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel
+import com.owncloud.android.presentation.files.globalsearch.GlobalSearchViewModel
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.logging.LogListViewModel
 import com.owncloud.android.presentation.migration.MigrationViewModel
@@ -85,6 +86,7 @@ val viewModelModule = module {
     viewModelOf(::SettingsVideoUploadsViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::FileOperationsViewModel)
+    viewModelOf(::GlobalSearchViewModel)
 
     viewModel { (accountName: String) -> CapabilityViewModel(accountName, get(), get(), get(), get()) }
     viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action) }
