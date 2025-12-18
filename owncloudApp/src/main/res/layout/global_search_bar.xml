@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <ImageButton
+        android:id="@+id/hamburger_menu_button"
+        android:layout_width="@dimen/icon_button_size"
+        android:layout_height="@dimen/icon_button_size"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/drawer_open"
+        android:src="@drawable/ic_drawer_icon"
+        android:padding="@dimen/standard_half_padding"
+        android:layout_marginTop="@dimen/standard_margin"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorOnSecondaryContainer" />
+
+    <EditText
+        android:id="@+id/global_search_edit_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/standard_half_padding"
+        android:background="@drawable/rounded_search_view_selector"
+        android:hint="@string/homecloud_global_search_view_title"
+        android:imeOptions="actionSearch|flagNoFullscreen"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:textColor="?attr/colorPrimary"
+        android:textColorHint="@color/search_view_hint_text"
+        android:textSize="16sp"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="8dp"
+        android:paddingStart="@dimen/standard_half_padding"
+        android:paddingTop="@dimen/standard_half_padding"
+        android:paddingBottom="@dimen/standard_half_padding"
+        android:paddingEnd="@dimen/icon_button_size"
+        android:layout_marginTop="@dimen/standard_margin"
+        android:layout_marginEnd="@dimen/standard_padding"
+        android:minHeight="48dp"
+        app:drawableTint="?attr/colorOnSecondaryContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/hamburger_menu_button"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <ImageButton
+        android:id="@+id/search_clear_button"
+        android:layout_width="@dimen/icon_button_size"
+        android:layout_height="@dimen/icon_button_size"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/action_upload_clear"
+        android:src="@drawable/ic_close"
+        android:visibility="gone"
+        app:tint="?attr/colorPrimary"
+        tools:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@id/global_search_edit_text"
+        app:layout_constraintEnd_toEndOf="@id/global_search_edit_text"
+        app:layout_constraintTop_toTopOf="@id/global_search_edit_text"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

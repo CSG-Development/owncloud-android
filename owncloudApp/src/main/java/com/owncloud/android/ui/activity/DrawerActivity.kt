@@ -599,7 +599,7 @@ abstract class DrawerActivity : ToolbarActivity() {
 
     private fun getDrawerLayout(): DrawerLayout? = findViewById(R.id.drawer_layout)
     private fun getNavView(): NavigationView? = findViewById(R.id.nav_view)
-    private fun getBottomNavigationView(): BottomNavigationView? = findViewById(R.id.bottom_nav_view)
+    fun getBottomNavigationView(): BottomNavigationView? = findViewById(R.id.bottom_nav_view)
     private fun getDrawerLogo(): AppCompatImageView? = findViewById(R.id.drawer_logo)
     private fun getDrawerLinkIcon(): ImageView? = findViewById(R.id.drawer_link_icon)
     private fun getDrawerLinkText(): TextView? = findViewById(R.id.drawer_link_text)

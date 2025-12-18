@@ -3,14 +3,11 @@ package com.owncloud.android.presentation.files.globalsearch
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.core.view.isVisible
@@ -43,7 +40,6 @@ import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
-import com.owncloud.android.ui.activity.DrawerActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
@@ -173,7 +169,6 @@ class GlobalSearchFragment : Fragment(),
         isMultiPersonal = capabilityViewModel.checkMultiPersonal()
         initViews()
         subscribeToViewModels()
-        setupSearchBar()
     }
 
     private fun initViews() {
@@ -201,38 +196,8 @@ class GlobalSearchFragment : Fragment(),
         showInitialState()
     }
 
-    private fun setupSearchBar() {
-        binding.hamburgerMenuButton.setOnClickListener {
-            (requireActivity() as? DrawerActivity)?.openDrawer()
-        }
-
-        binding.globalSearchEditText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s?.toString() ?: ""
-                globalSearchViewModel.updateSearchQuery(query)
-
-                binding.searchClearButton.isVisible = query.isNotEmpty()
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
-        binding.globalSearchEditText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                val query = binding.globalSearchEditText.text?.toString().orEmpty()
-                globalSearchViewModel.updateSearchQuery(query)
-                true
-            } else {
-                false
-            }
-        }
-
-        binding.searchClearButton.setOnClickListener {
-            binding.globalSearchEditText.text?.clear()
-            binding.searchClearButton.isVisible = false
-        }
+    fun updateSearchQuery(query: String) {
+        globalSearchViewModel.updateSearchQuery(query)
     }
 
     private fun subscribeToViewModels() {
@@ -278,7 +243,7 @@ class GlobalSearchFragment : Fragment(),
     private fun showInitialState() {
         binding.recyclerViewMainFileList.isVisible = false
         binding.transfersListEmpty.root.isVisible = true
-        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search)
+        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search_2)
         binding.transfersListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_global_search_initial_title)
         binding.transfersListEmpty.listEmptyDatasetSubTitle.text = ""
     }
@@ -303,7 +268,7 @@ class GlobalSearchFragment : Fragment(),
     private fun showEmptyState() {
         binding.recyclerViewMainFileList.isVisible = false
         binding.transfersListEmpty.root.isVisible = true
-        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search)
+        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search_2)
         binding.transfersListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_global_search_empty_title)
         binding.transfersListEmpty.listEmptyDatasetSubTitle.setText(R.string.homecloud_global_search_empty_subtitle)
     }
