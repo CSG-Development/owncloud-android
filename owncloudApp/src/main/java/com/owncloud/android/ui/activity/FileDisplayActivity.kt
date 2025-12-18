@@ -1880,6 +1880,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.SPACES_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = null
                     initAndShowListOfSpaces()
@@ -1908,6 +1909,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.AV_OFFLINE -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = storageManager.getRootPersonalFolder()
                     fileListOption = newFileListOption
@@ -1918,6 +1920,7 @@ class FileDisplayActivity : FileActivity(),
             }
 
             FileListOption.UPLOADS_LIST -> {
+                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowListOfUploads()
@@ -1935,6 +1938,14 @@ class FileDisplayActivity : FileActivity(),
                     fileListOption = newFileListOption
                     switchToGlobalSearchBarVisible(true)
                     initAndShowGlobalSearch()
+                }
+            }
+
+            FileListOption.GLOBAL_SEARCH -> {
+                if (previousFileListOption != newFileListOption || initialState) {
+                    fileListOption = newFileListOption
+                    initAndShowGlobalSearch()
+                    binding.navCoordinatorLayout.appBarLayout.isVisible = false
                 }
             }
         }

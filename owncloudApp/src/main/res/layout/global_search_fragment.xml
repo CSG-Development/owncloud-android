@@ -19,6 +19,7 @@
         android:id="@+id/shadow_view"
         android:layout_width="match_parent"
         android:layout_height="@dimen/file_list_progress_bar_height"
+        android:layout_margin="0dp"
         android:background="@drawable/shadow_gradient"
         app:layout_constraintTop_toBottomOf="@id/options_layout" />
 
@@ -33,10 +34,10 @@
         android:scrollbars="vertical"
         tools:listitem="@layout/item_file_list" />
 
-    <include
-        android:id="@+id/transfers_list_empty"
-        layout="@layout/item_empty_dataset"
-        android:layout_width="0dp"
+        <include
+            android:id="@+id/transfers_list_empty"
+            layout="@layout/item_empty_dataset"
+            android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -44,4 +45,5 @@
         app:layout_constraintTop_toBottomOf="@id/shadow_view"
         tools:visibility="gone" />
 
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
