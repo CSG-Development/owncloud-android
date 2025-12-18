@@ -40,11 +40,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.RemoteException
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -175,6 +178,9 @@ class FileDisplayActivity : FileActivity(),
     private val secondFragment: FileFragment?
         get() = supportFragmentManager.findFragmentByTag(TAG_SECOND_FRAGMENT) as FileFragment?
 
+    private val globalSearchFragment: GlobalSearchFragment?
+        get() = supportFragmentManager.findFragmentByTag(TAG_GLOBAL_SEARCH) as GlobalSearchFragment?
+
     private var selectAllMenuItem: MenuItem? = null
 
     private var fileWaitingToPreview: OCFile? = null
@@ -189,7 +195,7 @@ class FileDisplayActivity : FileActivity(),
 
     private val fileOperationsViewModel: FileOperationsViewModel by viewModel()
     private val transfersViewModel: TransfersViewModel by viewModel()
-    private lateinit var  spacesListViewModel: SpacesListViewModel
+    private lateinit var spacesListViewModel: SpacesListViewModel
     private val manageAccountsViewModel: ManageAccountsViewModel by viewModel()
 
     private val sharedPreferences: SharedPreferencesProvider by inject()
@@ -261,6 +267,7 @@ class FileDisplayActivity : FileActivity(),
 
         // setup drawer
         setupDrawer()
+        setupGlobalSearch()
 
         setupNavigationBottomBar(getMenuItemForFileListOption(fileListOption))
 
@@ -290,8 +297,8 @@ class FileDisplayActivity : FileActivity(),
         if (isLandscapeMode && !isTablet) {
             // Hide both bars in smartphone landscape mode
             showBottomNavBar(false)
-            binding.navCoordinatorLayout.appBarLayout.isVisible = false
         }
+        setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH)
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
@@ -398,6 +405,36 @@ class FileDisplayActivity : FileActivity(),
 
         spacesListViewModel = getViewModel { parametersOf(account.name, false) }
         spacesListViewModel.refreshSpacesFromServer()
+    }
+
+    private fun setupGlobalSearch() {
+        val globalSearchBar = binding.navCoordinatorLayout.toolbar?.globalSearchBar
+        globalSearchBar?.globalSearchEditText?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(searchText: CharSequence, start: Int, before: Int, count: Int) {
+                val query = searchText.trim().toString()
+                globalSearchFragment?.updateSearchQuery(query)
+                globalSearchBar.searchClearButton.isVisible = query.isNotBlank()
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        globalSearchBar?.globalSearchEditText?.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = globalSearchBar.globalSearchEditText.text?.trim().toString()
+                globalSearchFragment?.updateSearchQuery(query)
+                true
+            } else {
+                false
+            }
+        }
+
+        globalSearchBar?.searchClearButton?.setOnClickListener {
+            globalSearchBar.globalSearchEditText.text?.clear()
+            globalSearchBar.searchClearButton.isVisible = false
+        }
     }
 
     private fun initAndShowListOfFiles(fileListOption: FileListOption = FileListOption.ALL_FILES) {
@@ -804,11 +841,13 @@ class FileDisplayActivity : FileActivity(),
                 else if (currentDirDisplayed.parentId == ROOT_PARENT_ID) {
                     // If current space is a project space or personal in a multi-personal account, navigate back to the spaces list
                     if (mainFileListFragment?.getCurrentSpace()?.isProject == true ||
-                        (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)) {
+                        (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)
+                    ) {
                         navigateTo(FileListOption.SPACES_LIST)
                     } else if (fileListOption.isSharedByLink()) {
                         setBottomBarVisibility(isVisible = true)
                         navigateToOption(FileListOption.ALL_FILES)
+                        setCheckedItemAtBottomBar(R.id.nav_all_files)
                     } else {
                         // If current space is not a project space (personal or shares) or it is null ("Files" in oC10), close the app
                         finish()
@@ -843,7 +882,8 @@ class FileDisplayActivity : FileActivity(),
         super.onResume()
 
         if (mainFileListFragment?.getCurrentSpace()?.isProject == true ||
-            (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)) {
+            (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)
+        ) {
             setCheckedItemAtBottomBar(getMenuItemForFileListOption(FileListOption.SPACES_LIST))
             updateToolbar(null, mainFileListFragment?.getCurrentSpace())
         } else {
@@ -1036,6 +1076,7 @@ class FileDisplayActivity : FileActivity(),
 
     private fun isMultiPersonalModeInAvailableOffline(space: OCSpace?) = space!!.isPersonal && isMultiPersonal && fileListOption == FileListOption
         .AV_OFFLINE
+
     /**
      * Updates the view associated to the activity after the finish of an operation trying to
      * remove a file.
@@ -1423,6 +1464,7 @@ class FileDisplayActivity : FileActivity(),
                     is SynchronizeFileUseCase.SyncType.UploadEnqueued -> {
                         showSnackMessage(getString(R.string.upload_enqueued_msg))
                     }
+
                     null -> { /* Nothing to do */ }
                 }
             }
@@ -1800,11 +1842,17 @@ class FileDisplayActivity : FileActivity(),
         setSecondFragment(detailsFragment)
     }
 
+    private fun setGlobalSearchBarVisible(isVisible: Boolean) {
+        binding.navCoordinatorLayout.toolbar?.globalSearchBar?.root?.isVisible = isVisible
+        if (isVisible) {
+            binding.navCoordinatorLayout.toolbar?.globalSearchBar?.globalSearchEditText?.text?.clear()
+        }
+    }
+
     private fun navigateTo(newFileListOption: FileListOption, initialState: Boolean = false) {
         val previousFileListOption = fileListOption
         when (newFileListOption) {
             FileListOption.ALL_FILES -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (isLightUser) {
                     file = null
                     fileListOption = newFileListOption
@@ -1820,19 +1868,19 @@ class FileDisplayActivity : FileActivity(),
                         browseToRoot()
                     }
                 }
+                setGlobalSearchBarVisible(false)
             }
 
             FileListOption.SPACES_LIST -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = null
                     initAndShowListOfSpaces()
                     updateToolbar(null)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.SHARED_BY_LINK -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     val rootFolderForShares = storageManager.getRootSharesFolder()
                     val personalFolder = storageManager.getRootPersonalFolder()
@@ -1847,21 +1895,21 @@ class FileDisplayActivity : FileActivity(),
                         updateToolbar(null)
                         setBottomBarVisibility(isVisible = false)
                     }
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.AV_OFFLINE -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = storageManager.getRootPersonalFolder()
                     fileListOption = newFileListOption
                     mainFileListFragment?.updateFileListOption(newFileListOption, file) ?: initAndShowListOfFiles(newFileListOption)
                     updateToolbar(file)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.UPLOADS_LIST -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowListOfUploads()
@@ -1870,6 +1918,7 @@ class FileDisplayActivity : FileActivity(),
                         homeButtonDisplayed = true,
                         showBackArrow = false,
                     )
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
@@ -1877,7 +1926,7 @@ class FileDisplayActivity : FileActivity(),
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowGlobalSearch()
-                    binding.navCoordinatorLayout.appBarLayout.isVisible = false
+                    setGlobalSearchBarVisible(true)
                 }
             }
         }
