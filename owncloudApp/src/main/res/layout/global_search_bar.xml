@@ -5,19 +5,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <ImageButton
-        android:id="@+id/hamburger_menu_button"
-        android:layout_width="@dimen/icon_button_size"
-        android:layout_height="@dimen/icon_button_size"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/drawer_open"
-        android:src="@drawable/ic_drawer_icon"
-        android:padding="@dimen/standard_half_padding"
-        android:layout_marginTop="@dimen/standard_margin"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorOnSecondaryContainer" />
-
     <EditText
         android:id="@+id/global_search_edit_text"
         android:layout_width="0dp"
@@ -39,12 +26,11 @@
         android:paddingTop="@dimen/standard_half_padding"
         android:paddingBottom="@dimen/standard_half_padding"
         android:paddingEnd="@dimen/icon_button_size"
-        android:layout_marginTop="@dimen/standard_margin"
         android:layout_marginEnd="@dimen/standard_padding"
         android:minHeight="48dp"
-        app:drawableTint="?attr/colorOnSecondaryContainer"
+        app:drawableTint="@color/homecloud_toolbar_icon_tint"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/hamburger_menu_button"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
 
     <ImageButton

@@ -298,7 +298,7 @@ class FileDisplayActivity : FileActivity(),
             // Hide both bars in smartphone landscape mode
             showBottomNavBar(false)
         }
-        switchToGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH)
+        setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH)
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
@@ -407,15 +407,8 @@ class FileDisplayActivity : FileActivity(),
         spacesListViewModel.refreshSpacesFromServer()
     }
 
-    override fun setupDrawer() {
-        super.setupDrawer()
-        binding.navCoordinatorLayout.globalSearchBar?.hamburgerMenuButton?.setOnClickListener {
-            openDrawer()
-        }
-    }
-
     private fun setupGlobalSearch() {
-        val globalSearchBar = binding.navCoordinatorLayout.globalSearchBar
+        val globalSearchBar = binding.navCoordinatorLayout.toolbar?.globalSearchBar
         globalSearchBar?.globalSearchEditText?.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
@@ -540,11 +533,11 @@ class FileDisplayActivity : FileActivity(),
         return if (secondFragment != null) {
             secondFragment
 
-            // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
+        // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
         } else if (file.isFolder) {
             null
 
-            // Otherwise, decide which fragment should be shown.
+        // Otherwise, decide which fragment should be shown.
         } else {
             when {
                 PreviewAudioFragment.canBePreviewed(file) -> {
@@ -853,7 +846,8 @@ class FileDisplayActivity : FileActivity(),
                         navigateTo(FileListOption.SPACES_LIST)
                     } else if (fileListOption.isSharedByLink()) {
                         setBottomBarVisibility(isVisible = true)
-                        getBottomNavigationView()?.setSelectedItemId(R.id.nav_all_files)
+                        navigateToOption(FileListOption.ALL_FILES)
+                        setCheckedItemAtBottomBar(R.id.nav_all_files)
                     } else {
                         // If current space is not a project space (personal or shares) or it is null ("Files" in oC10), close the app
                         finish()
@@ -1471,8 +1465,7 @@ class FileDisplayActivity : FileActivity(),
                         showSnackMessage(getString(R.string.upload_enqueued_msg))
                     }
 
-                    null -> { /* Nothing to do */
-                    }
+                    null -> { /* Nothing to do */ }
                 }
             }
 
@@ -1849,11 +1842,10 @@ class FileDisplayActivity : FileActivity(),
         setSecondFragment(detailsFragment)
     }
 
-    private fun switchToGlobalSearchBarVisible(isVisible: Boolean) {
-        binding.navCoordinatorLayout.globalSearchBar?.root?.isVisible = isVisible
-        binding.navCoordinatorLayout.toolbar?.root?.isVisible = !isVisible
+    private fun setGlobalSearchBarVisible(isVisible: Boolean) {
+        binding.navCoordinatorLayout.toolbar?.globalSearchBar?.root?.isVisible = isVisible
         if (isVisible) {
-            binding.navCoordinatorLayout.globalSearchBar?.globalSearchEditText?.text?.clear()
+            binding.navCoordinatorLayout.toolbar?.globalSearchBar?.globalSearchEditText?.text?.clear()
         }
     }
 
@@ -1861,7 +1853,6 @@ class FileDisplayActivity : FileActivity(),
         val previousFileListOption = fileListOption
         when (newFileListOption) {
             FileListOption.ALL_FILES -> {
-                switchToGlobalSearchBarVisible(false)
                 if (isLightUser) {
                     file = null
                     fileListOption = newFileListOption
@@ -1877,20 +1868,19 @@ class FileDisplayActivity : FileActivity(),
                         browseToRoot()
                     }
                 }
+                setGlobalSearchBarVisible(false)
             }
 
             FileListOption.SPACES_LIST -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = null
                     initAndShowListOfSpaces()
                     updateToolbar(null)
-                    switchToGlobalSearchBarVisible(false)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.SHARED_BY_LINK -> {
-                switchToGlobalSearchBarVisible(false)
                 if (previousFileListOption != newFileListOption || initialState) {
                     val rootFolderForShares = storageManager.getRootSharesFolder()
                     val personalFolder = storageManager.getRootPersonalFolder()
@@ -1905,22 +1895,21 @@ class FileDisplayActivity : FileActivity(),
                         updateToolbar(null)
                         setBottomBarVisibility(isVisible = false)
                     }
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.AV_OFFLINE -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     file = storageManager.getRootPersonalFolder()
                     fileListOption = newFileListOption
                     mainFileListFragment?.updateFileListOption(newFileListOption, file) ?: initAndShowListOfFiles(newFileListOption)
                     updateToolbar(file)
-                    switchToGlobalSearchBarVisible(false)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
             FileListOption.UPLOADS_LIST -> {
-                binding.navCoordinatorLayout.appBarLayout.isVisible = true
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowListOfUploads()
@@ -1929,15 +1918,7 @@ class FileDisplayActivity : FileActivity(),
                         homeButtonDisplayed = true,
                         showBackArrow = false,
                     )
-                    switchToGlobalSearchBarVisible(false)
-                }
-            }
-
-            FileListOption.GLOBAL_SEARCH -> {
-                if (previousFileListOption != newFileListOption || initialState) {
-                    fileListOption = newFileListOption
-                    switchToGlobalSearchBarVisible(true)
-                    initAndShowGlobalSearch()
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
@@ -1945,7 +1926,7 @@ class FileDisplayActivity : FileActivity(),
                 if (previousFileListOption != newFileListOption || initialState) {
                     fileListOption = newFileListOption
                     initAndShowGlobalSearch()
-                    binding.navCoordinatorLayout.appBarLayout.isVisible = false
+                    setGlobalSearchBarVisible(true)
                 }
             }
         }

@@ -5,11 +5,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
+import androidx.core.view.forEach
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -93,8 +95,6 @@ class GlobalSearchFragment : Fragment(),
             setDrawerStatus(enabled = false)
             actionMode = mode
 
-            requireActivity().findViewById<View>(R.id.owncloud_app_bar).isFocusableInTouchMode = false
-
             val inflater = requireActivity().menuInflater
             inflater.inflate(R.menu.file_actions_menu, menu)
             this@GlobalSearchFragment.menu = menu
@@ -147,8 +147,6 @@ class GlobalSearchFragment : Fragment(),
             setDrawerStatus(enabled = true)
             actionMode = null
 
-            requireActivity().findViewById<View>(R.id.owncloud_app_bar).isFocusableInTouchMode = true
-
             statusBarColor?.let { requireActivity().window.statusBarColor = it }
 
             (requireActivity() as? MainFileListFragment.FileActions)?.setBottomBarVisibility(true)
@@ -166,9 +164,15 @@ class GlobalSearchFragment : Fragment(),
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setHasOptionsMenu(true)
         isMultiPersonal = capabilityViewModel.checkMultiPersonal()
         initViews()
         subscribeToViewModels()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        menu.forEach { it.isVisible = false }
     }
 
     private fun initViews() {
