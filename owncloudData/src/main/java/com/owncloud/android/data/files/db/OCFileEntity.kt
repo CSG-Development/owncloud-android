@@ -62,7 +62,11 @@ import com.owncloud.android.domain.files.model.MIME_DIR_UNIX
     tableName = FILES_TABLE_NAME,
     indices = [
         Index(
-            value = [FILE_OWNER, "remoteId", FILE_SPACE_ID],
+            /*
+              TODO: This index is required to avoid files duplications while sync.
+              Different spaces with the same owner and remote path won't be possible
+              */
+            value = [FILE_OWNER, "remotePath"],
             unique = true
         )
     ],
