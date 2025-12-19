@@ -575,6 +575,7 @@ class FileDisplayActivity : FileActivity(),
      * @param fragment New second Fragment to set.
      */
     private fun setSecondFragment(fragment: Fragment) {
+        setGlobalSearchBarVisible(false, clearSearch = false)
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.right_fragment_container, fragment, TAG_SECOND_FRAGMENT)
         transaction.commitNow()
@@ -821,14 +822,24 @@ class FileDisplayActivity : FileActivity(),
             if (secondFragment != null) {
                 // If secondFragment was shown, we need to navigate to the parent of the displayed file
                 // Need a cleanup
-                val folderIdToDisplay =
-                    if (fileListOption == FileListOption.AV_OFFLINE) storageManager.getRootPersonalFolder()!!.id!!
-                    else secondFragment!!.file!!.parentId!!
-                mainFileListFragment?.navigateToFolderId(folderIdToDisplay)
-                cleanSecondFragment()
-                updateToolbar(mainFileListFragment?.getCurrentFile())
-                mainFileListFragment?.getCurrentFile()?.let {
-                    file = it
+                if (fileListOption == FileListOption.GLOBAL_SEARCH) {
+                    cleanSecondFragment()
+                    updateStandardToolbar(
+                        title = "",
+                        homeButtonDisplayed = true,
+                        showBackArrow = false,
+                    )
+                    setGlobalSearchBarVisible(isVisible = true, clearSearch = false)
+                } else {
+                    val folderIdToDisplay =
+                        if (fileListOption == FileListOption.AV_OFFLINE) storageManager.getRootPersonalFolder()!!.id!!
+                        else secondFragment!!.file!!.parentId!!
+                    mainFileListFragment?.navigateToFolderId(folderIdToDisplay)
+                    cleanSecondFragment()
+                    updateToolbar(mainFileListFragment?.getCurrentFile())
+                    mainFileListFragment?.getCurrentFile()?.let {
+                        file = it
+                    }
                 }
             } else {
                 val currentDirDisplayed = mainFileListFragment?.getCurrentFile()
@@ -1842,9 +1853,9 @@ class FileDisplayActivity : FileActivity(),
         setSecondFragment(detailsFragment)
     }
 
-    private fun setGlobalSearchBarVisible(isVisible: Boolean) {
+    private fun setGlobalSearchBarVisible(isVisible: Boolean, clearSearch: Boolean = true) {
         binding.navCoordinatorLayout.toolbar?.globalSearchBar?.root?.isVisible = isVisible
-        if (isVisible) {
+        if (clearSearch) {
             binding.navCoordinatorLayout.toolbar?.globalSearchBar?.globalSearchEditText?.text?.clear()
         }
     }
