@@ -62,8 +62,8 @@ class GlobalSearchViewModel(
         performSearch(query)
     }
 
-    fun updateTypeFilter(typeFilter: TypeFilter) {
-        _filtersState.update { it.copy(typeFilter = typeFilter) }
+    fun updateTypeFilters(selectedTypeIds: Set<String>) {
+        _filtersState.update { it.copy(selectedTypeIds = selectedTypeIds) }
         if (currentSearchQuery.isNotBlank()) {
             performSearch(currentSearchQuery)
         }
@@ -76,11 +76,21 @@ class GlobalSearchViewModel(
         }
     }
 
+    fun updateDateFilterById(filterId: String) {
+        val dateFilter = DateFilter.fromId(filterId)
+        updateDateFilter(dateFilter)
+    }
+
     fun updateSizeFilter(sizeFilter: SizeFilter) {
         _filtersState.update { it.copy(sizeFilter = sizeFilter) }
         if (currentSearchQuery.isNotBlank()) {
             performSearch(currentSearchQuery)
         }
+    }
+
+    fun updateSizeFilterById(filterId: String) {
+        val sizeFilter = SizeFilter.fromId(filterId)
+        updateSizeFilter(sizeFilter)
     }
 
     fun getFiltersState(): SearchFiltersState = _filtersState.value
@@ -117,7 +127,6 @@ class GlobalSearchViewModel(
                     SearchFilesUseCase.Params(
                         searchPattern = query,
                         ignoreCase = true,
-                        mimePrefix = filters.typeFilter.mimePrefix,
                         minDate = filters.dateFilter.getMinDate(),
                         maxDate = Long.MAX_VALUE,
                         minSize = filters.sizeFilter.getMinSize(),
@@ -125,7 +134,19 @@ class GlobalSearchViewModel(
                     )
                 )
 
-                val filesWithSyncInfo = result.map { file ->
+                // Apply type filters if any are selected
+                val filteredResult = if (filters.selectedTypeIds.isNotEmpty()) {
+                    val mimePatterns = filters.getMimePatterns()
+                    result.filter { file ->
+                        mimePatterns.isEmpty() || mimePatterns.any { pattern ->
+                            file.mimeType.startsWith(pattern) || file.mimeType == pattern
+                        }
+                    }
+                } else {
+                    result
+                }
+
+                val filesWithSyncInfo = filteredResult.map { file ->
                     OCFileWithSyncInfo(
                         file = file,
                         uploadWorkerUuid = null,

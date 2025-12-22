@@ -9,8 +9,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.core.view.forEach
@@ -208,48 +206,88 @@ class GlobalSearchFragment : Fragment(),
         val filterDateButton = binding.searchFilters.filterDateButton
         val filterSizeButton = binding.searchFilters.filterSizeButton
 
-        filterTypeButton.setOnClickListener { showTypeFilterMenu(it) }
-        filterDateButton.setOnClickListener { showDateFilterMenu(it) }
-        filterSizeButton.setOnClickListener { showSizeFilterMenu(it) }
+        filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
+        filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
+        filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
     }
 
-    private fun showTypeFilterMenu(anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
-        TypeFilter.entries.forEach { filter ->
-            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+    private fun showTypeFilterBottomSheet() {
+        val items = TypeFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
         }
-        popup.setOnMenuItemClickListener { item ->
-            val filter = TypeFilter.fromOrdinal(item.itemId)
-            globalSearchViewModel.updateTypeFilter(filter)
-            true
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.global_search_filter_type),
+            items = items,
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds,
+            isMultiSelect = true
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                globalSearchViewModel.updateTypeFilters(selectedIds)
+            }
         }
-        popup.show()
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
     }
 
-    private fun showDateFilterMenu(anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
-        DateFilter.entries.forEach { filter ->
-            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+    private fun showDateFilterBottomSheet() {
+        val items = DateFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
         }
-        popup.setOnMenuItemClickListener { item ->
-            val filter = DateFilter.fromOrdinal(item.itemId)
-            globalSearchViewModel.updateDateFilter(filter)
-            true
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.global_search_filter_date),
+            items = items,
+            selectedIds = setOf(globalSearchViewModel.getFiltersState().dateFilter.id),
+            isMultiSelect = false
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                selectedIds.firstOrNull()?.let { id ->
+                    globalSearchViewModel.updateDateFilterById(id)
+                }
+            }
         }
-        popup.show()
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
     }
 
-    private fun showSizeFilterMenu(anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
-        SizeFilter.entries.forEach { filter ->
-            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+    private fun showSizeFilterBottomSheet() {
+        val items = SizeFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
         }
-        popup.setOnMenuItemClickListener { item ->
-            val filter = SizeFilter.fromOrdinal(item.itemId)
-            globalSearchViewModel.updateSizeFilter(filter)
-            true
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.global_search_filter_size),
+            items = items,
+            selectedIds = setOf(globalSearchViewModel.getFiltersState().sizeFilter.id),
+            isMultiSelect = false
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                selectedIds.firstOrNull()?.let { id ->
+                    globalSearchViewModel.updateSizeFilterById(id)
+                }
+            }
         }
-        popup.show()
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
     }
 
     private fun updateFilterButtonsUI(filtersState: SearchFiltersState) {
@@ -259,12 +297,16 @@ class GlobalSearchFragment : Fragment(),
 
         // Update Type filter button
         filterTypeButton.apply {
-            text = if (filtersState.typeFilter == TypeFilter.ALL) {
-                getString(R.string.global_search_filter_type)
-            } else {
-                getString(filtersState.typeFilter.labelResId)
+            val selectedCount = filtersState.selectedTypeIds.size
+            text = when (selectedCount) {
+                0 -> getString(R.string.global_search_filter_type)
+                1 -> {
+                    val typeFilter = TypeFilter.fromId(filtersState.selectedTypeIds.first())
+                    typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.global_search_filter_type)
+                }
+                else -> getString(R.string.global_search_filter_type) + " ($selectedCount)"
             }
-            isSelected = filtersState.typeFilter != TypeFilter.ALL
+            isSelected = selectedCount > 0
         }
 
         // Update Date filter button

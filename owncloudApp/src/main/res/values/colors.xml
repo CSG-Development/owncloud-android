@@ -72,4 +72,6 @@
     <!-- Bottom Sheet Fragment -->
     <color name="bottom_sheet_fragment_item_color">#6E758C</color>
     <color name="bottom_sheet_fragment_title_color">#6E758C</color>
+
+    <color name="homecloud_bottom_sheet_divider">#CBCDD3</color>
 </resources>
