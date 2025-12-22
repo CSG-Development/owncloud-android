@@ -83,7 +83,6 @@ class GlobalSearchFragment : Fragment(),
 
     private var isMultiPersonal = false
 
-    // Action Mode related
     private var actionMode: ActionMode? = null
     private var statusBarColor: Int? = null
     private var menu: Menu? = null
@@ -221,7 +220,7 @@ class GlobalSearchFragment : Fragment(),
         }
 
         val bottomSheet = FilterBottomSheetFragment.newInstance(
-            title = getString(R.string.global_search_filter_type),
+            title = getString(R.string.homecloud_global_search_filter_type),
             items = items,
             selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds,
             isMultiSelect = true
@@ -246,7 +245,7 @@ class GlobalSearchFragment : Fragment(),
         }
 
         val bottomSheet = FilterBottomSheetFragment.newInstance(
-            title = getString(R.string.global_search_filter_date),
+            title = getString(R.string.homecloud_global_search_filter_date),
             items = items,
             selectedIds = setOf(globalSearchViewModel.getFiltersState().dateFilter.id),
             isMultiSelect = false
@@ -273,7 +272,7 @@ class GlobalSearchFragment : Fragment(),
         }
 
         val bottomSheet = FilterBottomSheetFragment.newInstance(
-            title = getString(R.string.global_search_filter_size),
+            title = getString(R.string.homecloud_global_search_filter_size),
             items = items,
             selectedIds = setOf(globalSearchViewModel.getFiltersState().sizeFilter.id),
             isMultiSelect = false
@@ -295,34 +294,31 @@ class GlobalSearchFragment : Fragment(),
         val filterDateButton = binding.searchFilters.filterDateButton
         val filterSizeButton = binding.searchFilters.filterSizeButton
 
-        // Update Type filter button
         filterTypeButton.apply {
             val selectedCount = filtersState.selectedTypeIds.size
             text = when (selectedCount) {
-                0 -> getString(R.string.global_search_filter_type)
+                0 -> getString(R.string.homecloud_global_search_filter_type)
                 1 -> {
                     val typeFilter = TypeFilter.fromId(filtersState.selectedTypeIds.first())
-                    typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.global_search_filter_type)
+                    typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.homecloud_global_search_filter_type)
                 }
-                else -> getString(R.string.global_search_filter_type) + " ($selectedCount)"
+                else -> getString(R.string.homecloud_global_search_filter_type) + " ($selectedCount)"
             }
             isSelected = selectedCount > 0
         }
 
-        // Update Date filter button
         filterDateButton.apply {
             text = if (filtersState.dateFilter == DateFilter.ANY) {
-                getString(R.string.global_search_filter_date)
+                getString(R.string.homecloud_global_search_filter_date)
             } else {
                 getString(filtersState.dateFilter.labelResId)
             }
             isSelected = filtersState.dateFilter != DateFilter.ANY
         }
 
-        // Update Size filter button
         filterSizeButton.apply {
             text = if (filtersState.sizeFilter == SizeFilter.ANY) {
-                getString(R.string.global_search_filter_size)
+                getString(R.string.homecloud_global_search_filter_size)
             } else {
                 getString(filtersState.sizeFilter.labelResId)
             }
@@ -359,7 +355,6 @@ class GlobalSearchFragment : Fragment(),
             }
         }
 
-        // Observe menu options for multiselection
         collectLatestLifecycleFlow(globalSearchViewModel.menuOptions) { menuOptions ->
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
@@ -373,7 +368,6 @@ class GlobalSearchFragment : Fragment(),
             disableSelectionMode()
         }
 
-        // Observe filter state changes
         collectLatestLifecycleFlow(globalSearchViewModel.filtersState) { filtersState ->
             updateFilterButtonsUI(filtersState)
         }
