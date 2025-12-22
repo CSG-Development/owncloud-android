@@ -83,7 +83,6 @@ class GlobalSearchFragment : Fragment(),
 
     private var isMultiPersonal = false
 
-    // Action Mode related
     private var actionMode: ActionMode? = null
     private var statusBarColor: Int? = null
     private var menu: Menu? = null
@@ -197,7 +196,134 @@ class GlobalSearchFragment : Fragment(),
         binding.optionsLayout.onSortOptionsListener = this
         binding.optionsLayout.selectAdditionalView(SortOptionsView.AdditionalView.VIEW_TYPE)
 
+        setupFilterButtons()
         showInitialState()
+    }
+
+    private fun setupFilterButtons() {
+        val filterTypeButton = binding.searchFilters.filterTypeButton
+        val filterDateButton = binding.searchFilters.filterDateButton
+        val filterSizeButton = binding.searchFilters.filterSizeButton
+
+        filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
+        filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
+        filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
+    }
+
+    private fun showTypeFilterBottomSheet() {
+        val items = TypeFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
+        }
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.homecloud_global_search_filter_type),
+            items = items,
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds.map { it.id }.toSet(),
+            isMultiSelect = true
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                globalSearchViewModel.updateTypeFilters(selectedIds.mapNotNull { TypeFilter.fromId(it) }.toSet())
+            }
+        }
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
+    }
+
+    private fun showDateFilterBottomSheet() {
+        val items = DateFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
+        }
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.homecloud_global_search_filter_date),
+            items = items,
+            selectedIds = setOf(globalSearchViewModel.getFiltersState().dateFilter.id),
+            isMultiSelect = false
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                selectedIds.firstOrNull()?.let { id ->
+                    globalSearchViewModel.updateDateFilterById(id)
+                }
+            }
+        }
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
+    }
+
+    private fun showSizeFilterBottomSheet() {
+        val items = SizeFilter.entries.map { filter ->
+            FilterItem(
+                id = filter.id,
+                label = getString(filter.labelResId),
+                iconResId = filter.iconResId
+            )
+        }
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.homecloud_global_search_filter_size),
+            items = items,
+            selectedIds = setOf(globalSearchViewModel.getFiltersState().sizeFilter.id),
+            isMultiSelect = false
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                selectedIds.firstOrNull()?.let { id ->
+                    globalSearchViewModel.updateSizeFilterById(id)
+                }
+            }
+        }
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
+    }
+
+    private fun updateFilterButtonsUI(filtersState: SearchFiltersState) {
+        val filterTypeButton = binding.searchFilters.filterTypeButton
+        val filterDateButton = binding.searchFilters.filterDateButton
+        val filterSizeButton = binding.searchFilters.filterSizeButton
+
+        filterTypeButton.apply {
+            val selectedCount = filtersState.selectedTypeIds.size
+            text = when (selectedCount) {
+                0 -> getString(R.string.homecloud_global_search_filter_type)
+                1 -> {
+                    val typeFilter = filtersState.selectedTypeIds.firstOrNull()
+                    typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.homecloud_global_search_filter_type)
+                }
+                else -> getString(R.string.homecloud_global_search_filter_type_counter, selectedCount)
+            }
+            isSelected = selectedCount > 0
+        }
+
+        filterDateButton.apply {
+            text = if (filtersState.dateFilter == DateFilter.ANY) {
+                getString(R.string.homecloud_global_search_filter_date)
+            } else {
+                getString(filtersState.dateFilter.labelResId)
+            }
+            isSelected = filtersState.dateFilter != DateFilter.ANY
+        }
+
+        filterSizeButton.apply {
+            text = if (filtersState.sizeFilter == SizeFilter.ANY) {
+                getString(R.string.homecloud_global_search_filter_size)
+            } else {
+                getString(filtersState.sizeFilter.labelResId)
+            }
+            isSelected = filtersState.sizeFilter != SizeFilter.ANY
+        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -229,7 +355,6 @@ class GlobalSearchFragment : Fragment(),
             }
         }
 
-        // Observe menu options for multiselection
         collectLatestLifecycleFlow(globalSearchViewModel.menuOptions) { menuOptions ->
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
@@ -241,6 +366,10 @@ class GlobalSearchFragment : Fragment(),
 
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
             disableSelectionMode()
+        }
+
+        collectLatestLifecycleFlow(globalSearchViewModel.filtersState) { filtersState ->
+            updateFilterButtonsUI(filtersState)
         }
     }
 

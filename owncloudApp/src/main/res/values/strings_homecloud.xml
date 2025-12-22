@@ -70,4 +70,41 @@
     <string name="homecloud_global_search_initial_title">Search for your files</string>
     <string name="homecloud_global_search_empty_title">No matches</string>
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
+
+    <!-- Search Filters -->
+    <string name="homecloud_global_search_filter_type_counter">Type (%1$d)</string>
+    <string name="homecloud_global_search_filter_type">Type</string>
+    <string name="homecloud_global_search_filter_date">Date</string>
+    <string name="homecloud_global_search_filter_size">Size</string>
+    <string name="homecloud_common_apply">Apply</string>
+
+    <!-- Type Filter Options -->
+    <string name="homecloud_filter_type_file">File</string>
+    <string name="homecloud_filter_type_folder">Folder</string>
+    <string name="homecloud_filter_type_document">Document</string>
+    <string name="homecloud_filter_type_spreadsheet">Spreadsheet</string>
+    <string name="homecloud_filter_type_presentation">Presentation</string>
+    <string name="homecloud_filter_type_pdf">PDF</string>
+    <string name="homecloud_filter_type_image">Image</string>
+    <string name="homecloud_filter_type_video">Video</string>
+    <string name="homecloud_filter_type_audio">Audio</string>
+    <string name="homecloud_filter_type_archive">Archive</string>
+
+    <!-- Date Filter Options -->
+    <string name="homecloud_filter_date_any">Any time</string>
+    <string name="homecloud_filter_date_today">Today</string>
+    <string name="homecloud_filter_date_week">Last 7 days</string>
+    <string name="homecloud_filter_date_month">Last 30 days</string>
+    <string name="homecloud_filter_date_year">Last year</string>
+
+    <!-- Size Filter Options -->
+    <string name="homecloud_filter_size_any">Any size</string>
+    <string name="homecloud_filter_size_gt_10mb">&gt;10 MB</string>
+    <string name="homecloud_filter_size_lt_10mb">&lt; 10 MB</string>
+    <string name="homecloud_filter_size_lt_100mb">&lt; 100 MB</string>
+    <string name="homecloud_filter_size_gt_100mb">&gt; 100 MB</string>
+    <string name="homecloud_filter_size_lt_500mb">&lt; 500 MB</string>
+    <string name="homecloud_filter_size_gt_500mb">&gt; 500 MB</string>
+    <string name="homecloud_filter_size_lt_1gb">&lt; 1 GB</string>
+    <string name="homecloud_filter_size_gt_1gb">&gt; 1 GB</string>
 </resources>

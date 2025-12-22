@@ -43,6 +43,9 @@ class GlobalSearchViewModel(
     private val _menuOptions: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptions: SharedFlow<List<FileMenuOption>> = _menuOptions
 
+    private val _filtersState = MutableStateFlow(SearchFiltersState())
+    val filtersState: StateFlow<SearchFiltersState> = _filtersState
+
     init {
         val sortTypeSelected = SortType.entries[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
         val sortOrderSelected =
@@ -53,6 +56,42 @@ class GlobalSearchViewModel(
     fun updateSearchQuery(query: String) {
         performSearch(query)
     }
+
+    fun updateTypeFilters(selectedTypeIds: Set<TypeFilter>) {
+        _filtersState.update { it.copy(selectedTypeIds = selectedTypeIds) }
+        val currentSearchQuery = _searchUiState.value.query
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    private fun updateDateFilter(dateFilter: DateFilter) {
+        _filtersState.update { it.copy(dateFilter = dateFilter) }
+        val currentSearchQuery = _searchUiState.value.query
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    fun updateDateFilterById(filterId: String) {
+        val dateFilter = DateFilter.fromId(filterId)
+        updateDateFilter(dateFilter)
+    }
+
+    private fun updateSizeFilter(sizeFilter: SizeFilter) {
+        _filtersState.update { it.copy(sizeFilter = sizeFilter) }
+        val currentSearchQuery = _searchUiState.value.query
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    fun updateSizeFilterById(filterId: String) {
+        val sizeFilter = SizeFilter.fromId(filterId)
+        updateSizeFilter(sizeFilter)
+    }
+
+    fun getFiltersState(): SearchFiltersState = _filtersState.value
 
     fun updateSortTypeAndOrder(sortType: SortType, sortOrder: SortOrder) {
         sharedPreferencesProvider.putInt(PREF_FILE_LIST_SORT_TYPE, sortType.ordinal)
@@ -81,14 +120,30 @@ class GlobalSearchViewModel(
 
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             try {
+                val filters = _filtersState.value
                 val result = searchFilesUseCase(
                     SearchFilesUseCase.Params(
                         searchPattern = query,
                         ignoreCase = true,
+                        minDate = filters.dateFilter.getMinDate(),
+                        maxDate = Long.MAX_VALUE,
+                        minSize = filters.sizeFilter.getMinSize(),
+                        maxSize = filters.sizeFilter.getMaxSize(),
                     )
                 )
 
-                val filesWithSyncInfo = result.map { file ->
+                val filteredResult = if (filters.selectedTypeIds.isNotEmpty()) {
+                    val mimePatterns = filters.getMimePatterns()
+                    result.filter { file ->
+                        mimePatterns.isEmpty() || mimePatterns.any { pattern ->
+                            file.mimeType.startsWith(pattern) || file.mimeType == pattern
+                        }
+                    }
+                } else {
+                    result
+                }
+
+                val filesWithSyncInfo = filteredResult.map { file ->
                     OCFileWithSyncInfo(
                         file = file,
                         uploadWorkerUuid = null,
