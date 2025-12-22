@@ -298,7 +298,7 @@ class FileDisplayActivity : FileActivity(),
             // Hide both bars in smartphone landscape mode
             showBottomNavBar(false)
         }
-        setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH)
+        setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH && secondFragment == null)
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
@@ -492,7 +492,7 @@ class FileDisplayActivity : FileActivity(),
     }
 
     private fun initFragmentsWithFile() {
-        if (account != null && file != null) {
+        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH) {
             /// First fragment
             mainFileListFragment?.navigateToFolder(currentDir)
                 ?: Timber.e("Still have a chance to lose the initialization of list fragment >(")
