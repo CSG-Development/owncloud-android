@@ -5,7 +5,6 @@ import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -27,10 +26,10 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
     private var _binding: FilterBottomSheetFragmentBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var title: String
-    private lateinit var items: List<FilterItem>
-    private var selectedIds: Set<String> = emptySet()
-    private var isMultiSelect: Boolean = false
+    private val title: String by lazy { arguments?.getString(ARG_TITLE, "").orEmpty() }
+    private val items: List<FilterItem> by lazy { arguments?.getParcelableArrayList(ARG_ITEMS) ?: emptyList() }
+    private val selectedIds: Set<String> by lazy { arguments?.getStringArrayList(ARG_SELECTED_IDS)?.toSet() ?: emptySet() }
+    private val isMultiSelect: Boolean by lazy { arguments?.getBoolean(ARG_IS_MULTI_SELECT, false) ?: false }
 
     var filterSelectionListener: FilterSelectionListener? = null
 
@@ -43,16 +42,6 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
                 handleItemClick(item, isSelected)
             }
         )
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let { args ->
-            title = args.getString(ARG_TITLE, "")
-            items = args.getParcelableArrayList(ARG_ITEMS) ?: emptyList()
-            selectedIds = args.getStringArrayList(ARG_SELECTED_IDS)?.toSet() ?: emptySet()
-            isMultiSelect = args.getBoolean(ARG_IS_MULTI_SELECT, false)
-        }
     }
 
     override fun onCreateView(
@@ -75,7 +64,6 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
             adapter = this@FilterBottomSheetFragment.adapter
         }
 
-        // Show apply button only for multi-select
         if (isMultiSelect) {
             binding.applyButton.visibility = View.VISIBLE
             binding.applyButton.setOnClickListener {
@@ -100,11 +88,9 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun handleItemClick(item: FilterItem, isSelected: Boolean) {
         if (!isMultiSelect) {
-            // Single select - immediately notify and dismiss
             filterSelectionListener?.onFilterSelected(setOf(item.id))
             dismiss()
         }
-        // For multi-select, the adapter handles the selection state
     }
 
     interface FilterSelectionListener {
@@ -135,9 +121,6 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
     }
 }
 
-/**
- * RecyclerView Adapter for filter items.
- */
 private class FilterItemAdapter(
     private val items: List<FilterItem>,
     private val selectedIds: MutableSet<String>,
@@ -169,7 +152,6 @@ private class FilterItemAdapter(
         fun bind(item: FilterItem) {
             binding.filterItemTitle.text = item.label
 
-            // Set icon if provided
             item.iconResId?.let { iconRes ->
                 binding.filterItemIcon.setImageResource(iconRes)
                 binding.filterItemIcon.visibility = View.VISIBLE
@@ -179,7 +161,6 @@ private class FilterItemAdapter(
 
             val isSelected = selectedIds.contains(item.id)
 
-            // Show appropriate selection indicator
             if (isMultiSelect) {
                 binding.filterItemCheckbox.visibility = View.VISIBLE
                 binding.filterItemRadio.visibility = View.GONE
@@ -201,11 +182,10 @@ private class FilterItemAdapter(
                     notifyItemChanged(bindingAdapterPosition)
                     onItemClick(item, newState)
                 } else {
-                    // Single select - clear previous and select new
                     val previousSelected = selectedIds.toList()
                     selectedIds.clear()
                     selectedIds.add(item.id)
-                    // Update UI for previously selected items
+
                     previousSelected.forEach { prevId ->
                         val prevIndex = items.indexOfFirst { it.id == prevId }
                         if (prevIndex >= 0) {
@@ -217,7 +197,6 @@ private class FilterItemAdapter(
                 }
             }
 
-            // Also handle clicks on checkbox/radio directly
             binding.filterItemCheckbox.setOnClickListener {
                 binding.root.performClick()
             }
