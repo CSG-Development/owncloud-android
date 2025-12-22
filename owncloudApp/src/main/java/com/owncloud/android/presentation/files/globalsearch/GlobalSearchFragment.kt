@@ -222,13 +222,13 @@ class GlobalSearchFragment : Fragment(),
         val bottomSheet = FilterBottomSheetFragment.newInstance(
             title = getString(R.string.homecloud_global_search_filter_type),
             items = items,
-            selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds,
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds.map { it.id }.toSet(),
             isMultiSelect = true
         )
 
         bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
             override fun onFilterSelected(selectedIds: Set<String>) {
-                globalSearchViewModel.updateTypeFilters(selectedIds)
+                globalSearchViewModel.updateTypeFilters(selectedIds.mapNotNull { TypeFilter.fromId(it) }.toSet())
             }
         }
 
@@ -299,10 +299,10 @@ class GlobalSearchFragment : Fragment(),
             text = when (selectedCount) {
                 0 -> getString(R.string.homecloud_global_search_filter_type)
                 1 -> {
-                    val typeFilter = TypeFilter.fromId(filtersState.selectedTypeIds.first())
+                    val typeFilter = filtersState.selectedTypeIds.firstOrNull()
                     typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.homecloud_global_search_filter_type)
                 }
-                else -> getString(R.string.homecloud_global_search_filter_type) + " ($selectedCount)"
+                else -> getString(R.string.homecloud_global_search_filter_type_counter, selectedCount)
             }
             isSelected = selectedCount > 0
         }

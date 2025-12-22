@@ -72,6 +72,7 @@
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
 
     <!-- Search Filters -->
+    <string name="homecloud_global_search_filter_type_counter">Type (%1$d)</string>
     <string name="homecloud_global_search_filter_type">Type</string>
     <string name="homecloud_global_search_filter_date">Date</string>
     <string name="homecloud_global_search_filter_size">Size</string>

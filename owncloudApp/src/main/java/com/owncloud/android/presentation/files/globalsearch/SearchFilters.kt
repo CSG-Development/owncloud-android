@@ -127,20 +127,17 @@ enum class SizeFilter(val id: String, val labelResId: Int, val iconResId: Int? =
  * Data class holding all active search filters.
  */
 data class SearchFiltersState(
-    val selectedTypeIds: Set<String> = emptySet(),
+    val selectedTypeIds: Set<TypeFilter> = emptySet(),
     val dateFilter: DateFilter = DateFilter.ANY,
     val sizeFilter: SizeFilter = SizeFilter.ANY,
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypeIds.isNotEmpty() || dateFilter != DateFilter.ANY || sizeFilter != SizeFilter.ANY
 
-    val selectedTypes: List<TypeFilter>
-        get() = selectedTypeIds.mapNotNull { TypeFilter.fromId(it) }
-
     /**
      * Get combined MIME patterns for all selected types.
      */
     fun getMimePatterns(): List<String> {
-        return selectedTypes.flatMap { it.mimePatterns }
+        return selectedTypeIds.flatMap { it.mimePatterns }
     }
 }

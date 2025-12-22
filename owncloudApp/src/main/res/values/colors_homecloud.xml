@@ -70,6 +70,8 @@
     <color name="homecloud_toolbar_icon_tint">@color/homecloud_blue_darken_2</color>
     <color name="homecloud_dot_unselected">@color/black_transparent</color>
 
+    <color name="homecloud_bottom_sheet_divider">#CBCDD3</color>
+
     <!-- Original ownCloud colors override -->
     <color name="textColor">@color/homecloud_primary</color>
 

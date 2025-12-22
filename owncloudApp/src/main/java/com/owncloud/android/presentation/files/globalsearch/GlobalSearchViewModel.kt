@@ -57,7 +57,7 @@ class GlobalSearchViewModel(
         performSearch(query)
     }
 
-    fun updateTypeFilters(selectedTypeIds: Set<String>) {
+    fun updateTypeFilters(selectedTypeIds: Set<TypeFilter>) {
         _filtersState.update { it.copy(selectedTypeIds = selectedTypeIds) }
         val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
@@ -65,7 +65,7 @@ class GlobalSearchViewModel(
         }
     }
 
-    fun updateDateFilter(dateFilter: DateFilter) {
+    private fun updateDateFilter(dateFilter: DateFilter) {
         _filtersState.update { it.copy(dateFilter = dateFilter) }
         val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
@@ -78,7 +78,7 @@ class GlobalSearchViewModel(
         updateDateFilter(dateFilter)
     }
 
-    fun updateSizeFilter(sizeFilter: SizeFilter) {
+    private fun updateSizeFilter(sizeFilter: SizeFilter) {
         _filtersState.update { it.copy(sizeFilter = sizeFilter) }
         val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
