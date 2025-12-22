@@ -43,6 +43,13 @@ class GlobalSearchViewModel(
     private val _menuOptions: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptions: SharedFlow<List<FileMenuOption>> = _menuOptions
 
+    // Search filters state
+    private val _filtersState = MutableStateFlow(SearchFiltersState())
+    val filtersState: StateFlow<SearchFiltersState> = _filtersState
+
+    // Store current search query for re-searching when filters change
+    private var currentSearchQuery: String = ""
+
     init {
         val sortTypeSelected = SortType.entries[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
         val sortOrderSelected =
@@ -51,8 +58,32 @@ class GlobalSearchViewModel(
     }
 
     fun updateSearchQuery(query: String) {
+        currentSearchQuery = query
         performSearch(query)
     }
+
+    fun updateTypeFilter(typeFilter: TypeFilter) {
+        _filtersState.update { it.copy(typeFilter = typeFilter) }
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    fun updateDateFilter(dateFilter: DateFilter) {
+        _filtersState.update { it.copy(dateFilter = dateFilter) }
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    fun updateSizeFilter(sizeFilter: SizeFilter) {
+        _filtersState.update { it.copy(sizeFilter = sizeFilter) }
+        if (currentSearchQuery.isNotBlank()) {
+            performSearch(currentSearchQuery)
+        }
+    }
+
+    fun getFiltersState(): SearchFiltersState = _filtersState.value
 
     fun updateSortTypeAndOrder(sortType: SortType, sortOrder: SortOrder) {
         sharedPreferencesProvider.putInt(PREF_FILE_LIST_SORT_TYPE, sortType.ordinal)
@@ -81,10 +112,16 @@ class GlobalSearchViewModel(
 
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             try {
+                val filters = _filtersState.value
                 val result = searchFilesUseCase(
                     SearchFilesUseCase.Params(
                         searchPattern = query,
                         ignoreCase = true,
+                        mimePrefix = filters.typeFilter.mimePrefix,
+                        minDate = filters.dateFilter.getMinDate(),
+                        maxDate = Long.MAX_VALUE,
+                        minSize = filters.sizeFilter.getMinSize(),
+                        maxSize = filters.sizeFilter.getMaxSize(),
                     )
                 )
 

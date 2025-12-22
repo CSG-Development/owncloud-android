@@ -70,4 +70,30 @@
     <string name="homecloud_global_search_initial_title">Search for your files</string>
     <string name="homecloud_global_search_empty_title">No matches</string>
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
+
+    <!-- Search Filters -->
+    <string name="global_search_filter_type">Type</string>
+    <string name="global_search_filter_date">Date</string>
+    <string name="global_search_filter_size">Size</string>
+
+    <!-- Type Filter Options -->
+    <string name="filter_type_all">All types</string>
+    <string name="filter_type_images">Images</string>
+    <string name="filter_type_videos">Videos</string>
+    <string name="filter_type_audio">Audio</string>
+    <string name="filter_type_documents">Documents</string>
+    <string name="filter_type_folders">Folders</string>
+
+    <!-- Date Filter Options -->
+    <string name="filter_date_any">Any time</string>
+    <string name="filter_date_today">Today</string>
+    <string name="filter_date_week">Last 7 days</string>
+    <string name="filter_date_month">Last 30 days</string>
+    <string name="filter_date_year">Last year</string>
+
+    <!-- Size Filter Options -->
+    <string name="filter_size_any">Any size</string>
+    <string name="filter_size_small">Small (&lt; 1 MB)</string>
+    <string name="filter_size_medium">Medium (1-100 MB)</string>
+    <string name="filter_size_large">Large (&gt; 100 MB)</string>
 </resources>

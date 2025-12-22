@@ -9,6 +9,8 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.core.view.forEach
@@ -197,7 +199,93 @@ class GlobalSearchFragment : Fragment(),
         binding.optionsLayout.onSortOptionsListener = this
         binding.optionsLayout.selectAdditionalView(SortOptionsView.AdditionalView.VIEW_TYPE)
 
+        setupFilterButtons()
         showInitialState()
+    }
+
+    private fun setupFilterButtons() {
+        val filterTypeButton = binding.searchFilters.filterTypeButton
+        val filterDateButton = binding.searchFilters.filterDateButton
+        val filterSizeButton = binding.searchFilters.filterSizeButton
+
+        filterTypeButton.setOnClickListener { showTypeFilterMenu(it) }
+        filterDateButton.setOnClickListener { showDateFilterMenu(it) }
+        filterSizeButton.setOnClickListener { showSizeFilterMenu(it) }
+    }
+
+    private fun showTypeFilterMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        TypeFilter.entries.forEach { filter ->
+            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val filter = TypeFilter.fromOrdinal(item.itemId)
+            globalSearchViewModel.updateTypeFilter(filter)
+            true
+        }
+        popup.show()
+    }
+
+    private fun showDateFilterMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        DateFilter.entries.forEach { filter ->
+            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val filter = DateFilter.fromOrdinal(item.itemId)
+            globalSearchViewModel.updateDateFilter(filter)
+            true
+        }
+        popup.show()
+    }
+
+    private fun showSizeFilterMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        SizeFilter.entries.forEach { filter ->
+            popup.menu.add(Menu.NONE, filter.ordinal, filter.ordinal, filter.labelResId)
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val filter = SizeFilter.fromOrdinal(item.itemId)
+            globalSearchViewModel.updateSizeFilter(filter)
+            true
+        }
+        popup.show()
+    }
+
+    private fun updateFilterButtonsUI(filtersState: SearchFiltersState) {
+        val filterTypeButton = binding.searchFilters.filterTypeButton
+        val filterDateButton = binding.searchFilters.filterDateButton
+        val filterSizeButton = binding.searchFilters.filterSizeButton
+
+        // Update Type filter button
+        filterTypeButton.apply {
+            text = if (filtersState.typeFilter == TypeFilter.ALL) {
+                getString(R.string.global_search_filter_type)
+            } else {
+                getString(filtersState.typeFilter.labelResId)
+            }
+            isSelected = filtersState.typeFilter != TypeFilter.ALL
+        }
+
+        // Update Date filter button
+        filterDateButton.apply {
+            text = if (filtersState.dateFilter == DateFilter.ANY) {
+                getString(R.string.global_search_filter_date)
+            } else {
+                getString(filtersState.dateFilter.labelResId)
+            }
+            isSelected = filtersState.dateFilter != DateFilter.ANY
+        }
+
+        // Update Size filter button
+        filterSizeButton.apply {
+            text = if (filtersState.sizeFilter == SizeFilter.ANY) {
+                getString(R.string.global_search_filter_size)
+            } else {
+                getString(filtersState.sizeFilter.labelResId)
+            }
+            isSelected = filtersState.sizeFilter != SizeFilter.ANY
+        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -241,6 +329,11 @@ class GlobalSearchFragment : Fragment(),
 
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
             disableSelectionMode()
+        }
+
+        // Observe filter state changes
+        collectLatestLifecycleFlow(globalSearchViewModel.filtersState) { filtersState ->
+            updateFilterButtonsUI(filtersState)
         }
     }
 
