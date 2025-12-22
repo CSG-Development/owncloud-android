@@ -43,12 +43,8 @@ class GlobalSearchViewModel(
     private val _menuOptions: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptions: SharedFlow<List<FileMenuOption>> = _menuOptions
 
-    // Search filters state
     private val _filtersState = MutableStateFlow(SearchFiltersState())
     val filtersState: StateFlow<SearchFiltersState> = _filtersState
-
-    // Store current search query for re-searching when filters change
-    private var currentSearchQuery: String = ""
 
     init {
         val sortTypeSelected = SortType.entries[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
@@ -58,12 +54,12 @@ class GlobalSearchViewModel(
     }
 
     fun updateSearchQuery(query: String) {
-        currentSearchQuery = query
         performSearch(query)
     }
 
     fun updateTypeFilters(selectedTypeIds: Set<String>) {
         _filtersState.update { it.copy(selectedTypeIds = selectedTypeIds) }
+        val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
             performSearch(currentSearchQuery)
         }
@@ -71,6 +67,7 @@ class GlobalSearchViewModel(
 
     fun updateDateFilter(dateFilter: DateFilter) {
         _filtersState.update { it.copy(dateFilter = dateFilter) }
+        val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
             performSearch(currentSearchQuery)
         }
@@ -83,6 +80,7 @@ class GlobalSearchViewModel(
 
     fun updateSizeFilter(sizeFilter: SizeFilter) {
         _filtersState.update { it.copy(sizeFilter = sizeFilter) }
+        val currentSearchQuery = _searchUiState.value.query
         if (currentSearchQuery.isNotBlank()) {
             performSearch(currentSearchQuery)
         }
@@ -134,7 +132,6 @@ class GlobalSearchViewModel(
                     )
                 )
 
-                // Apply type filters if any are selected
                 val filteredResult = if (filters.selectedTypeIds.isNotEmpty()) {
                     val mimePatterns = filters.getMimePatterns()
                     result.filter { file ->
