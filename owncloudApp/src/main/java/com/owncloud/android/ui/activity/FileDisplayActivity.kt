@@ -294,11 +294,15 @@ class FileDisplayActivity : FileActivity(),
             AppRater.appLaunched(this, packageName)
         }
 
-        if (isLandscapeMode && !isTablet) {
+        if ((isLandscapeMode && !isTablet) || secondFragment != null) {
             // Hide both bars in smartphone landscape mode
             showBottomNavBar(false)
         }
         setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH && secondFragment == null)
+
+        if (secondFragment != null) {
+            updateToolbar(file)
+        }
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
