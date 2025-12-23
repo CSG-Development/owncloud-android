@@ -93,9 +93,10 @@
     <!-- Date Filter Options -->
     <string name="homecloud_filter_date_any">Any time</string>
     <string name="homecloud_filter_date_today">Today</string>
-    <string name="homecloud_filter_date_week">Last 7 days</string>
-    <string name="homecloud_filter_date_month">Last 30 days</string>
-    <string name="homecloud_filter_date_year">Last year</string>
+    <string name="homecloud_filter_date_recently_used">Recently used</string>
+    <string name="homecloud_filter_date_week">This week</string>
+    <string name="homecloud_filter_date_month">This month</string>
+    <string name="homecloud_filter_date_year">This year</string>
 
     <!-- Size Filter Options -->
     <string name="homecloud_filter_size_any">Any size</string>

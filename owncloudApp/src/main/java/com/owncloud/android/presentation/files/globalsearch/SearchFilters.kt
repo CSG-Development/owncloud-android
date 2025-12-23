@@ -1,8 +1,10 @@
 package com.owncloud.android.presentation.files.globalsearch
 
 import com.owncloud.android.R
+import java.util.Calendar
 
 const val TYPE_FILE = "file"
+
 enum class TypeFilter(
     val id: String,
     val labelResId: Int,
@@ -11,33 +13,41 @@ enum class TypeFilter(
 ) {
     FILE("file", R.string.homecloud_filter_type_file, R.drawable.ic_file, listOf(TYPE_FILE)),
     FOLDER("folder", R.string.homecloud_filter_type_folder, R.drawable.ic_folder_outlined, listOf("DIR")),
-    DOCUMENT("document", R.string.homecloud_filter_type_document, R.drawable.ic_document, listOf(
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml",
-        "application/vnd.oasis.opendocument.text",
-        "text/"
-    )),
-    SPREADSHEET("spreadsheet", R.string.homecloud_filter_type_spreadsheet, R.drawable.ic_spreadsheet, listOf(
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml",
-        "application/vnd.oasis.opendocument.spreadsheet"
-    )),
-    PRESENTATION("presentation", R.string.homecloud_filter_type_presentation, R.drawable.ic_presentation, listOf(
-        "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml",
-        "application/vnd.oasis.opendocument.presentation"
-    )),
+    DOCUMENT(
+        "document", R.string.homecloud_filter_type_document, R.drawable.ic_document, listOf(
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml",
+            "application/vnd.oasis.opendocument.text",
+            "text/"
+        )
+    ),
+    SPREADSHEET(
+        "spreadsheet", R.string.homecloud_filter_type_spreadsheet, R.drawable.ic_spreadsheet, listOf(
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml",
+            "application/vnd.oasis.opendocument.spreadsheet"
+        )
+    ),
+    PRESENTATION(
+        "presentation", R.string.homecloud_filter_type_presentation, R.drawable.ic_presentation, listOf(
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml",
+            "application/vnd.oasis.opendocument.presentation"
+        )
+    ),
     PDF("pdf", R.string.homecloud_filter_type_pdf, R.drawable.ic_pdf, listOf("application/pdf")),
     IMAGE("image", R.string.homecloud_filter_type_image, R.drawable.ic_image, listOf("image/")),
     VIDEO("video", R.string.homecloud_filter_type_video, R.drawable.ic_video, listOf("video/")),
     AUDIO("audio", R.string.homecloud_filter_type_audio, R.drawable.ic_audio, listOf("audio/")),
-    ARCHIVE("archive", R.string.homecloud_filter_type_archive, R.drawable.ic_archive, listOf(
-        "application/zip",
-        "application/x-rar",
-        "application/x-7z-compressed",
-        "application/x-tar",
-        "application/gzip"
-    ));
+    ARCHIVE(
+        "archive", R.string.homecloud_filter_type_archive, R.drawable.ic_archive, listOf(
+            "application/zip",
+            "application/x-rar",
+            "application/x-7z-compressed",
+            "application/x-tar",
+            "application/gzip"
+        )
+    );
 
     companion object {
         fun fromId(id: String): TypeFilter? = entries.find { it.id == id }
@@ -50,19 +60,55 @@ enum class TypeFilter(
  */
 enum class DateFilter(val id: String, val labelResId: Int, val iconResId: Int = R.drawable.ic_calendar) {
     ANY("any", R.string.homecloud_filter_date_any),
+
+    RECENTLY_USED("recently", R.string.homecloud_filter_date_recently_used, R.drawable.ic_recent),
     TODAY("today", R.string.homecloud_filter_date_today),
-    LAST_WEEK("week", R.string.homecloud_filter_date_week),
-    LAST_MONTH("month", R.string.homecloud_filter_date_month),
-    LAST_YEAR("year", R.string.homecloud_filter_date_year);
+    THIS_WEEK("week", R.string.homecloud_filter_date_week),
+    THIS_MONTH("month", R.string.homecloud_filter_date_month),
+    THIS_YEAR("year", R.string.homecloud_filter_date_year);
 
     fun getMinDate(): Long {
-        val now = System.currentTimeMillis()
+        val calendar = Calendar.getInstance()
         return when (this) {
             ANY -> 0L
-            TODAY -> now - DAY_IN_MILLIS
-            LAST_WEEK -> now - (7 * DAY_IN_MILLIS)
-            LAST_MONTH -> now - (30 * DAY_IN_MILLIS)
-            LAST_YEAR -> now - (365 * DAY_IN_MILLIS)
+            RECENTLY_USED -> {
+                calendar.timeInMillis - (7 * DAY_IN_MILLIS)
+            }
+
+            TODAY -> {
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.timeInMillis
+            }
+
+            THIS_WEEK -> {
+                calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.timeInMillis
+            }
+
+            THIS_MONTH -> {
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.timeInMillis
+            }
+
+            THIS_YEAR -> {
+                calendar.set(Calendar.DAY_OF_YEAR, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.timeInMillis
+            }
         }
     }
 
@@ -70,7 +116,6 @@ enum class DateFilter(val id: String, val labelResId: Int, val iconResId: Int = 
         private const val DAY_IN_MILLIS = 24 * 60 * 60 * 1000L
 
         fun fromId(id: String): DateFilter = entries.find { it.id == id } ?: ANY
-
     }
 }
 
