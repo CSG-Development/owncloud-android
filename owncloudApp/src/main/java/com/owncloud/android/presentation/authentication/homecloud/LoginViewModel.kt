@@ -112,8 +112,9 @@ class LoginViewModel(
                     when (currentState) {
                         is LoginScreenState.EmailState -> {
                             _state.update {
-                                currentState.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
+                                currentState.copy(errorCodeMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
                             }
+                            _events.emit(LoginEvent.ShowCodeDialog)
                         }
 
                         is LoginScreenState.LoginState -> {
