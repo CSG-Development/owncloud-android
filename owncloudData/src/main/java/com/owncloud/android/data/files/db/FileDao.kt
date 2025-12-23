@@ -639,18 +639,18 @@ interface FileDao {
         private const val SEARCH_FILES_CASE_INSENSITIVE = """
             SELECT *
             FROM ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
-            WHERE LOWER(name) LIKE '%' || LOWER(:searchPattern) || '%'
+            WHERE (:searchPattern = '' OR LOWER(name) LIKE '%' || LOWER(:searchPattern) || '%')
             AND length >= :minSize AND length <= :maxSize
-            AND mimeType LIKE :mimePrefix || '%'
+            AND (:mimePrefix = '' OR mimeType LIKE :mimePrefix || '%')
             AND modificationTimestamp >= :minDate AND modificationTimestamp <= :maxDate
         """
 
         private const val SEARCH_FILES_CASE_SENSITIVE = """
             SELECT *
             FROM ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
-            WHERE name LIKE '%' || :searchPattern || '%'
+            WHERE (:searchPattern = '' OR name LIKE '%' || :searchPattern || '%')
             AND length >= :minSize AND length <= :maxSize
-            AND mimeType LIKE :mimePrefix || '%'
+            AND (:mimePrefix = '' OR mimeType LIKE :mimePrefix || '%')
             AND modificationTimestamp >= :minDate AND modificationTimestamp <= :maxDate
         """
     }

@@ -222,8 +222,8 @@ class GlobalSearchFragment : Fragment(),
         val bottomSheet = FilterBottomSheetFragment.newInstance(
             title = getString(R.string.homecloud_global_search_filter_type),
             items = items,
-            selectedIds = globalSearchViewModel.getFiltersState().selectedTypeIds.map { it.id }.toSet(),
-            isMultiSelect = true
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTypes.map { it.id }.toSet(),
+            isMultiSelect = false
         )
 
         bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
@@ -295,11 +295,11 @@ class GlobalSearchFragment : Fragment(),
         val filterSizeButton = binding.searchFilters.filterSizeButton
 
         filterTypeButton.apply {
-            val selectedCount = filtersState.selectedTypeIds.size
+            val selectedCount = filtersState.selectedTypes.size
             text = when (selectedCount) {
                 0 -> getString(R.string.homecloud_global_search_filter_type)
                 1 -> {
-                    val typeFilter = filtersState.selectedTypeIds.firstOrNull()
+                    val typeFilter = filtersState.selectedTypes.firstOrNull()
                     typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.homecloud_global_search_filter_type)
                 }
                 else -> getString(R.string.homecloud_global_search_filter_type_counter, selectedCount)

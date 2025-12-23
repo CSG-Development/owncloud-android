@@ -9,19 +9,15 @@ class SearchFilesUseCase(
 ) : BaseUseCase<List<OCFile>, SearchFilesUseCase.Params>() {
 
     override fun run(params: Params): List<OCFile> {
-        return if (params.searchPattern.isBlank()) {
-            emptyList()
-        } else {
-            fileRepository.searchFiles(
-                searchPattern = params.searchPattern,
-                ignoreCase = params.ignoreCase,
-                minSize = params.minSize,
-                maxSize = params.maxSize,
-                mimePrefix = params.mimePrefix,
-                minDate = params.minDate,
-                maxDate = params.maxDate,
-            )
-        }
+        return fileRepository.searchFiles(
+            searchPattern = params.searchPattern,
+            ignoreCase = params.ignoreCase,
+            minSize = params.minSize,
+            maxSize = params.maxSize,
+            mimePrefix = params.mimePrefix,
+            minDate = params.minDate,
+            maxDate = params.maxDate,
+        )
     }
 
     data class Params(

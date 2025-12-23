@@ -6,7 +6,6 @@
     android:layout_height="wrap_content"
     android:background="?android:attr/selectableItemBackground"
     android:minHeight="56dp"
-    android:paddingHorizontal="@dimen/standard_half_padding"
     android:paddingVertical="@dimen/standard_half_padding">
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -18,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="?attr/colorPrimary"
-        tools:src="@drawable/ic_folder"
+        tools:src="@drawable/ic_folder_outlined"
         tools:visibility="visible" />
 
     <com.google.android.material.textview.MaterialTextView
@@ -27,7 +26,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/standard_margin"
         android:layout_marginEnd="@dimen/standard_margin"
-        android:textSize="16sp"
+        android:textSize="14sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/filter_item_checkbox"
         app:layout_constraintStart_toEndOf="@id/filter_item_icon"
@@ -45,8 +45,7 @@
         android:theme="@style/homeCloud.CheckBox"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.radiobutton.MaterialRadioButton
         android:id="@+id/filter_item_radio"
@@ -55,6 +54,8 @@
         android:clickable="false"
         android:focusable="false"
         android:visibility="gone"
+        android:layout_marginEnd="-8dp"
+        tools:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
