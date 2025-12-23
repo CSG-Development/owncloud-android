@@ -2,16 +2,14 @@ package com.owncloud.android.presentation.files.globalsearch
 
 import com.owncloud.android.R
 
-/**
- * Represents the type filter options for file search (multiselect).
- */
+const val TYPE_FILE = "file"
 enum class TypeFilter(
     val id: String,
     val labelResId: Int,
     val iconResId: Int?,
     val mimePatterns: List<String>
 ) {
-    FILE("file", R.string.homecloud_filter_type_file, R.drawable.ic_file, listOf()),
+    FILE("file", R.string.homecloud_filter_type_file, R.drawable.ic_file, listOf(TYPE_FILE)),
     FOLDER("folder", R.string.homecloud_filter_type_folder, R.drawable.ic_folder_outlined, listOf("DIR")),
     DOCUMENT("document", R.string.homecloud_filter_type_document, R.drawable.ic_document, listOf(
         "application/msword",
@@ -123,21 +121,13 @@ enum class SizeFilter(val id: String, val labelResId: Int, val iconResId: Int? =
     }
 }
 
-/**
- * Data class holding all active search filters.
- */
 data class SearchFiltersState(
-    val selectedTypeIds: Set<TypeFilter> = emptySet(),
+    val selectedTypes: Set<TypeFilter> = emptySet(),
     val dateFilter: DateFilter = DateFilter.ANY,
     val sizeFilter: SizeFilter = SizeFilter.ANY,
 ) {
-    val hasActiveFilters: Boolean
-        get() = selectedTypeIds.isNotEmpty() || dateFilter != DateFilter.ANY || sizeFilter != SizeFilter.ANY
 
-    /**
-     * Get combined MIME patterns for all selected types.
-     */
     fun getMimePatterns(): List<String> {
-        return selectedTypeIds.flatMap { it.mimePatterns }
+        return selectedTypes.flatMap { it.mimePatterns }
     }
 }

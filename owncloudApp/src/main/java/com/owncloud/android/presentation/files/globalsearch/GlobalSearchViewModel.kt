@@ -58,19 +58,15 @@ class GlobalSearchViewModel(
     }
 
     fun updateTypeFilters(selectedTypeIds: Set<TypeFilter>) {
-        _filtersState.update { it.copy(selectedTypeIds = selectedTypeIds) }
+        _filtersState.update { it.copy(selectedTypes = selectedTypeIds) }
         val currentSearchQuery = _searchUiState.value.query
-        if (currentSearchQuery.isNotBlank()) {
-            performSearch(currentSearchQuery)
-        }
+        performSearch(currentSearchQuery, true)
     }
 
     private fun updateDateFilter(dateFilter: DateFilter) {
         _filtersState.update { it.copy(dateFilter = dateFilter) }
         val currentSearchQuery = _searchUiState.value.query
-        if (currentSearchQuery.isNotBlank()) {
-            performSearch(currentSearchQuery)
-        }
+        performSearch(currentSearchQuery, true)
     }
 
     fun updateDateFilterById(filterId: String) {
@@ -81,9 +77,7 @@ class GlobalSearchViewModel(
     private fun updateSizeFilter(sizeFilter: SizeFilter) {
         _filtersState.update { it.copy(sizeFilter = sizeFilter) }
         val currentSearchQuery = _searchUiState.value.query
-        if (currentSearchQuery.isNotBlank()) {
-            performSearch(currentSearchQuery)
-        }
+        performSearch(currentSearchQuery, true)
     }
 
     fun updateSizeFilterById(filterId: String) {
@@ -110,8 +104,8 @@ class GlobalSearchViewModel(
 
     fun getSortOrder(): SortOrder = sortTypeAndOrder.value.second
 
-    private fun performSearch(query: String) {
-        if (query.isBlank()) {
+    private fun performSearch(query: String, allowEmptyQuery: Boolean = false) {
+        if (query.isBlank() && !allowEmptyQuery) {
             _searchUiState.update { SearchUiState.Initial }
             return
         }
@@ -132,10 +126,11 @@ class GlobalSearchViewModel(
                     )
                 )
 
-                val filteredResult = if (filters.selectedTypeIds.isNotEmpty()) {
+                val filteredResult = if (filters.selectedTypes.isNotEmpty()) {
                     val mimePatterns = filters.getMimePatterns()
                     result.filter { file ->
                         mimePatterns.isEmpty() || mimePatterns.any { pattern ->
+                            (pattern == TYPE_FILE && !file.isFolder) ||
                             file.mimeType.startsWith(pattern) || file.mimeType == pattern
                         }
                     }
