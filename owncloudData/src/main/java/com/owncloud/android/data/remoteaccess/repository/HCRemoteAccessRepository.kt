@@ -52,7 +52,7 @@ class HCRemoteAccessRepository(
 
             tokenStorage.saveUserName(userName = userName)
         } catch (e: HttpException) {
-            if (e.code() == HttpConstants.HTTP_BAD_REQUEST) {
+            if (e.code() == HttpConstants.HTTP_UNAUTHORIZED) {
                 throw WrongCodeException(e)
             } else {
                 throw e
