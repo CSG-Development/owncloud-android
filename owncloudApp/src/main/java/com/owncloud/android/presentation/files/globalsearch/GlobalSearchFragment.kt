@@ -78,9 +78,15 @@ class GlobalSearchFragment : Fragment(),
             StaggeredGridLayoutManager(1, RecyclerView.VERTICAL)
         }
     }
-    private lateinit var fileListAdapter: FileListAdapter
-    private lateinit var viewType: ViewType
-
+    private val fileListAdapter: FileListAdapter by lazy {
+        FileListAdapter(
+            context = requireContext(),
+            layoutManager = layoutManager,
+            isPickerMode = false,
+            listener = this,
+            isMultiPersonal = isMultiPersonal
+        )
+    }
     private var isMultiPersonal = false
 
     private var actionMode: ActionMode? = null
@@ -175,22 +181,11 @@ class GlobalSearchFragment : Fragment(),
     }
 
     private fun initViews() {
-        viewType = if (globalSearchViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
-
-        binding.optionsLayout.viewTypeSelected = viewType
+        binding.optionsLayout.viewTypeSelected = if (globalSearchViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
         binding.optionsLayout.sortTypeSelected = globalSearchViewModel.getSortType()
         binding.optionsLayout.sortOrderSelected = globalSearchViewModel.getSortOrder()
 
         binding.recyclerViewMainFileList.layoutManager = layoutManager
-
-        fileListAdapter = FileListAdapter(
-            context = requireContext(),
-            layoutManager = layoutManager,
-            isPickerMode = false,
-            listener = this,
-            isMultiPersonal = isMultiPersonal
-        )
-
         binding.recyclerViewMainFileList.adapter = fileListAdapter
 
         binding.optionsLayout.onSortOptionsListener = this
@@ -302,6 +297,7 @@ class GlobalSearchFragment : Fragment(),
                     val typeFilter = filtersState.selectedTypes.firstOrNull()
                     typeFilter?.let { getString(it.labelResId) } ?: getString(R.string.homecloud_global_search_filter_type)
                 }
+
                 else -> getString(R.string.homecloud_global_search_filter_type_counter, selectedCount)
             }
             isSelected = selectedCount > 0
@@ -631,8 +627,12 @@ class GlobalSearchFragment : Fragment(),
         }
 
         val file = ocFileWithSyncInfo.file
-        val fileActions = requireActivity() as? MainFileListFragment.FileActions
-        fileActions?.onFileClicked(file)
+        val fileDisplayActivity = requireActivity() as? FileDisplayActivity
+        if (file.isFolder) {
+            fileDisplayActivity?.startFolderPreview(file)
+        } else {
+            fileDisplayActivity?.onFileClicked(file)
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")

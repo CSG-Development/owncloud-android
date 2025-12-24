@@ -267,7 +267,10 @@ class FileDisplayActivity : FileActivity(),
 
         // setup drawer
         setupDrawer()
-        setupGlobalSearch()
+
+        if (savedInstanceState == null) {
+            setupGlobalSearch()
+        }
 
         setupNavigationBottomBar(getMenuItemForFileListOption(fileListOption))
 
@@ -1798,6 +1801,17 @@ class FileDisplayActivity : FileActivity(),
         setSecondFragment(textPreviewFragment)
         updateToolbar(file)
         setFile(file)
+    }
+
+    fun startFolderPreview(file: OCFile) {
+        val folderPreviewFragment = MainFileListFragment.newInstance(
+            file,
+            accountName = account.name,
+        )
+        setSecondFragment(folderPreviewFragment)
+        updateToolbar(file)
+        setFile(file)
+        folderPreviewFragment.setListeners()
     }
 
     /**
