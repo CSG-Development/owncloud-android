@@ -121,6 +121,7 @@ import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
+import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
@@ -134,7 +135,7 @@ import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 import java.io.File
 
-class MainFileListFragment : Fragment(),
+class MainFileListFragment : FileFragment(),
     CreateFolderDialogFragment.CreateFolderListener,
     FileListAdapter.FileListAdapterListener,
     SearchView.OnQueryTextListener,
@@ -350,6 +351,21 @@ class MainFileListFragment : Fragment(),
                 )
             )
         }
+    }
+
+    override fun updateViewForSyncInProgress() {
+    }
+
+    override fun updateViewForSyncOff() {
+    }
+
+    override fun onFileMetadataChanged(updatedFile: OCFile?) {
+    }
+
+    override fun onFileMetadataChanged() {
+    }
+
+    override fun onFileContentChanged() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
