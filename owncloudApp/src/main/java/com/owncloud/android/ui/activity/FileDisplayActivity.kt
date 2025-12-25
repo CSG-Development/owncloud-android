@@ -267,10 +267,7 @@ class FileDisplayActivity : FileActivity(),
 
         // setup drawer
         setupDrawer()
-
-        if (savedInstanceState == null) {
-            setupGlobalSearch()
-        }
+        setupGlobalSearch()
 
         setupNavigationBottomBar(getMenuItemForFileListOption(fileListOption))
 

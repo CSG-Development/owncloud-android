@@ -54,7 +54,7 @@ class GlobalSearchViewModel(
     }
 
     fun updateSearchQuery(query: String) {
-        performSearch(query)
+        performSearch(query, hasFiltersSelected())
     }
 
     fun updateTypeFilters(selectedTypeIds: Set<TypeFilter>) {
@@ -84,6 +84,11 @@ class GlobalSearchViewModel(
         val sizeFilter = SizeFilter.fromId(filterId)
         updateSizeFilter(sizeFilter)
     }
+
+    private fun hasFiltersSelected(): Boolean =
+        _filtersState.value.selectedTypes.isNotEmpty() ||
+                _filtersState.value.dateFilter != DateFilter.ANY ||
+                _filtersState.value.sizeFilter != SizeFilter.ANY
 
     fun getFiltersState(): SearchFiltersState = _filtersState.value
 
@@ -131,7 +136,7 @@ class GlobalSearchViewModel(
                     result.filter { file ->
                         mimePatterns.isEmpty() || mimePatterns.any { pattern ->
                             (pattern == TYPE_FILE && !file.isFolder) ||
-                            file.mimeType.startsWith(pattern) || file.mimeType == pattern
+                                    file.mimeType.startsWith(pattern) || file.mimeType == pattern
                         }
                     }
                 } else {
