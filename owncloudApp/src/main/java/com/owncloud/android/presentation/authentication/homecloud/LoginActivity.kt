@@ -335,6 +335,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                     state.errorCodeException == null -> {
                         dialogBinding.allowButton.visibility = View.VISIBLE
+                        dialogBinding.allowButton.isEnabled = true
                         dialogBinding.resendButton.visibility = View.INVISIBLE
                         dialogBinding.allowLoading.visibility = View.INVISIBLE
                         dialogBinding.codeEditVerification.clearError()
@@ -342,6 +343,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                     state.errorCodeException is WrongCodeException -> {
                         dialogBinding.allowButton.visibility = View.VISIBLE
+                        dialogBinding.allowButton.isEnabled = false
                         dialogBinding.resendButton.visibility = View.INVISIBLE
                         dialogBinding.allowLoading.visibility = View.INVISIBLE
                         dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_incorrect_code))
@@ -356,6 +358,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                     else -> {
                         dialogBinding.allowButton.visibility = View.INVISIBLE
+                        dialogBinding.allowButton.isEnabled = false
                         dialogBinding.resendButton.visibility = View.VISIBLE
                         dialogBinding.allowLoading.visibility = View.INVISIBLE
                         dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_code_unknown_error))

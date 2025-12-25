@@ -150,10 +150,11 @@ class VerificationCodeView @JvmOverloads constructor(
 
         et.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                if (errorTextView.isVisible) {
+                    clearError()
+                }
+
                 if (!s.isNullOrEmpty()) {
-                    if (errorTextView.isVisible) {
-                        clearError()
-                    }
                     if (index < codeLength - 1) {
                         editTexts[index + 1].requestFocus()
                     } else {
