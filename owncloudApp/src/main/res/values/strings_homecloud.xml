@@ -28,7 +28,7 @@
 
     <string name="homecloud_new_shortcut_url_edit_text_hint">Enter URL</string>
     <string name="homecloud_new_shortcut_name_edit_text_hint">Enter Name (without .url)</string>
-    
+
     <string name="homecloud_drawer_storage_label">Storage space</string>
     <string name="homecloud_drawer_quota">%1$s of %2$s used</string>
 
@@ -44,6 +44,7 @@
     <string name="homecloud_button_skip">Skip</string>
     <string name="homecloud_action_button_next">Next</string>
     <string name="homecloud_incorrect_code">Incorrect code.</string>
+    <string name="homecloud_expired_code">Your code has expired</string>
     <string name="homecloud_code_unknown_error">Something went wrong.</string>
     <string name="homecloud_login_invalid_email_message">Incorrect email</string>
 
@@ -63,4 +64,49 @@
     <string name="homecloud_retry">Retry</string>
     <string name="homecloud_device_update">Device update</string>
     <string name="homecloud_device_sync_error">Your device may be disconnected or address has changed. Do you want to try to sync device?</string>
+
+    <string name="homecloud_bottom_nav_search">Search</string>
+
+    <string name="homecloud_global_search_view_title">Search files</string>
+    <string name="homecloud_global_search_initial_title">Search for your files</string>
+    <string name="homecloud_global_search_empty_title">No matches</string>
+    <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
+
+    <!-- Search Filters -->
+    <string name="homecloud_global_search_filter_type_counter">Type (%1$d)</string>
+    <string name="homecloud_global_search_filter_type">Type</string>
+    <string name="homecloud_global_search_filter_date">Date</string>
+    <string name="homecloud_global_search_filter_size">Size</string>
+    <string name="homecloud_common_apply">Apply</string>
+
+    <!-- Type Filter Options -->
+    <string name="homecloud_filter_type_file">File</string>
+    <string name="homecloud_filter_type_folder">Folder</string>
+    <string name="homecloud_filter_type_document">Document</string>
+    <string name="homecloud_filter_type_spreadsheet">Spreadsheet</string>
+    <string name="homecloud_filter_type_presentation">Presentation</string>
+    <string name="homecloud_filter_type_pdf">PDF</string>
+    <string name="homecloud_filter_type_image">Image</string>
+    <string name="homecloud_filter_type_video">Video</string>
+    <string name="homecloud_filter_type_audio">Audio</string>
+    <string name="homecloud_filter_type_archive">Archive</string>
+
+    <!-- Date Filter Options -->
+    <string name="homecloud_filter_date_any">Any time</string>
+    <string name="homecloud_filter_date_today">Today</string>
+    <string name="homecloud_filter_date_recently_used">Recently used</string>
+    <string name="homecloud_filter_date_week">This week</string>
+    <string name="homecloud_filter_date_month">This month</string>
+    <string name="homecloud_filter_date_year">This year</string>
+
+    <!-- Size Filter Options -->
+    <string name="homecloud_filter_size_any">Any size</string>
+    <string name="homecloud_filter_size_gt_10mb">&gt;10 MB</string>
+    <string name="homecloud_filter_size_lt_10mb">&lt; 10 MB</string>
+    <string name="homecloud_filter_size_lt_100mb">&lt; 100 MB</string>
+    <string name="homecloud_filter_size_gt_100mb">&gt; 100 MB</string>
+    <string name="homecloud_filter_size_lt_500mb">&lt; 500 MB</string>
+    <string name="homecloud_filter_size_gt_500mb">&gt; 500 MB</string>
+    <string name="homecloud_filter_size_lt_1gb">&lt; 1 GB</string>
+    <string name="homecloud_filter_size_gt_1gb">&gt; 1 GB</string>
 </resources>

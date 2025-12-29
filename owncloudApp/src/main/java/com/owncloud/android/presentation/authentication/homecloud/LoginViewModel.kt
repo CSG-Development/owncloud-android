@@ -108,12 +108,13 @@ class LoginViewModel(
 
                     initiateRemoteAccessAuthenticationUseCase.execute(currentState.username)
                 },
-                exceptionHandlerBlock = {
+                exceptionHandlerBlock = { e ->
                     when (currentState) {
                         is LoginScreenState.EmailState -> {
                             _state.update {
-                                currentState.copy(errorMessage = contextProvider.getString(R.string.homecloud_code_unknown_error))
+                                currentState.copy(errorCodeException = e)
                             }
+                            _events.emit(LoginEvent.ShowCodeDialog)
                         }
 
                         is LoginScreenState.LoginState -> {
@@ -193,7 +194,7 @@ class LoginViewModel(
             runCatchingException(
                 block = {
                     val currentState = _state.value as LoginScreenState.EmailState
-                    _state.update { currentState.copy(isAllowLoading = true, errorCodeMessage = null) }
+                    _state.update { currentState.copy(isAllowLoading = true, errorCodeException = null) }
                     getRemoteAccessTokenUseCase.execute(currentState.reference, code, currentState.username)
                     switchToLoginState()
                 },
@@ -212,19 +213,9 @@ class LoginViewModel(
     }
 
     private fun handleCodeError(e: Throwable) {
-        val errorMessage = when {
-            e is WrongCodeException -> {
-                contextProvider.getString(R.string.homecloud_incorrect_code)
-            }
-
-            else -> {
-                contextProvider.getString(R.string.homecloud_code_unknown_error)
-            }
-        }
-
         _state.update { currentState ->
             when (currentState) {
-                is LoginScreenState.EmailState -> currentState.copy(errorCodeMessage = errorMessage)
+                is LoginScreenState.EmailState -> currentState.copy(errorCodeException = e)
                 is LoginScreenState.LoginState -> currentState
             }
         }
@@ -574,7 +565,7 @@ class LoginViewModel(
             val reference: String = "",
             val isAllowLoading: Boolean = false,
             override val errorMessage: String? = null,
-            val errorCodeMessage: String? = null,
+            val errorCodeException: Throwable? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
             override val isActionButtonLoading: Boolean = false

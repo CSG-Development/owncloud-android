@@ -30,6 +30,7 @@ fun FileListOption.toTitleStringRes(): Int = when (this) {
     FileListOption.SHARED_BY_LINK -> R.string.file_list_empty_title_shared_by_links
     FileListOption.AV_OFFLINE -> R.string.file_list_empty_title_available_offline
     FileListOption.UPLOADS_LIST -> R.string.upload_list_empty
+    FileListOption.GLOBAL_SEARCH -> R.string.homecloud_global_search_empty_title
 }
 
 @StringRes
@@ -39,6 +40,7 @@ fun FileListOption.toSubtitleStringRes(): Int = when (this) {
     FileListOption.SHARED_BY_LINK -> R.string.file_list_empty_subtitle_shared_by_links
     FileListOption.AV_OFFLINE -> R.string.file_list_empty_subtitle_available_offline
     FileListOption.UPLOADS_LIST -> R.string.upload_list_empty_subtitle
+    FileListOption.GLOBAL_SEARCH -> R.string.homecloud_global_search_empty_subtitle
 }
 
 @DrawableRes
@@ -48,4 +50,5 @@ fun FileListOption.toDrawableRes(): Int = when (this) {
     FileListOption.SHARED_BY_LINK -> R.drawable.ic_shared_by_link
     FileListOption.AV_OFFLINE -> R.drawable.ic_available_offline
     FileListOption.UPLOADS_LIST -> R.drawable.ic_uploads
+    FileListOption.GLOBAL_SEARCH -> R.drawable.ic_search
 }

@@ -6,20 +6,28 @@ import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessDeviceResponse
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
+import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenErrorResponse
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.exceptions.CodeExpiredException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
 import com.owncloud.android.lib.common.http.HttpConstants
+import com.squareup.moshi.Moshi
 import retrofit2.HttpException
 
 class HCRemoteAccessRepository(
     private val remoteAccessService: RemoteAccessService,
     private val tokenStorage: RemoteAccessTokenStorage,
     private val deviceVerificationClient: HCDeviceVerificationClient,
-    private val currentDeviceStorage: CurrentDeviceStorage
+    private val currentDeviceStorage: CurrentDeviceStorage,
+    private val moshi: Moshi,
 ) : RemoteAccessRepository {
+
+    private val tokenErrorAdapter by lazy {
+        moshi.adapter(RemoteAccessTokenErrorResponse::class.java)
+    }
 
     override suspend fun initiateAuthentication(
         email: String,
@@ -52,11 +60,28 @@ class HCRemoteAccessRepository(
 
             tokenStorage.saveUserName(userName = userName)
         } catch (e: HttpException) {
-            if (e.code() == HttpConstants.HTTP_BAD_REQUEST) {
-                throw WrongCodeException(e)
-            } else {
-                throw e
+            handleTokenError(e)
+        }
+    }
+
+    private fun handleTokenError(e: HttpException) {
+        if (e.code() == HttpConstants.HTTP_UNAUTHORIZED) {
+            val errorResponse = e.response()?.errorBody()?.string()
+            errorResponse?.let {
+                val errorType = tokenErrorAdapter.fromJson(it)
+                when (errorType?.errorType) {
+                    "invalid credentials" -> {
+                        throw WrongCodeException(e)
+                    }
+                    "verification code expired" -> {
+                        throw CodeExpiredException(e)
+                    }
+                    else -> { }
+                }
             }
+            throw e
+        } else {
+            throw e
         }
     }
 

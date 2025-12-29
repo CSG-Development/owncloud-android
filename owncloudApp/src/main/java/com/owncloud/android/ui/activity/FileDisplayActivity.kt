@@ -40,11 +40,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.RemoteException
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -101,6 +104,7 @@ import com.owncloud.android.presentation.conflicts.ConflictsResolveActivity
 import com.owncloud.android.presentation.files.details.FileDetailsFragment
 import com.owncloud.android.presentation.files.filelist.MainEmptyListFragment
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
+import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.security.LockType
@@ -174,6 +178,9 @@ class FileDisplayActivity : FileActivity(),
     private val secondFragment: FileFragment?
         get() = supportFragmentManager.findFragmentByTag(TAG_SECOND_FRAGMENT) as FileFragment?
 
+    private val globalSearchFragment: GlobalSearchFragment?
+        get() = supportFragmentManager.findFragmentByTag(TAG_GLOBAL_SEARCH) as GlobalSearchFragment?
+
     private var selectAllMenuItem: MenuItem? = null
 
     private var fileWaitingToPreview: OCFile? = null
@@ -188,7 +195,7 @@ class FileDisplayActivity : FileActivity(),
 
     private val fileOperationsViewModel: FileOperationsViewModel by viewModel()
     private val transfersViewModel: TransfersViewModel by viewModel()
-    private lateinit var  spacesListViewModel: SpacesListViewModel
+    private lateinit var spacesListViewModel: SpacesListViewModel
     private val manageAccountsViewModel: ManageAccountsViewModel by viewModel()
 
     private val sharedPreferences: SharedPreferencesProvider by inject()
@@ -260,6 +267,7 @@ class FileDisplayActivity : FileActivity(),
 
         // setup drawer
         setupDrawer()
+        setupGlobalSearch()
 
         setupNavigationBottomBar(getMenuItemForFileListOption(fileListOption))
 
@@ -286,10 +294,14 @@ class FileDisplayActivity : FileActivity(),
             AppRater.appLaunched(this, packageName)
         }
 
-        if (isLandscapeMode && !isTablet) {
+        if ((isLandscapeMode && !isTablet) || secondFragment != null) {
             // Hide both bars in smartphone landscape mode
             showBottomNavBar(false)
-            binding.navCoordinatorLayout.appBarLayout.isVisible = false
+        }
+        setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH && secondFragment == null)
+
+        if (secondFragment != null) {
+            updateToolbar(file)
         }
 
         checkNotificationPermission()
@@ -399,6 +411,36 @@ class FileDisplayActivity : FileActivity(),
         spacesListViewModel.refreshSpacesFromServer()
     }
 
+    private fun setupGlobalSearch() {
+        val globalSearchBar = binding.navCoordinatorLayout.toolbar?.globalSearchBar
+        globalSearchBar?.globalSearchEditText?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(searchText: CharSequence, start: Int, before: Int, count: Int) {
+                val query = searchText.trim().toString()
+                globalSearchFragment?.updateSearchQuery(query)
+                globalSearchBar.searchClearButton.isVisible = query.isNotBlank()
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        globalSearchBar?.globalSearchEditText?.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = globalSearchBar.globalSearchEditText.text?.trim().toString()
+                globalSearchFragment?.updateSearchQuery(query)
+                true
+            } else {
+                false
+            }
+        }
+
+        globalSearchBar?.searchClearButton?.setOnClickListener {
+            globalSearchBar.globalSearchEditText.text?.clear()
+            globalSearchBar.searchClearButton.isVisible = false
+        }
+    }
+
     private fun initAndShowListOfFiles(fileListOption: FileListOption = FileListOption.ALL_FILES) {
         val mainListOfFiles = MainFileListFragment.newInstance(
             initialFolderToDisplay = file,
@@ -454,7 +496,7 @@ class FileDisplayActivity : FileActivity(),
     }
 
     private fun initFragmentsWithFile() {
-        if (account != null && file != null) {
+        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH) {
             /// First fragment
             mainFileListFragment?.navigateToFolder(currentDir)
                 ?: Timber.e("Still have a chance to lose the initialization of list fragment >(")
@@ -470,6 +512,14 @@ class FileDisplayActivity : FileActivity(),
         } else {
             Timber.e("initFragmentsWithFile() called with invalid nulls! account is $account, file is $file")
         }
+    }
+
+    private fun initAndShowGlobalSearch() {
+        val listOfSpaces = GlobalSearchFragment()
+        this.fileListOption = FileListOption.GLOBAL_SEARCH
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.left_fragment_container, listOfSpaces, TAG_GLOBAL_SEARCH)
+        transaction.commit()
     }
 
     /**
@@ -529,6 +579,7 @@ class FileDisplayActivity : FileActivity(),
      * @param fragment New second Fragment to set.
      */
     private fun setSecondFragment(fragment: Fragment) {
+        setGlobalSearchBarVisible(false, clearSearch = false)
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.right_fragment_container, fragment, TAG_SECOND_FRAGMENT)
         transaction.commitNow()
@@ -775,14 +826,24 @@ class FileDisplayActivity : FileActivity(),
             if (secondFragment != null) {
                 // If secondFragment was shown, we need to navigate to the parent of the displayed file
                 // Need a cleanup
-                val folderIdToDisplay =
-                    if (fileListOption == FileListOption.AV_OFFLINE) storageManager.getRootPersonalFolder()!!.id!!
-                    else secondFragment!!.file!!.parentId!!
-                mainFileListFragment?.navigateToFolderId(folderIdToDisplay)
-                cleanSecondFragment()
-                updateToolbar(mainFileListFragment?.getCurrentFile())
-                mainFileListFragment?.getCurrentFile()?.let {
-                    file = it
+                if (fileListOption == FileListOption.GLOBAL_SEARCH) {
+                    cleanSecondFragment()
+                    updateStandardToolbar(
+                        title = "",
+                        homeButtonDisplayed = true,
+                        showBackArrow = false,
+                    )
+                    setGlobalSearchBarVisible(isVisible = true, clearSearch = false)
+                } else {
+                    val folderIdToDisplay =
+                        if (fileListOption == FileListOption.AV_OFFLINE) storageManager.getRootPersonalFolder()!!.id!!
+                        else secondFragment!!.file!!.parentId!!
+                    mainFileListFragment?.navigateToFolderId(folderIdToDisplay)
+                    cleanSecondFragment()
+                    updateToolbar(mainFileListFragment?.getCurrentFile())
+                    mainFileListFragment?.getCurrentFile()?.let {
+                        file = it
+                    }
                 }
             } else {
                 val currentDirDisplayed = mainFileListFragment?.getCurrentFile()
@@ -795,11 +856,13 @@ class FileDisplayActivity : FileActivity(),
                 else if (currentDirDisplayed.parentId == ROOT_PARENT_ID) {
                     // If current space is a project space or personal in a multi-personal account, navigate back to the spaces list
                     if (mainFileListFragment?.getCurrentSpace()?.isProject == true ||
-                        (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)) {
+                        (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)
+                    ) {
                         navigateTo(FileListOption.SPACES_LIST)
                     } else if (fileListOption.isSharedByLink()) {
                         setBottomBarVisibility(isVisible = true)
                         navigateToOption(FileListOption.ALL_FILES)
+                        setCheckedItemAtBottomBar(R.id.nav_all_files)
                     } else {
                         // If current space is not a project space (personal or shares) or it is null ("Files" in oC10), close the app
                         finish()
@@ -834,7 +897,8 @@ class FileDisplayActivity : FileActivity(),
         super.onResume()
 
         if (mainFileListFragment?.getCurrentSpace()?.isProject == true ||
-            (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)) {
+            (mainFileListFragment?.getCurrentSpace()?.isPersonal == true && isMultiPersonal)
+        ) {
             setCheckedItemAtBottomBar(getMenuItemForFileListOption(FileListOption.SPACES_LIST))
             updateToolbar(null, mainFileListFragment?.getCurrentSpace())
         } else {
@@ -1011,6 +1075,7 @@ class FileDisplayActivity : FileActivity(),
                     FileListOption.ALL_FILES -> getString(R.string.default_display_name_for_root_folder)
                     FileListOption.SPACES_LIST -> getString(R.string.bottom_nav_spaces)
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
+                    FileListOption.GLOBAL_SEARCH -> ""
                 }
             setTitle(title)
             val showBackArrow = fileListOption.isSharedByLink()
@@ -1026,6 +1091,7 @@ class FileDisplayActivity : FileActivity(),
 
     private fun isMultiPersonalModeInAvailableOffline(space: OCSpace?) = space!!.isPersonal && isMultiPersonal && fileListOption == FileListOption
         .AV_OFFLINE
+
     /**
      * Updates the view associated to the activity after the finish of an operation trying to
      * remove a file.
@@ -1413,6 +1479,7 @@ class FileDisplayActivity : FileActivity(),
                     is SynchronizeFileUseCase.SyncType.UploadEnqueued -> {
                         showSnackMessage(getString(R.string.upload_enqueued_msg))
                     }
+
                     null -> { /* Nothing to do */ }
                 }
             }
@@ -1733,6 +1800,17 @@ class FileDisplayActivity : FileActivity(),
         setFile(file)
     }
 
+    fun startFolderPreview(file: OCFile) {
+        val folderPreviewFragment = MainFileListFragment.newInstance(
+            file,
+            accountName = account.name,
+        )
+        setSecondFragment(folderPreviewFragment)
+        updateToolbar(file)
+        setFile(file)
+        folderPreviewFragment.setListeners()
+    }
+
     /**
      * Chooses the suitable method to preview a file [OCFile].
      *
@@ -1790,6 +1868,13 @@ class FileDisplayActivity : FileActivity(),
         setSecondFragment(detailsFragment)
     }
 
+    private fun setGlobalSearchBarVisible(isVisible: Boolean, clearSearch: Boolean = true) {
+        binding.navCoordinatorLayout.toolbar?.globalSearchBar?.root?.isVisible = isVisible
+        if (clearSearch) {
+            binding.navCoordinatorLayout.toolbar?.globalSearchBar?.globalSearchEditText?.text?.clear()
+        }
+    }
+
     private fun navigateTo(newFileListOption: FileListOption, initialState: Boolean = false) {
         val previousFileListOption = fileListOption
         when (newFileListOption) {
@@ -1809,6 +1894,7 @@ class FileDisplayActivity : FileActivity(),
                         browseToRoot()
                     }
                 }
+                setGlobalSearchBarVisible(false)
             }
 
             FileListOption.SPACES_LIST -> {
@@ -1816,6 +1902,7 @@ class FileDisplayActivity : FileActivity(),
                     file = null
                     initAndShowListOfSpaces()
                     updateToolbar(null)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
@@ -1834,6 +1921,7 @@ class FileDisplayActivity : FileActivity(),
                         updateToolbar(null)
                         setBottomBarVisibility(isVisible = false)
                     }
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
@@ -1843,6 +1931,7 @@ class FileDisplayActivity : FileActivity(),
                     fileListOption = newFileListOption
                     mainFileListFragment?.updateFileListOption(newFileListOption, file) ?: initAndShowListOfFiles(newFileListOption)
                     updateToolbar(file)
+                    setGlobalSearchBarVisible(false)
                 }
             }
 
@@ -1855,6 +1944,15 @@ class FileDisplayActivity : FileActivity(),
                         homeButtonDisplayed = true,
                         showBackArrow = false,
                     )
+                    setGlobalSearchBarVisible(false)
+                }
+            }
+
+            FileListOption.GLOBAL_SEARCH -> {
+                if (previousFileListOption != newFileListOption || initialState) {
+                    fileListOption = newFileListOption
+                    initAndShowGlobalSearch()
+                    setGlobalSearchBarVisible(true)
                 }
             }
         }
@@ -1870,6 +1968,7 @@ class FileDisplayActivity : FileActivity(),
         FileListOption.AV_OFFLINE -> R.id.nav_available_offline_files
         FileListOption.ALL_FILES -> R.id.nav_all_files
         FileListOption.UPLOADS_LIST -> R.id.nav_uploads
+        FileListOption.GLOBAL_SEARCH -> R.id.nav_global_search
         null -> R.id.nav_all_files
     }
 
@@ -1960,7 +2059,7 @@ class FileDisplayActivity : FileActivity(),
         startDownloadForSending(file)
     }
 
-    override fun cancelFileTransference(files: ArrayList<OCFile>) {
+    override fun cancelFileTransference(files: List<OCFile>) {
         transfersViewModel.cancelTransfersRecursively(files, account.name)
     }
 
@@ -2077,6 +2176,7 @@ class FileDisplayActivity : FileActivity(),
     companion object {
         private const val TAG_LIST_OF_FILES = "LIST_OF_FILES"
         private const val TAG_LIST_OF_SPACES = "LIST_OF_SPACES"
+        private const val TAG_GLOBAL_SEARCH = "TAG_GLOBAL_SEARCH"
         private const val TAG_SECOND_FRAGMENT = "SECOND_FRAGMENT"
 
         private const val KEY_WAITING_TO_PREVIEW = "WAITING_TO_PREVIEW"

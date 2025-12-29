@@ -25,6 +25,8 @@ import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogCodeBinding
 import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.device.model.Device
+import com.owncloud.android.domain.exceptions.CodeExpiredException
+import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
 import com.owncloud.android.extensions.manageOptionLockSelected
@@ -331,18 +333,35 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                         dialogBinding.allowLoading.visibility = View.VISIBLE
                     }
 
-                    state.errorCodeMessage == null -> {
+                    state.errorCodeException == null -> {
                         dialogBinding.allowButton.visibility = View.VISIBLE
+                        dialogBinding.allowButton.isEnabled = true
                         dialogBinding.resendButton.visibility = View.INVISIBLE
                         dialogBinding.allowLoading.visibility = View.INVISIBLE
                         dialogBinding.codeEditVerification.clearError()
                     }
 
-                    else -> {
+                    state.errorCodeException is WrongCodeException -> {
+                        dialogBinding.allowButton.visibility = View.VISIBLE
+                        dialogBinding.allowButton.isEnabled = false
+                        dialogBinding.resendButton.visibility = View.INVISIBLE
+                        dialogBinding.allowLoading.visibility = View.INVISIBLE
+                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_incorrect_code))
+                    }
+
+                    state.errorCodeException is CodeExpiredException -> {
                         dialogBinding.allowButton.visibility = View.INVISIBLE
                         dialogBinding.resendButton.visibility = View.VISIBLE
                         dialogBinding.allowLoading.visibility = View.INVISIBLE
-                        dialogBinding.codeEditVerification.setError(state.errorCodeMessage)
+                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_expired_code))
+                    }
+
+                    else -> {
+                        dialogBinding.allowButton.visibility = View.INVISIBLE
+                        dialogBinding.allowButton.isEnabled = false
+                        dialogBinding.resendButton.visibility = View.VISIBLE
+                        dialogBinding.allowLoading.visibility = View.INVISIBLE
+                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_code_unknown_error))
                     }
                 }
 

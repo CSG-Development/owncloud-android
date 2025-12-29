@@ -286,6 +286,7 @@ abstract class DrawerActivity : ToolbarActivity() {
             R.id.nav_spaces -> navigateToOption(FileListOption.SPACES_LIST)
             R.id.nav_uploads -> navigateToOption(FileListOption.UPLOADS_LIST)
             R.id.nav_available_offline_files -> navigateToOption(FileListOption.AV_OFFLINE)
+            R.id.nav_global_search -> navigateToOption(FileListOption.GLOBAL_SEARCH)
         }
     }
 

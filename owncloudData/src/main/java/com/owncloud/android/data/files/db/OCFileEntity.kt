@@ -22,7 +22,9 @@ import android.database.Cursor
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.util.TableInfo
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILE_ACCOUNT_OWNER
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILE_CONTENT_LENGTH
@@ -58,12 +60,22 @@ import com.owncloud.android.domain.files.model.MIME_DIR_UNIX
 
 @Entity(
     tableName = FILES_TABLE_NAME,
+    indices = [
+        Index(
+            /*
+              TODO: This index is required to avoid files duplications while sync.
+              Different spaces with the same owner and remote path won't be possible
+              */
+            value = [FILE_OWNER, "remotePath"],
+            unique = true
+        )
+    ],
     foreignKeys = [ForeignKey(
         entity = SpacesEntity::class,
         parentColumns = arrayOf(SPACES_ACCOUNT_NAME, SPACES_ID),
         childColumns = arrayOf(FILE_OWNER, FILE_SPACE_ID),
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
 )
 data class OCFileEntity(
     var parentId: Long? = null,

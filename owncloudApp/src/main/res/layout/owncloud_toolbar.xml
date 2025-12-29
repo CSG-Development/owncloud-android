@@ -27,6 +27,12 @@
         android:focusableInTouchMode="false"
         android:visibility="visible"
         app:navigationContentDescription="@string/common_back"
-        android:theme="@style/ThemeOverlay.homeCloud.Toolbar"/>
+        android:theme="@style/ThemeOverlay.homeCloud.Toolbar">
+
+        <include
+            android:id="@+id/global_search_bar"
+            layout="@layout/global_search_bar"
+            android:visibility="gone" />
+    </com.google.android.material.appbar.MaterialToolbar>
 
 </com.google.android.material.appbar.AppBarLayout>
