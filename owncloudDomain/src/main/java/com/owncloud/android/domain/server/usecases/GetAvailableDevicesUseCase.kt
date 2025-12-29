@@ -2,6 +2,7 @@ package com.owncloud.android.domain.server.usecases
 
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,7 @@ import timber.log.Timber
 class GetAvailableDevicesUseCase(
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase,
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase,
+    private val getSavedDeviceCertificateUseCase: GetSavedDeviceCertificateUseCase,
 ) {
 
     companion object {
@@ -76,11 +78,29 @@ class GetAvailableDevicesUseCase(
                     mutableDevices.add(localDevice)
                 }
             }
-            mutableDevices
+            sortDevicesByPriority(mutableDevices)
         }.stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
+    }
+
+    private fun sortDevicesByPriority(devices: MutableList<Device>): List<Device> {
+        val savedCertificate = getSavedDeviceCertificateUseCase()
+        if (savedCertificate.isNullOrEmpty()) {
+            return devices
+        }
+
+        val priorityDeviceIndex = devices.indexOfFirst { device ->
+            device.certificateCommonName == savedCertificate
+        }
+
+        if (priorityDeviceIndex != NO_EXIST_INDEX && priorityDeviceIndex != 0) {
+            val priorityDevice = devices.removeAt(priorityDeviceIndex)
+            devices.add(0, priorityDevice)
+        }
+
+        return devices
     }
 }
