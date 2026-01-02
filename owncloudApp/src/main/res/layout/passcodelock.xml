@@ -18,6 +18,7 @@
 -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/passcodeLockLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -28,7 +29,7 @@
         android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginBottom="@dimen/standard_margin"
         app:layout_constraintBottom_toTopOf="@id/layout_code"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -38,8 +39,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/pass_code_enter_pass_code"
-            android:textColor="@android:color/black"
             android:textSize="16sp"
+            android:textStyle="bold"
             app:layout_constraintBottom_toTopOf="@id/explanation"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -69,11 +70,9 @@
         android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@id/error"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title">
+        app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Edit text items will be added here procedurally based on ownBrander settings. -->
+        <!-- Dot items will be added here procedurally based on ownBrander settings. -->
 
     </LinearLayout>
 
@@ -83,35 +82,37 @@
         android:layout_height="wrap_content"
         android:textColor="@color/warning"
         android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@id/lock_time"
+        tools:text="@string/pass_code_wrong"
+        android:layout_marginBottom="@dimen/standard_margin"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_code" />
+        app:layout_constraintBottom_toTopOf="@id/lock_time" />
 
     <TextView
         android:id="@+id/lock_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/passcode_standard_margin"
-        android:textColor="@android:color/black"
         android:textSize="16sp"
-        android:visibility="invisible"
+        android:visibility="gone"
+        tools:text="@string/lock_time_try_again"
+        tools:visibility="visible"
         app:layout_constraintBottom_toTopOf="@id/numberKeyboard"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/error" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <com.owncloud.android.presentation.security.passcode.NumberKeyboard
         android:id="@+id/numberKeyboard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/rightGuideline"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="@id/leftGuideline"
-        app:layout_constraintTop_toBottomOf="@id/lock_time" />
+        app:layout_constraintVertical_bias="0.7"
+        app:layout_constraintStart_toStartOf="@id/leftGuideline" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/leftGuideline"

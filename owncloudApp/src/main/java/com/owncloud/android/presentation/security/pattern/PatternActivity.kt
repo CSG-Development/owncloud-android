@@ -103,7 +103,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
                  * this block takes the pattern input by the user and checks it with the pattern initially set by the user.
                  */
                 binding.headerPattern.text = getString(R.string.pattern_enter_pattern)
-                binding.explanationPattern.visibility = View.INVISIBLE
+                binding.explanationPattern.visibility = View.GONE
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             }
             ACTION_REQUEST_WITH_RESULT -> {
@@ -120,7 +120,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
                 if (confirmingPattern) {
                     binding.headerPattern.text = headerPatternViewText
                     if (!patternExpShouldVisible) {
-                        binding.explanationPattern.visibility = View.INVISIBLE
+                        binding.explanationPattern.visibility = View.GONE
                     }
                 } else {
                     binding.headerPattern.text = getString(R.string.pattern_configure_pattern)
@@ -223,7 +223,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
 
     private fun handleActionCheck() {
         if (patternViewModel.checkPatternIsValid(patternValue)) {
-            binding.errorPattern.visibility = View.INVISIBLE
+            binding.errorPattern.visibility = View.GONE
             val preferencesProvider = OCSharedPreferencesProvider(applicationContext)
             preferencesProvider.putLong(PREFERENCE_LAST_UNLOCK_TIMESTAMP, SystemClock.elapsedRealtime())
             PatternManager.onActivityStopped(this)
@@ -231,7 +231,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
         } else {
             showErrorAndRestart(
                 errorMessage = R.string.pattern_incorrect_pattern,
-                headerMessage = R.string.pattern_enter_pattern, explanationVisibility = View.INVISIBLE
+                headerMessage = R.string.pattern_enter_pattern, explanationVisibility = View.GONE
             )
         }
     }
@@ -241,20 +241,20 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
             patternViewModel.removePattern()
             val result = Intent()
             setResult(RESULT_OK, result)
-            binding.errorPattern.visibility = View.INVISIBLE
+            binding.errorPattern.visibility = View.GONE
             notifyDocumentsProviderRoots(applicationContext)
             finish()
         } else {
             showErrorAndRestart(
                 errorMessage = R.string.pattern_incorrect_pattern,
-                headerMessage = R.string.pattern_enter_pattern, explanationVisibility = View.INVISIBLE
+                headerMessage = R.string.pattern_enter_pattern, explanationVisibility = View.GONE
             )
         }
     }
 
     private fun handleActionRequestWithResult() {
         if (!confirmingPattern) {
-            binding.errorPattern.visibility = View.INVISIBLE
+            binding.errorPattern.visibility = View.GONE
             requestPatternConfirmation()
         } else if (confirmPattern()) {
             savePatternAndExit()
@@ -283,7 +283,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
     private fun requestPatternConfirmation() {
         binding.patternLockView.clearPattern()
         binding.headerPattern.setText(R.string.pattern_reenter_pattern)
-        binding.explanationPattern.visibility = View.INVISIBLE
+        binding.explanationPattern.visibility = View.GONE
         confirmingPattern = true
     }
 

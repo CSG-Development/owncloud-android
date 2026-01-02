@@ -72,6 +72,9 @@
     <string name="homecloud_global_search_empty_title">No matches</string>
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
 
+    <string name="homecloud_use_passcode">Use Passcode</string>
+    <string name="homecloud_use_pattern">Use Pattern</string>
+
     <!-- Search Filters -->
     <string name="homecloud_global_search_filter_type_counter">Type (%1$d)</string>
     <string name="homecloud_global_search_filter_type">Type</string>
