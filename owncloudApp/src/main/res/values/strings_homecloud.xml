@@ -4,6 +4,9 @@
     <string name="setup_btn_next">Next</string>
     <string name="welcome_feature_done_button">Done</string>
 
+    <string name="homecloud_app_name_1">Personal Cloud</string>
+    <string name="homecloud_app_name_2">Files</string>
+
     <string name="homecloud_login_email_hint">Email</string>
     <string name="homecloud_login_server_address_hint">Connecting to</string>
     <string name="homecloud_login_password_hint">Password</string>
@@ -71,6 +74,9 @@
     <string name="homecloud_global_search_initial_title">Search for your files</string>
     <string name="homecloud_global_search_empty_title">No matches</string>
     <string name="homecloud_global_search_empty_subtitle">The search term you entered did not match any item in the selected scope.</string>
+
+    <string name="homecloud_use_passcode">Use Passcode</string>
+    <string name="homecloud_use_pattern">Use Pattern</string>
 
     <!-- Search Filters -->
     <string name="homecloud_global_search_filter_type_counter">Type (%1$d)</string>

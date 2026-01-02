@@ -69,4 +69,9 @@
     <color name="homecloud_dot_unselected">@color/white_transparent</color>
 
     <color name="homecloud_bottom_sheet_divider">#616161</color>
+    <color name="homecloud_pattern_lock">@color/white</color>
+    <color name="homecloud_passcode_lock">@color/homecloud_blue_lighten_2_20</color>
+    <color name="homecloud_passcode_lock_pressed">@color/white_pressed</color>
+    <color name="homecloud_passcode_lock_backspace">@color/homecloud_white_87</color>
+    <color name="homecloud_passcode_text_lock">@color/homecloud_white_70</color>
 </resources>

@@ -32,12 +32,11 @@ package com.owncloud.android.presentation.security.passcode
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
-import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.owncloud.android.BuildConfig
@@ -69,7 +68,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
     private var _binding: PasscodelockBinding? = null
     val binding get() = _binding!!
 
-    private lateinit var passCodeEditTexts: Array<EditText?>
+    private lateinit var passCodeDotViews: Array<ImageView?>
 
     private var numberOfPasscodeDigits = 0
     private var confirmingPassCode = false
@@ -101,7 +100,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         }
 
         numberOfPasscodeDigits = passCodeViewModel.getPassCode()?.length ?: passCodeViewModel.getNumberOfPassCodeDigits()
-        passCodeEditTexts = arrayOfNulls(numberOfPasscodeDigits)
+        passCodeDotViews = arrayOfNulls(numberOfPasscodeDigits)
 
         // Allow or disallow touches with other visible windows
         binding.passcodeLockLayout.filterTouchesWhenObscured =
@@ -121,7 +120,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
             ACTION_CHECK -> { //When you start the app with passcode
                 // this is a pass code request; the user has to input the right value
                 binding.header.text = getString(R.string.pass_code_enter_pass_code)
-                binding.explanation.visibility = View.INVISIBLE
+                binding.explanation.visibility = View.GONE
                 supportActionBar?.setDisplayHomeAsUpEnabled(false) //Don´t show the back arrow
             }
 
@@ -159,7 +158,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
                 // pass code preference has just been disabled in Preferences;
                 // will confirm user knows pass code, then remove it
                 binding.header.text = getString(R.string.pass_code_remove_your_pass_code)
-                binding.explanation.visibility = View.INVISIBLE
+                binding.explanation.visibility = View.GONE
                 supportActionBar?.setDisplayHomeAsUpEnabled(true)
             }
 
@@ -183,11 +182,10 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         val layoutCode = findViewById<LinearLayout>(R.id.layout_code)
         val numberOfPasscodeDigits = (passCodeViewModel.getPassCode()?.length ?: passCodeViewModel.getNumberOfPassCodeDigits())
         for (i in 0 until numberOfPasscodeDigits) {
-            val txt = layoutInflater.inflate(R.layout.passcode_edit_text, layoutCode, false) as EditText
-            layoutCode.addView(txt)
-            passCodeEditTexts[i] = txt
+            val dotView = layoutInflater.inflate(R.layout.passcode_dot_indicator, layoutCode, false) as ImageView
+            layoutCode.addView(dotView)
+            passCodeDotViews[i] = dotView
         }
-        passCodeEditTexts.first()?.requestFocus()
     }
 
     override fun onNumberClicked(number: Int) {
@@ -203,11 +201,8 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
             binding.lockTime.text = getString(R.string.lock_time_try_again, it)
         })
         passCodeViewModel.getFinishedTimeToUnlockLiveData.observe(this, Event.EventObserver {
-            binding.lockTime.visibility = View.INVISIBLE
-            for (editText: EditText? in passCodeEditTexts) {
-                editText?.isEnabled = true
-            }
-            passCodeEditTexts.first()?.requestFocus()
+            binding.lockTime.visibility = View.GONE
+            clearDots()
         })
 
         passCodeViewModel.status.observe(this) { status ->
@@ -239,34 +234,26 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         }
 
         passCodeViewModel.passcode.observe(this) { passcode ->
-            if (passcode.isNotEmpty()) {
-                passCodeEditTexts[passcode.length - 1]?.apply {
-                    text = Editable.Factory.getInstance().newEditable(passcode.last().toString())
-                    isEnabled = false
-                }
-            }
-
-            if (passcode.length < numberOfPasscodeDigits) {
-                //Backspace
-                passCodeEditTexts[passcode.length]?.apply {
-                    isEnabled = true
-                    setText("")
-                    requestFocus()
-                }
+            // Update all dot indicators based on passcode length
+            for (i in 0 until numberOfPasscodeDigits) {
+                passCodeDotViews[i]?.setImageResource(
+                    if (i < passcode.length) R.drawable.passcode_dot_filled
+                    else R.drawable.passcode_dot_empty
+                )
             }
         }
     }
 
     private fun actionCheckOk() {
         // pass code accepted in request, user is allowed to access the app
-        binding.error.visibility = View.INVISIBLE
+        binding.error.visibility = View.GONE
 
         PassCodeManager.onActivityStopped(this)
         finish()
     }
 
     private fun actionCheckMigration() {
-        binding.error.visibility = View.INVISIBLE
+        binding.error.visibility = View.GONE
 
         val intent = Intent(baseContext, PassCodeActivity::class.java)
         intent.apply {
@@ -283,7 +270,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
     private fun actionCheckError() {
         showErrorAndRestart(
             errorMessage = R.string.pass_code_wrong, headerMessage = getString(R.string.pass_code_enter_pass_code),
-            explanationVisibility = View.INVISIBLE
+            explanationVisibility = View.GONE
         )
         if (passCodeViewModel.getNumberOfAttempts() >= NUM_ATTEMPTS_WITHOUT_TIMER) {
             lockScreen()
@@ -300,12 +287,12 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
     private fun actionRemoveError() {
         showErrorAndRestart(
             errorMessage = R.string.pass_code_wrong, headerMessage = getString(R.string.pass_code_enter_pass_code),
-            explanationVisibility = View.INVISIBLE
+            explanationVisibility = View.GONE
         )
     }
 
     private fun actionCreateNoConfirm() {
-        binding.error.visibility = View.INVISIBLE
+        binding.error.visibility = View.GONE
         requestPassCodeConfirmation()
     }
 
@@ -330,9 +317,6 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         val timeToUnlock = passCodeViewModel.getTimeToUnlockLeft()
         if (timeToUnlock > 0) {
             binding.lockTime.visibility = View.VISIBLE
-            for (editText: EditText? in passCodeEditTexts) {
-                editText?.isEnabled = false
-            }
             passCodeViewModel.initUnlockTimer()
         }
     }
@@ -345,7 +329,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         binding.error.visibility = View.VISIBLE
         binding.header.text = headerMessage
         binding.explanation.visibility = explanationVisibility
-        clearBoxes()
+        clearDots()
     }
 
     /**
@@ -353,23 +337,19 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
      * code.
      */
     private fun requestPassCodeConfirmation() {
-        clearBoxes()
+        clearDots()
         binding.header.setText(R.string.pass_code_reenter_your_pass_code)
-        binding.explanation.visibility = View.INVISIBLE
+        binding.explanation.visibility = View.GONE
         confirmingPassCode = true
     }
 
     /**
-     * Sets the input fields to empty strings and puts the focus on the first one.
+     * Resets all dot indicators to empty state.
      */
-    private fun clearBoxes() {
-        for (passCodeEditText in passCodeEditTexts) {
-            passCodeEditText?.apply {
-                isEnabled = true
-                setText("")
-            }
+    private fun clearDots() {
+        for (dotView in passCodeDotViews) {
+            dotView?.setImageResource(R.drawable.passcode_dot_empty)
         }
-        passCodeEditTexts.first()?.requestFocus()
     }
 
     /**

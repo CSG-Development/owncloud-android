@@ -29,6 +29,7 @@ import com.owncloud.android.domain.exceptions.CodeExpiredException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.extensions.manageOptionLockSelected
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.updateTextIfDiffers
@@ -84,6 +85,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.thumbnailName.text = getAppName()
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
         binding.backButton.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =

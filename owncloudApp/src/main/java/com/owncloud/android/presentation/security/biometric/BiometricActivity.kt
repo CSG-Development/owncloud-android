@@ -31,6 +31,8 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.PromptInfo
 import com.owncloud.android.R
+import com.owncloud.android.databinding.ActivityBiometricBinding
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.presentation.security.passcode.PassCodeActivity
 import com.owncloud.android.presentation.security.passcode.PassCodeManager
 import com.owncloud.android.presentation.security.pattern.PatternManager
@@ -48,6 +50,9 @@ class BiometricActivity : AppCompatActivity() {
     private val handler = Handler()
     private val executor = Executor { command -> handler.post(command) }
 
+    private lateinit var binding: ActivityBiometricBinding
+
+
     /**
      * Initializes the activity.
      * <p>
@@ -58,6 +63,10 @@ class BiometricActivity : AppCompatActivity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        binding = ActivityBiometricBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.thumbnailName.text = getAppName()
 
         biometricViewModel.initCipher()?.let {
             cryptoObject = BiometricPrompt.CryptoObject(it)
@@ -71,11 +80,19 @@ class BiometricActivity : AppCompatActivity() {
         }
     }
 
+    private fun getNegativeButtonText(): String {
+        return when {
+            PassCodeManager.isPassCodeEnabled() -> getString(R.string.homecloud_use_passcode)
+            PatternManager.isPatternEnabled() -> getString(R.string.homecloud_use_pattern)
+            else -> getString(android.R.string.cancel)
+        }
+    }
+
     private fun showBiometricPrompt() {
         val promptInfo = PromptInfo.Builder()
             .setTitle(getString(R.string.biometric_prompt_title))
             .setSubtitle(getString(R.string.biometric_prompt_subtitle))
-            .setNegativeButtonText(getString(android.R.string.cancel))
+            .setNegativeButtonText(getNegativeButtonText())
             .setConfirmationRequired(true)
             .build()
         val biometricPrompt = BiometricPrompt(this@BiometricActivity,

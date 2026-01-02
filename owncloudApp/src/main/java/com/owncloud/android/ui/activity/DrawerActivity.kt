@@ -185,7 +185,7 @@ abstract class DrawerActivity : ToolbarActivity() {
         drawerToggle?.toolbarNavigationClickListener = View.OnClickListener { onBackPressed() }
     }
 
-    override fun updateStandardToolbar(title: String, homeButtonDisplayed: Boolean, showBackArrow: Boolean) {
+    override fun updateStandardToolbar(title: CharSequence, homeButtonDisplayed: Boolean, showBackArrow: Boolean) {
         drawerToggle?.isDrawerIndicatorEnabled = !showBackArrow
         setDrawerLockMode(
             if (showBackArrow) {
