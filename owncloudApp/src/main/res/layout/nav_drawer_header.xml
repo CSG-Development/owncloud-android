@@ -44,9 +44,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginVertical="@dimen/standard_margin"
-            android:text="@string/default_display_name_for_root_folder"
-            android:textSize="22sp"
-            />
+            android:textSize="22sp" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/drawer_current_account"

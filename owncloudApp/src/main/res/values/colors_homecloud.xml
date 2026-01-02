@@ -98,4 +98,6 @@
     <color name="homecloud_white_70">#B2FFFFFF</color>
     <color name="homecloud_white_87">#DEFFFFFF</color>
     <color name="homecloud_black_87">#DE000000</color>
+    <color name="homecloud_green">#6EBD49</color>
+
 </resources>

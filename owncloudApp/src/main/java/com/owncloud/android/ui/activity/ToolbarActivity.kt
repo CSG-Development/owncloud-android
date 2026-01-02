@@ -33,6 +33,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import com.owncloud.android.R
+import com.owncloud.android.extensions.getAppName
 
 /**
  * Base class providing toolbar registration functionality, see [.setupToolbar].
@@ -44,7 +45,7 @@ abstract class ToolbarActivity : BaseActivity() {
      * want to use the toolbar.
      */
     open fun setupStandardToolbar(
-        title: String?,
+        title: CharSequence?,
         homeButtonEnabled: Boolean,
         displayShowTitleEnabled: Boolean,
     ) {
@@ -58,7 +59,7 @@ abstract class ToolbarActivity : BaseActivity() {
     }
 
     open fun updateStandardToolbar(
-        title: String = getString(R.string.default_display_name_for_root_folder),
+        title: CharSequence = getAppName(),
         homeButtonDisplayed: Boolean = true,
         showBackArrow: Boolean = false,
     ) {

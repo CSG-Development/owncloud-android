@@ -32,6 +32,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.PromptInfo
 import com.owncloud.android.R
 import com.owncloud.android.databinding.ActivityBiometricBinding
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.presentation.security.passcode.PassCodeActivity
 import com.owncloud.android.presentation.security.passcode.PassCodeManager
 import com.owncloud.android.presentation.security.pattern.PatternManager
@@ -65,6 +66,7 @@ class BiometricActivity : AppCompatActivity() {
 
         binding = ActivityBiometricBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.thumbnailName.text = getAppName()
 
         biometricViewModel.initCipher()?.let {
             cryptoObject = BiometricPrompt.CryptoObject(it)
