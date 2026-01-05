@@ -25,7 +25,7 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
 
     private var items: List<DropdownItem<*>> = emptyList()
     private var onItemSelectedListener: OnItemSelectedListener? = null
-    private var onDropdownDismissListener: OnDropdownDismissListener? = null
+    var onDropdownDismissListener: OnDropdownDismissListener? = null
     private var anchorView: View? = null
 
     private val dropdownBackground: Drawable?
@@ -99,18 +99,6 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
 
     fun setOnItemSelectedListener(listener: OnItemSelectedListener?) {
         this.onItemSelectedListener = listener
-    }
-
-    fun setOnDropdownDismissListener(listener: OnDropdownDismissListener?) {
-        this.onDropdownDismissListener = listener
-    }
-
-    fun setDropdownAnchorView(view: View?) {
-        this.anchorView = view
-    }
-
-    fun setDropdownPopupWidth(width: Int) {
-        this.dropdownWidth = width
     }
 
     override fun showDropDown() {
