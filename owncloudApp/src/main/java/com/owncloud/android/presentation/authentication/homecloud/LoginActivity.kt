@@ -41,7 +41,9 @@ import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
 import com.owncloud.android.presentation.settings.SettingsActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
+import com.owncloud.android.ui.custom.CustomAutoCompleteTextView
 import com.owncloud.android.ui.custom.LoadingButton
+import com.owncloud.android.ui.custom.getTypedData
 import com.owncloud.android.ui.dialog.SslUntrustedCertDialog
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.launch
@@ -58,12 +60,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private val unableToDetectMessage: SpannableStringBuilder by lazy {
         createUnableToDetectMessage()
-    }
-
-    private val adapter by lazy {
-        DeviceAddressAdapter(
-            this, mutableListOf()
-        )
     }
 
     private val dialog by lazy {
@@ -142,10 +138,18 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             loginViewModel.onActionClicked()
         }
 
-        binding.hostUrlInput.setAdapter(adapter)
-        binding.hostUrlInput.setOnItemClickListener { parent, _, position, _ ->
-            val selectedDevice = parent.getItemAtPosition(position) as Device
-            loginViewModel.onDeviceSelected(selectedDevice)
+        binding.hostUrlInput.setOnItemSelectedListener { item, _ ->
+            if (item.isSpecialItem) {
+                loginViewModel.onCantFindDeviceClicked()
+            } else {
+                item.getTypedData<Device>()?.let { device ->
+                    loginViewModel.onDeviceSelected(device)
+                }
+            }
+        }
+        // Show dropdown when clicking on the TextInputLayout end icon
+        binding.hostUrlInputLayout.setEndIconOnClickListener {
+            binding.hostUrlInput.toggleDropdown()
         }
         connectFieldTextWatcher = binding.hostUrlInput.doAfterTextChanged { text ->
             loginViewModel.onServerUrlChanged(text.toString())
@@ -267,9 +271,29 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         launchFileDisplayActivity()
     }
 
-    private fun updateDevices(devices: List<Device>) {
-        adapter.setDevices(devices)
-        binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else ContextCompat.getDrawable(this, R.drawable.ic_device)
+    private fun updateDevices(devices: List<Device>, selectedDevice: Device?) {
+        val deviceIcon = ContextCompat.getDrawable(this, R.drawable.ic_device)
+        val dropdownItems = devices.map { device ->
+            CustomAutoCompleteTextView.DropdownItem(
+                id = device.id,
+                text = device.name,
+                isSelected = device.id == selectedDevice?.id,
+                data = device
+            )
+        }.toMutableList()
+
+        if (devices.isNotEmpty()) {
+            dropdownItems.add(
+                CustomAutoCompleteTextView.DropdownItem(
+                    id = "cant_find_device",
+                    text = getString(R.string.homecloud_cant_find_device),
+                    isSpecialItem = true
+                )
+            )
+        }
+
+        binding.hostUrlInput.setDropdownItems(dropdownItems)
+        binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else deviceIcon
     }
 
     private fun hideCodeDialog() {
@@ -391,7 +415,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.accountUsernameText.text = state.username
 
                     binding.backButton.visibility = View.VISIBLE
-                    updateDevices(state.devices)
+                    updateDevices(state.devices, state.selectedDevice)
                     binding.accountPassword.updateTextIfDiffers(state.password)
                     binding.hostUrlInput.removeTextChangedListener(connectFieldTextWatcher)
                     if (state.selectedDevice == null) {
