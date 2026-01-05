@@ -35,4 +35,10 @@
         <attr name="loadingIndicatorSize" format="dimension" />
     </declare-styleable>
 
+    <declare-styleable name="CustomAutoCompleteTextView">
+        <attr name="dropdownBackground" format="reference" />
+        <attr name="dropdownElevation" format="dimension" />
+        <attr name="dropdownMaxHeight" format="dimension" />
+    </declare-styleable>
+
 </resources>
