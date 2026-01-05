@@ -6,6 +6,7 @@
     <color name="homecloud_secondary">#DDFFFFFF</color>
     <color name="homecloud_color_accent">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_color_outline">#616161</color>
+    <color name="homecloud_color_on_secondary_container">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_surface">#3D3E41</color>
     <color name="homecloud_error">#F28F8C</color>
     <color name="homecloud_error_transparent">#3DF28F8C</color>
