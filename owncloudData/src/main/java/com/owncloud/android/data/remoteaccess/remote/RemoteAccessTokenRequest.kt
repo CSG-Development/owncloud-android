@@ -8,6 +8,8 @@ data class RemoteAccessTokenRequest(
     @Json(name = "reference")
     val reference: String,
     @Json(name = "code")
-    val code: String
+    val code: String,
+    @Json(name = "clientId")
+    val clientId: String
 )
 
