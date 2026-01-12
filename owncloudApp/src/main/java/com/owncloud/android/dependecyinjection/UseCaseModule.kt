@@ -24,6 +24,7 @@
 
 package com.owncloud.android.dependecyinjection
 
+import com.owncloud.android.domain.GetFirebaseInstallationIdUseCase
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryWhichAllowCreationAsStreamUseCase
@@ -323,4 +324,6 @@ val useCaseModule = module {
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
+
+    factoryOf(::GetFirebaseInstallationIdUseCase)
 }

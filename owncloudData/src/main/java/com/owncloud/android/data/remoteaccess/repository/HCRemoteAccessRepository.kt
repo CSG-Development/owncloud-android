@@ -45,11 +45,12 @@ class HCRemoteAccessRepository(
         return remoteAccessService.initiateAuthentication(request = request).reference
     }
 
-    override suspend fun getToken(reference: String, code: String, userName: String) {
+    override suspend fun getToken(reference: String, code: String, userName: String, clientId: String) {
         try {
             val request = RemoteAccessTokenRequest(
                 reference = reference,
-                code = code
+                code = code,
+                clientId = clientId
             )
             val (accessToken, refreshToken) = remoteAccessService.getToken(request = request)
 
