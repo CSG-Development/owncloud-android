@@ -125,8 +125,8 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
                 binding.explanation.visibility = View.GONE
                 binding.logoutButton?.visibility = View.VISIBLE
                 binding.logoutButton?.setOnClickListener {
+                    passCodeViewModel.logout()
                     AccountUtils.deleteAccounts(this) {
-                        passCodeViewModel.removePassCode()
                         startActivity(Intent(this, LoginActivity::class.java))
                         finish()
                     }

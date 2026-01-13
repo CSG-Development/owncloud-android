@@ -108,8 +108,8 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
                 binding.explanationPattern.visibility = View.GONE
                 binding.logoutButton?.visibility = View.VISIBLE
                 binding.logoutButton?.setOnClickListener {
+                    patternViewModel.logout()
                     AccountUtils.deleteAccounts(this) {
-                        patternViewModel.removePattern()
                         startActivity(Intent(this, LoginActivity::class.java))
                         finish()
                     }

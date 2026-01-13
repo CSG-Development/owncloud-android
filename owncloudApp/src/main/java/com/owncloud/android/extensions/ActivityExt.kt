@@ -49,7 +49,6 @@ import com.owncloud.android.BuildConfig
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
 import com.owncloud.android.domain.files.model.OCFile
-import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.ShareSheetHelper
 import com.owncloud.android.presentation.security.LockEnforcedType
 import com.owncloud.android.presentation.security.LockEnforcedType.Companion.parseFromInteger
@@ -296,7 +295,6 @@ fun Activity.checkPasscodeEnforced(securityEnforced: SecurityEnforced) {
     val lockEnforced: Int = this.resources.getInteger(R.integer.lock_enforced)
     val passcodeConfigured = sharedPreferencesProvider.getBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false)
     val patternConfigured = sharedPreferencesProvider.getBoolean(PatternActivity.PREFERENCE_SET_PATTERN, false)
-    val isLoggedIn = AccountUtils.getAccounts(this).isNotEmpty()
 
     when (parseFromInteger(lockEnforced)) {
         LockEnforcedType.DISABLED -> {
@@ -310,13 +308,13 @@ fun Activity.checkPasscodeEnforced(securityEnforced: SecurityEnforced) {
         }
 
         LockEnforcedType.PASSCODE_ENFORCED -> {
-            if (!passcodeConfigured && isLoggedIn) {
+            if (!passcodeConfigured) {
                 manageOptionLockSelected(LockType.PASSCODE)
             }
         }
 
         LockEnforcedType.PATTERN_ENFORCED -> {
-            if (!patternConfigured && isLoggedIn) {
+            if (!patternConfigured) {
                 manageOptionLockSelected(LockType.PATTERN)
             }
         }
