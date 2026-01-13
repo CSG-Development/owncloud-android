@@ -6,6 +6,7 @@ import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessInitiateResponse
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenResponse
+import com.owncloud.android.data.remoteaccess.remote.RemoteRefreshTokenRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -58,9 +59,9 @@ interface RemoteAccessService {
      * @param refreshToken Refresh token from the previous token response
      * @return New token response with refreshed access token
      */
-    @GET(REMOTE_ACCESS_PATH_TOKEN_REFRESH)
+    @POST(REMOTE_ACCESS_PATH_TOKEN_REFRESH)
     suspend fun refreshToken(
-        @Query("refresh_token") refreshToken: String
+        @Body request: RemoteRefreshTokenRequest
     ): RemoteAccessTokenResponse
 
     /**
