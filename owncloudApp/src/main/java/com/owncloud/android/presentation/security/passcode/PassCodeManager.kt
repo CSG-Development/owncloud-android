@@ -28,6 +28,7 @@ import android.os.PowerManager
 import android.os.SystemClock
 import com.owncloud.android.MainApp.Companion.appContext
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
+import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.security.LockTimeout
 import com.owncloud.android.presentation.security.PREFERENCE_LAST_UNLOCK_TIMESTAMP
 import com.owncloud.android.presentation.security.PREFERENCE_LOCK_TIMEOUT
@@ -42,7 +43,8 @@ object PassCodeManager {
     private val preferencesProvider = OCSharedPreferencesProvider(appContext)
 
     fun onActivityStarted(activity: Activity) {
-        if (!exemptOfPasscodeActivities.contains(activity.javaClass) && passCodeShouldBeRequested()) {
+        if (!exemptOfPasscodeActivities.contains(activity.javaClass) && passCodeShouldBeRequested()
+            && AccountUtils.getAccounts(activity).isNotEmpty()) {
 
             // Do not ask for passcode if biometric is enabled
             if (BiometricManager.isBiometricEnabled() && !visibleActivities.contains(

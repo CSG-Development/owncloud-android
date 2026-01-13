@@ -43,6 +43,8 @@ import com.owncloud.android.data.providers.implementation.OCSharedPreferencesPro
 import com.owncloud.android.databinding.ActivityPatternLockBinding
 import com.owncloud.android.extensions.showBiometricDialog
 import com.owncloud.android.extensions.showMessageInSnackbar
+import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
 import com.owncloud.android.presentation.documentsprovider.DocumentsProviderUtils.notifyDocumentsProviderRoots
 import com.owncloud.android.presentation.security.PREFERENCE_LAST_UNLOCK_TIMESTAMP
 import com.owncloud.android.presentation.security.biometric.BiometricStatus
@@ -104,6 +106,14 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
                  */
                 binding.headerPattern.text = getString(R.string.pattern_enter_pattern)
                 binding.explanationPattern.visibility = View.GONE
+                binding.logoutButton?.visibility = View.VISIBLE
+                binding.logoutButton?.setOnClickListener {
+                    AccountUtils.deleteAccounts(this) {
+                        patternViewModel.removePattern()
+                        startActivity(Intent(this, LoginActivity::class.java))
+                        finish()
+                    }
+                }
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             }
             ACTION_REQUEST_WITH_RESULT -> {
