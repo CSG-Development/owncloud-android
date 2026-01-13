@@ -6,6 +6,8 @@ import com.owncloud.android.data.remoteaccess.datasources.REMOTE_ACCESS_PATH_INI
 import com.owncloud.android.data.remoteaccess.datasources.REMOTE_ACCESS_PATH_TOKEN
 import com.owncloud.android.data.remoteaccess.datasources.REMOTE_ACCESS_PATH_TOKEN_REFRESH
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
+import com.owncloud.android.data.remoteaccess.remote.RemoteRefreshTokenRequest
+import com.owncloud.android.domain.GetFirebaseInstallationIdUseCase
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Request
@@ -14,21 +16,22 @@ import timber.log.Timber
 
 /**
  * OkHttp Interceptor for handling token refresh on 401/403 errors.
- * 
+ *
  * This interceptor:
  * - Intercepts 401 and 403 responses
  * - Automatically refreshes the access token using the refresh token
  * - Retries the original request with the new token
  * - Prevents race conditions by synchronizing token refresh
  * - Avoids infinite retry loops
- * 
+ *
  * Uses lazy injection to break circular dependency:
  * OkHttpClient → Interceptor → Service (lazy) → Retrofit → OkHttpClient
  */
 class RemoteAccessTokenRefreshInterceptor(
     private val tokenStorage: RemoteAccessTokenStorage,
     private val currentDeviceStorage: CurrentDeviceStorage,
-    private val remoteAccessServiceLazy: Lazy<RemoteAccessService>
+    private val remoteAccessServiceLazy: Lazy<RemoteAccessService>,
+    private val getFirebaseInstallationIdUseCase: Lazy<GetFirebaseInstallationIdUseCase>,
 ) : Interceptor {
 
     // Lock object for synchronizing token refresh across multiple threads
@@ -36,19 +39,19 @@ class RemoteAccessTokenRefreshInterceptor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        
+
         // Proceed with the original request
         val response = chain.proceed(originalRequest)
 
         // Check if we need to handle token refresh (401 or 403)
         if ((response.code == 401 || response.code == 403) && shouldAttemptRefresh(originalRequest)) {
             Timber.d("Received ${response.code} error, attempting token refresh")
-            
+
             // Close the original response body
             response.close()
-            
+
             val refreshedRequest = attemptTokenRefresh(originalRequest)
-            
+
             if (refreshedRequest != null) {
                 // Retry with the new token
                 Timber.d("Retrying request with refreshed token")
@@ -68,20 +71,21 @@ class RemoteAccessTokenRefreshInterceptor(
      */
     private fun shouldAttemptRefresh(request: Request): Boolean {
         val path = request.url.encodedPath
-        
+
         // Don't refresh for auth endpoints
         if (path.contains(REMOTE_ACCESS_PATH_INITIATE) ||
             path.contains(REMOTE_ACCESS_PATH_TOKEN) ||
-            path.contains(REMOTE_ACCESS_PATH_TOKEN_REFRESH)) {
+            path.contains(REMOTE_ACCESS_PATH_TOKEN_REFRESH)
+        ) {
             return false
         }
-        
+
         // Check if this request already has the retry marker (prevent infinite loops)
         if (request.header(RETRY_HEADER) != null) {
             Timber.w("Request already retried once, not attempting another refresh")
             return false
         }
-        
+
         return true
     }
 
@@ -101,7 +105,7 @@ class RemoteAccessTokenRefreshInterceptor(
         // Synchronized block to prevent multiple simultaneous refresh attempts
         synchronized(refreshLock) {
             val newToken = tokenStorage.getAccessToken()
-            
+
             // Check if token was already refreshed by another thread
             if (newToken != currentToken && !newToken.isNullOrEmpty()) {
                 Timber.d("Token was already refreshed by another thread, using new token")
@@ -112,7 +116,12 @@ class RemoteAccessTokenRefreshInterceptor(
             return try {
                 Timber.d("Attempting to refresh access token")
                 val tokenResponse = runBlocking {
-                    remoteAccessServiceLazy.value.refreshToken(refreshToken)
+                    remoteAccessServiceLazy.value.refreshToken(
+                        RemoteRefreshTokenRequest(
+                            refreshToken = refreshToken,
+                            clientId = getFirebaseInstallationIdUseCase.value.getInstallationId()
+                        )
+                    )
                 }
 
                 // Save the new tokens
@@ -127,14 +136,14 @@ class RemoteAccessTokenRefreshInterceptor(
                 buildRequestWithToken(originalRequest, tokenResponse.accessToken)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh token")
-                
+
                 // If refresh failed with auth error, clear tokens and device paths
                 if (e is retrofit2.HttpException && (e.code() == 401 || e.code() == 403)) {
                     Timber.w("Refresh token is invalid, clearing tokens and device paths")
                     tokenStorage.clearTokens()
                     currentDeviceStorage.clearDevicePaths()
                 }
-                
+
                 // Return null to indicate refresh failure
                 null
             }

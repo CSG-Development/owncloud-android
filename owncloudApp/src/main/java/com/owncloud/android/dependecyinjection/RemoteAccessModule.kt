@@ -109,7 +109,8 @@ val remoteAccessModule = module {
         RemoteAccessTokenRefreshInterceptor(
             tokenStorage = get(),
             currentDeviceStorage = get(),
-            remoteAccessServiceLazy = inject()
+            remoteAccessServiceLazy = inject(),
+            getFirebaseInstallationIdUseCase = inject()
         )
     }
 
