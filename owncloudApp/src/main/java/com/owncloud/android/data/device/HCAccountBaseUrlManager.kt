@@ -4,9 +4,11 @@ import android.accounts.Account
 import android.accounts.AccountManager
 import android.content.Context
 import com.owncloud.android.domain.device.AccountBaseUrlManager
-import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import com.owncloud.android.presentation.authentication.AccountUtils.getCurrentOwnCloudAccount
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
 /**
@@ -17,6 +19,9 @@ class HCAccountBaseUrlManager(
     private val appContext: Context,
     private val accountManager: AccountManager,
 ) : AccountBaseUrlManager {
+
+    private val _baseUrlFlow: MutableStateFlow<String?> = MutableStateFlow(getCurrentBaseUrl())
+    override val baseUrlFlow: Flow<String?> = _baseUrlFlow
 
     override fun getCurrentBaseUrl(): String? {
         val account = getCurrentAccount() ?: return null
@@ -36,6 +41,7 @@ class HCAccountBaseUrlManager(
                 newBaseUrl
             )
             Timber.d("HCAccountBaseUrlManager: Successfully updated base URL to: $newBaseUrl")
+            _baseUrlFlow.update { newBaseUrl }
             true
         } catch (e: Exception) {
             Timber.e(e, "HCAccountBaseUrlManager: Failed to update base URL")
