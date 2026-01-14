@@ -75,6 +75,7 @@
     <color name="homecloud_passcode_lock_pressed">@color/white_pressed</color>
     <color name="homecloud_passcode_lock_backspace">@color/homecloud_white_87</color>
     <color name="homecloud_passcode_text_lock">@color/homecloud_white_70</color>
+    <color name="homecloud_text_error_lock">#F28F8C</color>
 
 
 </resources>
