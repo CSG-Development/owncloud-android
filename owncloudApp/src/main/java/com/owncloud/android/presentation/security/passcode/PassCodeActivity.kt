@@ -45,6 +45,8 @@ import com.owncloud.android.databinding.PasscodelockBinding
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.showBiometricDialog
 import com.owncloud.android.extensions.showMessageInSnackbar
+import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
 import com.owncloud.android.presentation.documentsprovider.DocumentsProviderUtils.notifyDocumentsProviderRoots
 import com.owncloud.android.presentation.security.biometric.BiometricStatus
 import com.owncloud.android.presentation.security.biometric.BiometricViewModel
@@ -121,6 +123,14 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
                 // this is a pass code request; the user has to input the right value
                 binding.header.text = getString(R.string.pass_code_enter_pass_code)
                 binding.explanation.visibility = View.GONE
+                binding.logoutButton?.visibility = View.VISIBLE
+                binding.logoutButton?.setOnClickListener {
+                    passCodeViewModel.logout()
+                    AccountUtils.deleteAccounts(this) {
+                        startActivity(Intent(this, LoginActivity::class.java))
+                        finish()
+                    }
+                }
                 supportActionBar?.setDisplayHomeAsUpEnabled(false) //Don´t show the back arrow
             }
 

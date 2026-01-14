@@ -25,14 +25,19 @@ import android.os.SystemClock
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.domain.utils.Event
+import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.security.PREFERENCE_LAST_UNLOCK_ATTEMPT_TIMESTAMP
 import com.owncloud.android.presentation.security.PREFERENCE_LAST_UNLOCK_TIMESTAMP
 import com.owncloud.android.presentation.security.biometric.BiometricActivity
 import com.owncloud.android.presentation.settings.security.SettingsSecurityFragment.Companion.PREFERENCE_LOCK_ATTEMPTS
 import com.owncloud.android.providers.ContextProvider
+import com.owncloud.android.providers.CoroutinesDispatcherProvider
+import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
+import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -41,7 +46,10 @@ import kotlin.math.pow
 class PassCodeViewModel(
     private val preferencesProvider: SharedPreferencesProvider,
     private val contextProvider: ContextProvider,
-    private val action: PasscodeAction
+    private val action: PasscodeAction,
+    private val removeAccountUseCase: RemoveAccountUseCase,
+    private val appContextProvider: ContextProvider,
+    private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
 
     private val _getTimeToUnlockLiveData = MutableLiveData<Event<String>>()
@@ -162,6 +170,13 @@ class PassCodeViewModel(
         preferencesProvider.removePreference(PassCodeActivity.PREFERENCE_PASSCODE)
         preferencesProvider.putBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false)
         numberOfPasscodeDigits = (getPassCode()?.length ?: getNumberOfPassCodeDigits())
+    }
+
+    fun logout() {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val currentAccount = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())
+            removeAccountUseCase(RemoveAccountUseCase.Params(accountName = currentAccount.name))
+        }
     }
 
     fun checkPassCodeIsValid(passcode: String): Boolean {

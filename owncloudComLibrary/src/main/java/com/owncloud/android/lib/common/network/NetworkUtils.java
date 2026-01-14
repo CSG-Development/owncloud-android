@@ -47,6 +47,8 @@ public class NetworkUtils {
 
     private static KeyStore mKnownServersStore = null;
 
+    private static final Object sLock = new Object();
+
     /**
      * Returns the local store of reliable server certificates, explicitly accepted by the user.
      * <p>
@@ -64,32 +66,41 @@ public class NetworkUtils {
      */
     public static KeyStore getKnownServersStore(Context context)
             throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        if (mKnownServersStore == null) {
-            //mKnownServersStore = KeyStore.getInstance("BKS");
-            mKnownServersStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            File localTrustStoreFile = new File(context.getFilesDir(), LOCAL_TRUSTSTORE_FILENAME);
-            Timber.d("Searching known-servers store at %s", localTrustStoreFile.getAbsolutePath());
-            if (localTrustStoreFile.exists()) {
-                try (InputStream in = new FileInputStream(localTrustStoreFile)) {
-                    mKnownServersStore.load(in, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
-                } catch (Throwable e) {
-                    Timber.e(e, "Error loading known servers store");
+        synchronized (sLock) {
+            if (mKnownServersStore == null) {
+                mKnownServersStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                File localTrustStoreFile = new File(context.getFilesDir(), LOCAL_TRUSTSTORE_FILENAME);
+                Timber.d("Searching known-servers store at %s", localTrustStoreFile.getAbsolutePath());
+                if (localTrustStoreFile.exists()) {
+                    try (InputStream in = new FileInputStream(localTrustStoreFile)) {
+                        mKnownServersStore.load(in, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
+                    } catch (Throwable e) {
+                        Timber.e(e, "Error loading known servers store, will delete corrupted file and create new one");
+                        // Delete corrupted file and initialize empty KeyStore
+                        if (localTrustStoreFile.delete()) {
+                            Timber.w("Deleted corrupted known servers store file");
+                        } else {
+                            Timber.e("Failed to delete corrupted known servers store file");
+                        }
+                        mKnownServersStore.load(null, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
+                    }
+                } else {
+                    // next is necessary to initialize an empty KeyStore instance
+                    mKnownServersStore.load(null, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
                 }
-            } else {
-                // next is necessary to initialize an empty KeyStore instance
-                mKnownServersStore.load(null, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
             }
+            return mKnownServersStore;
         }
-        return mKnownServersStore;
     }
 
     public static void addCertToKnownServersStore(Certificate cert, Context context)
             throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
-
-        KeyStore knownServers = getKnownServersStore(context);
-        knownServers.setCertificateEntry(Integer.toString(cert.hashCode()), cert);
-        try (FileOutputStream fos = context.openFileOutput(LOCAL_TRUSTSTORE_FILENAME, Context.MODE_PRIVATE)) {
-            knownServers.store(fos, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
+        synchronized (sLock) {
+            KeyStore knownServers = getKnownServersStore(context);
+            knownServers.setCertificateEntry(Integer.toString(cert.hashCode()), cert);
+            try (FileOutputStream fos = context.openFileOutput(LOCAL_TRUSTSTORE_FILENAME, Context.MODE_PRIVATE)) {
+                knownServers.store(fos, LOCAL_TRUSTSTORE_PASSWORD.toCharArray());
+            }
         }
     }
 

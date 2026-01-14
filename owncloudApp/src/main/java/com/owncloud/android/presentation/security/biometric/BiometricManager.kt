@@ -29,6 +29,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import com.owncloud.android.MainApp.Companion.appContext
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
+import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.security.LockTimeout
 import com.owncloud.android.presentation.security.PREFERENCE_LAST_UNLOCK_TIMESTAMP
 import com.owncloud.android.presentation.security.PREFERENCE_LOCK_TIMEOUT
@@ -50,7 +51,8 @@ object BiometricManager {
     private val androidBiometricManager: BiometricManager = BiometricManager.from(appContext)
 
     fun onActivityStarted(activity: Activity) {
-        if (!exemptOfBiometricActivities.contains(activity.javaClass) && biometricShouldBeRequested()) {
+        if (!exemptOfBiometricActivities.contains(activity.javaClass) && biometricShouldBeRequested()
+            && AccountUtils.getAccounts(activity).isNotEmpty()) {
 
             if (isHardwareDetected() && hasEnrolledBiometric()) {
                 // Use biometric lock

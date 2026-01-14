@@ -115,4 +115,6 @@
     <string name="homecloud_filter_size_gt_500mb">&gt; 500 MB</string>
     <string name="homecloud_filter_size_lt_1gb">&lt; 1 GB</string>
     <string name="homecloud_filter_size_gt_1gb">&gt; 1 GB</string>
+
+    <string name="homecloud_logout_title">Log out</string>
 </resources>

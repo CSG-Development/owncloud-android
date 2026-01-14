@@ -23,6 +23,7 @@ package com.owncloud.android.usecases.accounts
 import com.owncloud.android.data.appregistry.datasources.LocalAppRegistryDataSource
 import com.owncloud.android.data.capabilities.datasources.LocalCapabilitiesDataSource
 import com.owncloud.android.data.files.datasources.LocalFileDataSource
+import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.data.searches.datasources.LocalSavedSearchesDataSource
 import com.owncloud.android.data.sharing.shares.datasources.LocalShareDataSource
 import com.owncloud.android.data.spaces.datasources.LocalSpacesDataSource
@@ -33,6 +34,8 @@ import com.owncloud.android.domain.automaticuploads.usecases.ResetPictureUploads
 import com.owncloud.android.domain.automaticuploads.usecases.ResetVideoUploadsUseCase
 import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.presentation.security.passcode.PassCodeActivity
+import com.owncloud.android.presentation.security.pattern.PatternActivity
 import com.owncloud.android.usecases.transfers.uploads.CancelTransfersFromAccountUseCase
 
 /*
@@ -54,6 +57,7 @@ class RemoveAccountUseCase(
     private val localSavedSearchesDataSource: LocalSavedSearchesDataSource,
     private val currentDeviceRepository: CurrentDeviceRepository,
     private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
+    private val preferencesProvider: SharedPreferencesProvider,
 ) : BaseUseCase<Unit, RemoveAccountUseCase.Params>() {
 
     override fun run(params: Params) {
@@ -95,6 +99,12 @@ class RemoveAccountUseCase(
         currentDeviceRepository.clearCurrentDevicePaths()
 
         dynamicUrlSwitchingController.stopDynamicUrlSwitching()
+
+        // Remove passcode or pattern if exist
+        preferencesProvider.removePreference(PassCodeActivity.PREFERENCE_PASSCODE)
+        preferencesProvider.putBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false)
+        preferencesProvider.removePreference(PatternActivity.PREFERENCE_PATTERN)
+        preferencesProvider.putBoolean(PatternActivity.PREFERENCE_SET_PATTERN, false)
     }
 
     data class Params(
