@@ -292,7 +292,7 @@
     <string name="sync_fail_in_favourites_content">Contents of %1$d files could not be sync\'ed (%2$d conflicts)</string>
     <string name="sync_current_folder_was_removed">Folder %1$s does not exist anymore.</string>
 
-    <string name="pass_code_enter_pass_code">Please insert your passcode.</string>
+    <string name="pass_code_enter_pass_code">Please enter your passcode.</string>
     <string name="pass_code_configure_your_pass_code">Enter your passcode.</string>
     <string name="pass_code_configure_your_pass_code_migration">Enter a new %1$d-digit passcode.</string>
     <string name="pass_code_configure_your_pass_code_explanation">The passcode will be requested every time the app is started.</string>

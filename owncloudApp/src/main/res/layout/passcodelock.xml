@@ -80,7 +80,7 @@
         android:id="@+id/error"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/warning"
+        android:textColor="@color/homecloud_text_error_lock"
         android:textSize="16sp"
         tools:text="@string/pass_code_wrong"
         android:layout_marginBottom="@dimen/standard_margin"
