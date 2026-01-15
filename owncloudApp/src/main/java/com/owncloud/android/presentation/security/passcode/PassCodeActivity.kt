@@ -123,14 +123,6 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
                 // this is a pass code request; the user has to input the right value
                 binding.header.text = getString(R.string.pass_code_enter_pass_code)
                 binding.explanation.visibility = View.GONE
-                binding.logoutButton?.visibility = View.VISIBLE
-                binding.logoutButton?.setOnClickListener {
-                    passCodeViewModel.logout()
-                    AccountUtils.deleteAccounts(this) {
-                        startActivity(Intent(this, LoginActivity::class.java))
-                        finish()
-                    }
-                }
                 supportActionBar?.setDisplayHomeAsUpEnabled(false) //Don´t show the back arrow
             }
 
@@ -257,6 +249,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
     private fun actionCheckOk() {
         // pass code accepted in request, user is allowed to access the app
         binding.error.visibility = View.GONE
+        binding.logoutButton?.visibility = View.GONE
 
         PassCodeManager.onActivityStopped(this)
         finish()
@@ -264,6 +257,7 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
 
     private fun actionCheckMigration() {
         binding.error.visibility = View.GONE
+        binding.logoutButton?.visibility = View.GONE
 
         val intent = Intent(baseContext, PassCodeActivity::class.java)
         intent.apply {
@@ -340,6 +334,14 @@ class PassCodeActivity : AppCompatActivity(), NumberKeyboardListener, EnableBiom
         binding.header.text = headerMessage
         binding.explanation.visibility = explanationVisibility
         clearDots()
+        binding.logoutButton?.visibility = View.VISIBLE
+        binding.logoutButton?.setOnClickListener {
+            passCodeViewModel.logout()
+            AccountUtils.deleteAccounts(this) {
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+            }
+        }
     }
 
     /**
