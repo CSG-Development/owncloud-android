@@ -106,14 +106,6 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
                  */
                 binding.headerPattern.text = getString(R.string.pattern_enter_pattern)
                 binding.explanationPattern.visibility = View.GONE
-                binding.logoutButton?.visibility = View.VISIBLE
-                binding.logoutButton?.setOnClickListener {
-                    patternViewModel.logout()
-                    AccountUtils.deleteAccounts(this) {
-                        startActivity(Intent(this, LoginActivity::class.java))
-                        finish()
-                    }
-                }
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             }
             ACTION_REQUEST_WITH_RESULT -> {
@@ -234,6 +226,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
     private fun handleActionCheck() {
         if (patternViewModel.checkPatternIsValid(patternValue)) {
             binding.errorPattern.visibility = View.GONE
+            binding.logoutButton?.visibility = View.GONE
             val preferencesProvider = OCSharedPreferencesProvider(applicationContext)
             preferencesProvider.putLong(PREFERENCE_LAST_UNLOCK_TIMESTAMP, SystemClock.elapsedRealtime())
             PatternManager.onActivityStopped(this)
@@ -252,6 +245,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
             val result = Intent()
             setResult(RESULT_OK, result)
             binding.errorPattern.visibility = View.GONE
+            binding.logoutButton?.visibility = View.GONE
             notifyDocumentsProviderRoots(applicationContext)
             finish()
         } else {
@@ -265,6 +259,7 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
     private fun handleActionRequestWithResult() {
         if (!confirmingPattern) {
             binding.errorPattern.visibility = View.GONE
+            binding.logoutButton?.visibility = View.GONE
             requestPatternConfirmation()
         } else if (confirmPattern()) {
             savePatternAndExit()
@@ -285,6 +280,14 @@ class PatternActivity : AppCompatActivity(), EnableBiometrics {
         binding.errorPattern.visibility = View.VISIBLE
         binding.headerPattern.setText(headerMessage)
         binding.explanationPattern.visibility = explanationVisibility
+        binding.logoutButton?.visibility = View.VISIBLE
+        binding.logoutButton?.setOnClickListener {
+            patternViewModel.logout()
+            AccountUtils.deleteAccounts(this) {
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+            }
+        }
     }
 
     /**
