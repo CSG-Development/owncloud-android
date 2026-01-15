@@ -81,6 +81,7 @@
     <color name="homecloud_text_error_lock">#F44336</color>
 
     <color name="homecloud_server_selected_background">@color/homecloud_highlight_background</color>
+    <color name="homecloud_server_list_dropdown">@color/white</color>
 
     <!-- Original ownCloud colors override -->
     <color name="textColor">@color/homecloud_primary</color>
