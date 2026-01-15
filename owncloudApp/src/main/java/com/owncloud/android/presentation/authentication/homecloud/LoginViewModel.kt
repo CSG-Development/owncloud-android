@@ -549,26 +549,6 @@ class LoginViewModel(
             data object UnableToConnect : AuthError()
         }
 
-        fun copyState(
-            username: String = this.username,
-            devices: List<Device> = this.devices,
-            isActionButtonLoading: Boolean = this.isActionButtonLoading,
-        ): LoginScreenState {
-            return when (this) {
-                is EmailState -> copy(
-                    username = username,
-                    devices = devices,
-                    isActionButtonLoading = isActionButtonLoading
-                )
-
-                is LoginState -> copy(
-                    username = username,
-                    devices = devices,
-                    isActionButtonLoading = isActionButtonLoading,
-                )
-            }
-        }
-
         data class EmailState(
             override val username: String = "",
             val reference: String = "",
