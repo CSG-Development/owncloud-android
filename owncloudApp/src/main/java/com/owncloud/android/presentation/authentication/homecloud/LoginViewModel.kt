@@ -9,15 +9,15 @@ import com.owncloud.android.R
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
-import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
 import com.owncloud.android.domain.exceptions.SSLErrorException
+import com.owncloud.android.domain.exceptions.UnauthorizedException
 import com.owncloud.android.domain.exceptions.UnknownErrorException
-import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
@@ -122,7 +122,7 @@ class LoginViewModel(
                                 currentState.copy(
                                     isRefreshServersLoading = false,
                                     isActionButtonLoading = false,
-                                    isUnableToDetect = true
+                                    authError = LoginScreenState.AuthError.UnableToDetect
                                 )
                             }
 
@@ -136,7 +136,6 @@ class LoginViewModel(
                             username = currentState.username,
                             reference = reference,
                             errorEmailInvalidMessage = null,
-                            errorMessage = null,
                             isActionButtonLoading = false,
                         )
                     }
@@ -232,15 +231,9 @@ class LoginViewModel(
             when (val currentState = _state.value) {
                 is LoginScreenState.LoginState -> {
                     when {
-                        currentState.isUnableToDetect -> {
+                        currentState.authError != null -> {
                             _state.update {
-                                currentState.copy(isUnableToDetect = false)
-                            }
-                        }
-
-                        !currentState.errorMessage.isNullOrEmpty() -> {
-                            _state.update {
-                                currentState.copy(errorMessage = null)
+                                currentState.copy(authError = null)
                             }
                         }
 
@@ -312,7 +305,7 @@ class LoginViewModel(
                         is LoginScreenState.LoginState -> currentState.copy(
                             devices = devices,
                             selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice,
-                            isUnableToDetect = devices.isEmpty()
+                            authError = if (devices.isEmpty()) LoginScreenState.AuthError.UnableToConnect else null
                         )
                     }
                 }
@@ -327,7 +320,7 @@ class LoginViewModel(
                     _state.update { currentState ->
                         when (currentState) {
                             is LoginScreenState.EmailState -> currentState
-                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, isUnableToDetect = false)
+                            is LoginScreenState.LoginState -> currentState.copy(isRefreshServersLoading = true, authError = null)
                         }
                     }
                     withContext(coroutinesDispatcherProvider.io) {
@@ -335,7 +328,7 @@ class LoginViewModel(
                     }
                 },
                 exceptionHandlerBlock = {
-                    Timber.e(it, it.message)
+                    Timber.e(it)
                 },
                 completeBlock = {
                     _state.update { currentState ->
@@ -343,7 +336,7 @@ class LoginViewModel(
                             is LoginScreenState.EmailState -> currentState
                             is LoginScreenState.LoginState -> currentState.copy(
                                 isRefreshServersLoading = false,
-                                isUnableToDetect = currentState.devices.isEmpty()
+                                authError = if (currentState.devices.isEmpty()) LoginScreenState.AuthError.UnableToDetect else null
                             )
                         }
                     }
@@ -356,13 +349,11 @@ class LoginViewModel(
     fun onRetryClicked() {
         val currentState = _state.value
         if (currentState is LoginScreenState.LoginState) {
-            when {
-                currentState.isUnableToDetect -> {
-                    refreshServers()
-                }
-                !currentState.errorMessage.isNullOrEmpty() -> {
-                    performLogin()
-                }
+            when (currentState.authError) {
+                is LoginScreenState.AuthError.LoginError -> performLogin()
+                LoginScreenState.AuthError.UnableToConnect -> performLogin()
+                LoginScreenState.AuthError.UnableToDetect -> refreshServers()
+                else -> {}
             }
         }
     }
@@ -407,7 +398,7 @@ class LoginViewModel(
     private fun performLogin() {
         viewModelScope.launch {
             val currentState = _state.value as LoginScreenState.LoginState
-            _state.update { currentState.copy(isLoading = true, errorMessage = null) }
+            _state.update { currentState.copy(isLoading = true, authError = null) }
             runCatchingException(
                 block = {
                     val serverInfoResult = withContext(coroutinesDispatcherProvider.io) {
@@ -451,7 +442,7 @@ class LoginViewModel(
                         }
 
                     } else {
-                        handleLoginError(serverInfoResult.getThrowableOrNull())
+                        handleDeviceError()
                     }
                 },
                 exceptionHandlerBlock = {
@@ -461,6 +452,15 @@ class LoginViewModel(
                 completeBlock = {
                 }
             )
+        }
+    }
+
+    private fun handleDeviceError() {
+        val state = _state.value
+        if (state is LoginScreenState.LoginState) {
+            _state.update {
+                state.copy(isLoading = false, authError = LoginScreenState.AuthError.UnableToConnect)
+            }
         }
     }
 
@@ -487,6 +487,10 @@ class LoginViewModel(
                 contextProvider.getString(R.string.homecloud_login_server_connection_error)
             }
 
+            e is UnauthorizedException -> {
+                contextProvider.getString(R.string.homecloud_login_auth_unauthorized)
+            }
+
             else -> {
                 e?.parseError("", contextProvider.getContext().resources)
             }
@@ -496,10 +500,10 @@ class LoginViewModel(
             when (currentState) {
                 is LoginScreenState.LoginState -> currentState.copy(
                     isLoading = false,
-                    errorMessage = text?.toString()
+                    authError = LoginScreenState.AuthError.LoginError(text?.toString().orEmpty())
                 )
 
-                is LoginScreenState.EmailState -> currentState.copy(errorMessage = text?.toString())
+                is LoginScreenState.EmailState -> currentState
             }
         }
     }
@@ -524,36 +528,41 @@ class LoginViewModel(
     }
 
     fun onCodeDialogDismissed() {
-        _state.update { currentState ->
-            currentState.copyState(errorMessage = null)
+        val currentState = _state.value
+        if (currentState is LoginScreenState.EmailState) {
+            _state.update {
+                currentState.copy(errorCodeException = null)
+            }
         }
     }
 
     sealed class LoginScreenState {
         abstract val username: String
-        abstract val errorMessage: String?
 
         abstract val devices: List<Device>
 
         abstract val isActionButtonLoading: Boolean
 
+        sealed class AuthError {
+            data class LoginError(val errorMessage: String) : AuthError()
+            data object UnableToDetect : AuthError()
+            data object UnableToConnect : AuthError()
+        }
+
         fun copyState(
             username: String = this.username,
-            errorMessage: String? = this.errorMessage,
             devices: List<Device> = this.devices,
             isActionButtonLoading: Boolean = this.isActionButtonLoading,
         ): LoginScreenState {
             return when (this) {
                 is EmailState -> copy(
                     username = username,
-                    errorMessage = errorMessage,
                     devices = devices,
                     isActionButtonLoading = isActionButtonLoading
                 )
 
                 is LoginState -> copy(
                     username = username,
-                    errorMessage = errorMessage,
                     devices = devices,
                     isActionButtonLoading = isActionButtonLoading,
                 )
@@ -564,7 +573,6 @@ class LoginViewModel(
             override val username: String = "",
             val reference: String = "",
             val isAllowLoading: Boolean = false,
-            override val errorMessage: String? = null,
             val errorCodeException: Throwable? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
@@ -576,10 +584,9 @@ class LoginViewModel(
             val password: String = "",
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
-            val isUnableToDetect: Boolean = false,
+            val authError: AuthError? = null,
             val selectedDevice: Device? = null,
             val serverUrl: String = "",
-            override val errorMessage: String? = null,
             override val devices: List<Device> = emptyList(),
             override val isActionButtonLoading: Boolean = false
         ) : LoginScreenState()

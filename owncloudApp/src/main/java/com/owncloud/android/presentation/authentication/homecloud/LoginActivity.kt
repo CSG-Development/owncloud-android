@@ -139,12 +139,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         }
 
         binding.hostUrlInput.setOnItemSelectedListener { item, _ ->
-            if (item.isSpecialItem) {
-                loginViewModel.onCantFindDeviceClicked()
-            } else {
-                item.getTypedData<Device>()?.let { device ->
-                    loginViewModel.onDeviceSelected(device)
-                }
+            item.getTypedData<Device>()?.let { device ->
+                loginViewModel.onDeviceSelected(device)
             }
         }
         // Show dropdown when clicking on the TextInputLayout end icon
@@ -282,16 +278,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             )
         }.toMutableList()
 
-        if (devices.isNotEmpty()) {
-            dropdownItems.add(
-                CustomAutoCompleteTextView.DropdownItem(
-                    id = "cant_find_device",
-                    text = getString(R.string.homecloud_cant_find_device),
-                    isSpecialItem = true
-                )
-            )
-        }
-
         binding.hostUrlInput.setDropdownItems(dropdownItems)
         binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else deviceIcon
     }
@@ -395,15 +381,26 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             }
 
             is LoginScreenState.LoginState -> {
-                if (state.isUnableToDetect || !state.errorMessage.isNullOrBlank()) {
-                    binding.scrollView.visibility = View.GONE
-                    binding.backButton.visibility = View.GONE
-                    if (!state.errorMessage.isNullOrBlank()) {
-                        setupUnableToConnectContent()
-                    } else if (state.isUnableToDetect) {
-                        setupUnableToDetectContent()
-                    }
-                    binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                changeLoadingState(state)
+                if (state.authError != null) {
+                     when (state.authError) {
+                         is LoginScreenState.AuthError.LoginError -> {
+                             binding.errorMessage.visibility = View.VISIBLE
+                             binding.errorMessage.text = state.authError.errorMessage
+                         }
+                         LoginScreenState.AuthError.UnableToConnect -> {
+                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                             binding.scrollView.visibility = View.GONE
+                             binding.backButton.visibility = View.GONE
+                             setupUnableToConnectContent()
+                         }
+                         LoginScreenState.AuthError.UnableToDetect -> {
+                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                             binding.scrollView.visibility = View.GONE
+                             binding.backButton.visibility = View.GONE
+                             setupUnableToDetectContent()
+                         }
+                     }
                 } else {
                     // Show main scroll view, hide unable to connect
                     binding.scrollView.visibility = View.VISIBLE
@@ -411,7 +408,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                     // Hide email input, show email text
                     binding.accountUsernameContainer.visibility = View.GONE
-                    binding.accountUsernameText.visibility = View.VISIBLE
                     binding.accountUsernameText.text = state.username
 
                     binding.backButton.visibility = View.VISIBLE
@@ -424,37 +420,44 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                         binding.hostUrlInput.updateTextIfDiffers(state.selectedDevice.name)
                     }
                     connectFieldTextWatcher?.let { binding.hostUrlInput.addTextChangedListener(it) }
-                    binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
-                    binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-                    if (state.isLoading) {
-                        binding.backButton.visibility = View.GONE
-                        binding.loadingLayout.visibility = View.VISIBLE
-                        binding.actionGroup.visibility = View.GONE
-                        binding.loginStateGroup.visibility = View.GONE
-                        binding.serversRefreshButton.visibility = View.INVISIBLE
-                    } else {
-                        binding.backButton.visibility = View.VISIBLE
-                        binding.loadingLayout.visibility = View.GONE
-                        binding.actionGroup.visibility = View.VISIBLE
-                        binding.loginStateGroup.visibility = View.VISIBLE
-                        binding.actionButton.setText(R.string.setup_btn_login)
-                        if (state.isActionButtonLoading) {
-                            binding.actionButton.setState(LoadingButton.State.LOADING)
-                        } else {
-                            val state =
-                                if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
-                                    (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
-                                    Patterns.EMAIL_ADDRESS.matcher(state.username)
-                                        .matches()
-                                ) {
-                                    LoadingButton.State.ENABLED
-                                } else {
-                                    LoadingButton.State.DISABLED
-                                }
-                            binding.actionButton.setState(state)
-                        }
-                    }
                 }
+            }
+        }
+    }
+
+    private fun changeLoadingState(state: LoginScreenState.LoginState) {
+        if (state.isLoading) {
+            binding.accountUsernameText.visibility = View.GONE
+            binding.errorMessage.visibility = View.GONE
+            binding.serversRefreshButton.visibility = View.INVISIBLE
+            binding.serversRefreshLoading.visibility = View.GONE
+            binding.backButton.visibility = View.GONE
+            binding.loadingLayout.visibility = View.VISIBLE
+            binding.actionGroup.visibility = View.GONE
+            binding.loginStateGroup.visibility = View.GONE
+        } else {
+            binding.accountUsernameText.visibility = View.VISIBLE
+            binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
+            binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
+            binding.backButton.visibility = View.VISIBLE
+            binding.loadingLayout.visibility = View.GONE
+            binding.actionGroup.visibility = View.VISIBLE
+            binding.loginStateGroup.visibility = View.VISIBLE
+            binding.actionButton.setText(R.string.setup_btn_login)
+            if (state.isActionButtonLoading) {
+                binding.actionButton.setState(LoadingButton.State.LOADING)
+            } else {
+                val state =
+                    if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
+                        (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
+                        Patterns.EMAIL_ADDRESS.matcher(state.username)
+                            .matches()
+                    ) {
+                        LoadingButton.State.ENABLED
+                    } else {
+                        LoadingButton.State.DISABLED
+                    }
+                binding.actionButton.setState(state)
             }
         }
     }

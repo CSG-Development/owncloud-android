@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import android.widget.PopupWindow
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.owncloud.android.R
@@ -63,7 +62,6 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
     data class DropdownItem<T>(
         val id: String,
         val text: String,
-        val isSpecialItem: Boolean = false,
         val isSelected: Boolean = false,
         val data: T? = null
     )
@@ -213,8 +211,6 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
                 binding.root.setBackgroundColor(
                     if (item.isSelected) selectedBackgroundColor else defaultBackgroundColor
                 )
-
-                binding.divider.isVisible = item.isSpecialItem
             }
         }
     }

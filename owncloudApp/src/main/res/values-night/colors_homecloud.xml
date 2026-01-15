@@ -77,5 +77,7 @@
     <color name="homecloud_passcode_text_lock">@color/homecloud_white_70</color>
     <color name="homecloud_text_error_lock">#F28F8C</color>
 
+    <color name="homecloud_server_list_dropdown">#1D1E21</color>
+
 
 </resources>

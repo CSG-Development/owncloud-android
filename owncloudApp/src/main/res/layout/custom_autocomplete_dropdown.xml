@@ -5,6 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_custom_autocomplete_dropdown"
+    android:clipToOutline="true"
+    android:outlineProvider="background"
     android:clipToPadding="false"
     android:overScrollMode="never"
     android:paddingVertical="8dp"
