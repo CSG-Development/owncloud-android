@@ -1,5 +1,7 @@
 package com.owncloud.android.domain.device
 
+import kotlinx.coroutines.flow.Flow
+
 /**
  * Interface for managing account base URL.
  * 
@@ -8,6 +10,8 @@ package com.owncloud.android.domain.device
  * Android-specific implementations.
  */
 interface AccountBaseUrlManager {
+
+    val baseUrlFlow: Flow<String?>
 
     /**
      * Gets the current base URL for the active account.

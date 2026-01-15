@@ -29,6 +29,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.LocalStorageProvider
+import com.owncloud.android.domain.device.AccountBaseUrlManager
 import com.owncloud.android.domain.user.model.UserQuota
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaAsStreamUseCase
 import com.owncloud.android.domain.user.usecases.GetUserQuotasUseCase
@@ -51,10 +52,15 @@ class DrawerViewModel(
     private val localStorageProvider: LocalStorageProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val contextProvider: ContextProvider,
+    private val accountBaseUrlManager: AccountBaseUrlManager,
 ) : ViewModel() {
 
     private val _userQuota = MutableStateFlow<Event<UIResult<Flow<UserQuota?>>>?>(null)
     val userQuota: StateFlow<Event<UIResult<Flow<UserQuota?>>>?> = _userQuota
+
+    fun observeBaseUrl(): Flow<String?> = accountBaseUrlManager.baseUrlFlow
+
+    fun getCurrentBaseUrl(): String? = accountBaseUrlManager.getCurrentBaseUrl()
 
     fun getUserQuota(accountName: String) {
         runUseCaseWithResult(
