@@ -90,8 +90,8 @@ class BiometricActivity : AppCompatActivity() {
 
     private fun showBiometricPrompt() {
         val promptInfo = PromptInfo.Builder()
-            .setTitle(getString(R.string.biometric_prompt_title))
-            .setSubtitle(getString(R.string.biometric_prompt_subtitle))
+            .setTitle(getString(R.string.homecloud_biometric_sign_in_title))
+            .setSubtitle(getString(R.string.homecloud_biometric_sign_in_description))
             .setNegativeButtonText(getNegativeButtonText())
             .setConfirmationRequired(true)
             .build()
