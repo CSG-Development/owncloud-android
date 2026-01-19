@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view_dropdown"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_custom_autocomplete_dropdown"
+    android:clipToOutline="true"
+    android:outlineProvider="background"
+    android:clipToPadding="false"
+    android:overScrollMode="never"
+    android:paddingVertical="8dp"
+    tools:itemCount="3"
+    tools:listitem="@layout/custom_autocomplete_item" />
+

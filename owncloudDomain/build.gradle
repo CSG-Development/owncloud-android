@@ -37,6 +37,9 @@ dependencies {
     implementation libs.androidx.work.runtime.ktx
     implementation libs.koin.core
 
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
+
     // Kotlin
     implementation libs.kotlin.stdlib
     implementation libs.kotlinx.coroutines.core

@@ -24,7 +24,8 @@ interface RemoteAccessRepository {
     suspend fun getToken(
         reference: String,
         code: String,
-        userName: String
+        userName: String,
+        clientId: String,
     )
 
     fun getUserName(): String?

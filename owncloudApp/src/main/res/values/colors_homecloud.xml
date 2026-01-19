@@ -6,6 +6,7 @@
     <color name="homecloud_secondary">#CC000000</color>
     <color name="homecloud_color_accent">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_color_outline">#E0E0E0</color>
+    <color name="homecloud_color_on_secondary_container">@color/homecloud_blue_darken_2</color>
     <color name="homecloud_surface">#F0F1F5</color>
     <color name="homecloud_error">#F44336</color>
     <color name="homecloud_error_transparent">#1FF44336</color>
@@ -70,7 +71,17 @@
     <color name="homecloud_toolbar_icon_tint">@color/homecloud_blue_darken_2</color>
     <color name="homecloud_dot_unselected">@color/black_transparent</color>
 
+    <color name="homecloud_highlight_background">@color/homecloud_blue_darken_2_20</color>
     <color name="homecloud_bottom_sheet_divider">@color/homecloud_border_gray</color>
+    <color name="homecloud_pattern_lock">@color/black</color>
+    <color name="homecloud_passcode_lock">@color/homecloud_highlight_background</color>
+    <color name="homecloud_passcode_lock_pressed">@color/black</color>
+    <color name="homecloud_passcode_lock_backspace">@color/black</color>
+    <color name="homecloud_passcode_text_lock">@color/homecloud_black_60</color>
+    <color name="homecloud_text_error_lock">#F44336</color>
+
+    <color name="homecloud_server_selected_background">@color/homecloud_highlight_background</color>
+    <color name="homecloud_server_list_dropdown">@color/white</color>
 
     <!-- Original ownCloud colors override -->
     <color name="textColor">@color/homecloud_primary</color>
@@ -79,12 +90,20 @@
     <color name="homecloud_blue_darken_2">#FF1976D2</color>
     <color name="homecloud_blue_darken_2_12">#1F1976D2</color>
     <color name="homecloud_blue_darken_2_24">#3D1976D2</color>
+    <color name="homecloud_blue_darken_2_20">#331976D2</color>
     <color name="homecloud_blue_darken_2_50">#801976D2</color>
     <color name="homecloud_content_grey">#9E9E9E</color>
     <color name="homecloud_content_disabled_bg">#616161</color>
     <color name="homecloud_blue_lighten_2">#FF64B5F6</color>
+    <color name="homecloud_blue_lighten_2_20">#3364B5F6</color>
     <color name="homecloud_blue_lighten_2_24">#3D64B5F6</color>
     <color name="homecloud_blue_lighten_2_50">#8064B5F6</color>
     <color name="homecloud_border_gray">#CBCDD3</color>
     <color name="homecloud_grey_2">#7A7A7A</color>
+    <color name="homecloud_black_60">#99000000</color>
+    <color name="homecloud_white_70">#B2FFFFFF</color>
+    <color name="homecloud_white_87">#DEFFFFFF</color>
+    <color name="homecloud_black_87">#DE000000</color>
+    <color name="homecloud_green">#6EBD49</color>
+
 </resources>

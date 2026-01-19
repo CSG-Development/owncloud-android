@@ -32,7 +32,7 @@
                 android:src="@drawable/ic_login_logo"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintVertical_bias="0.35"
+                app:layout_constraintVertical_bias="0.2"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -41,7 +41,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="22sp"
-                android:text="@string/default_display_name_for_root_folder"
                 app:layout_constraintTop_toBottomOf="@id/thumbnail_logo"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -70,14 +69,15 @@
                 app:expandedHintEnabled="true"
                 app:hintEnabled="true">
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                <com.owncloud.android.ui.custom.CustomAutoCompleteTextView
                     android:id="@+id/hostUrlInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="16dp"
                     android:imeOptions="flagNoExtractUi"
                     android:inputType="textUri"
-                    android:textColorHint="@color/homecloud_input_placeholder" />
+                    android:textColorHint="@color/homecloud_input_placeholder"
+                    app:dropdownMaxHeight="300dp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
@@ -97,6 +97,7 @@
                 android:padding="6dp"
                 android:contentDescription="@string/app_name"
                 android:src="@drawable/ic_refresh"
+                app:tint="?attr/colorOnSecondaryContainer"
                 app:layout_constraintVertical_bias="0.4"
                 app:layout_constraintStart_toEndOf="@id/hostUrlInputLayout"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -121,7 +122,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:hint="@string/homecloud_login_email_hint"
                 app:errorEnabled="true"
                 app:endIconDrawable="@drawable/ic_clear_input"
                 app:endIconMode="clear_text"
@@ -129,7 +129,6 @@
                 app:hintAnimationEnabled="true"
                 app:expandedHintEnabled="true"
                 app:hintEnabled="true"
-                app:placeholderTextColor="@color/homecloud_input_placeholder"
                 app:layout_constraintTop_toBottomOf="@+id/thumbnail_name"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
@@ -140,6 +139,7 @@
                     android:drawablePadding="5dp"
                     android:imeOptions="flagNoExtractUi"
                     android:inputType="textNoSuggestions"
+                    android:hint="@string/homecloud_login_email_hint"
                     android:textColorHint="@color/homecloud_input_placeholder"/>
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -171,7 +171,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="@string/homecloud_login_password_hint"
                 app:endIconDrawable="@drawable/ic_password_toggle"
                 app:endIconMode="password_toggle"
                 style="@style/homeCloud.TextInputLayout.OutlinedBox"
@@ -187,8 +186,9 @@
                     android:layout_height="wrap_content"
                     android:drawablePadding="5dp"
                     android:imeOptions="flagNoExtractUi"
-                    android:inputType="textPassword"
-                    android:textColorHint="@color/homecloud_input_placeholder"/>
+                    android:hint="@string/homecloud_login_password_hint"
+                    android:textColorHint="@color/homecloud_input_placeholder"
+                    android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button

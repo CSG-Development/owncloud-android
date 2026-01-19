@@ -29,6 +29,7 @@ import com.owncloud.android.domain.exceptions.CodeExpiredException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.extensions.manageOptionLockSelected
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.updateTextIfDiffers
@@ -40,7 +41,9 @@ import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
 import com.owncloud.android.presentation.settings.SettingsActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
+import com.owncloud.android.ui.custom.CustomAutoCompleteTextView
 import com.owncloud.android.ui.custom.LoadingButton
+import com.owncloud.android.ui.custom.getTypedData
 import com.owncloud.android.ui.dialog.SslUntrustedCertDialog
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.launch
@@ -57,12 +60,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private val unableToDetectMessage: SpannableStringBuilder by lazy {
         createUnableToDetectMessage()
-    }
-
-    private val adapter by lazy {
-        DeviceAddressAdapter(
-            this, mutableListOf()
-        )
     }
 
     private val dialog by lazy {
@@ -84,6 +81,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.thumbnailName.text = getAppName()
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
         binding.backButton.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =
@@ -140,10 +138,14 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             loginViewModel.onActionClicked()
         }
 
-        binding.hostUrlInput.setAdapter(adapter)
-        binding.hostUrlInput.setOnItemClickListener { parent, _, position, _ ->
-            val selectedDevice = parent.getItemAtPosition(position) as Device
-            loginViewModel.onDeviceSelected(selectedDevice)
+        binding.hostUrlInput.setOnItemSelectedListener { item, _ ->
+            item.getTypedData<Device>()?.let { device ->
+                loginViewModel.onDeviceSelected(device)
+            }
+        }
+        // Show dropdown when clicking on the TextInputLayout end icon
+        binding.hostUrlInputLayout.setEndIconOnClickListener {
+            binding.hostUrlInput.toggleDropdown()
         }
         connectFieldTextWatcher = binding.hostUrlInput.doAfterTextChanged { text ->
             loginViewModel.onServerUrlChanged(text.toString())
@@ -265,9 +267,19 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         launchFileDisplayActivity()
     }
 
-    private fun updateDevices(devices: List<Device>) {
-        adapter.setDevices(devices)
-        binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else ContextCompat.getDrawable(this, R.drawable.ic_device)
+    private fun updateDevices(devices: List<Device>, selectedDevice: Device?) {
+        val deviceIcon = ContextCompat.getDrawable(this, R.drawable.ic_device)
+        val dropdownItems = devices.map { device ->
+            CustomAutoCompleteTextView.DropdownItem(
+                id = device.id,
+                text = device.name,
+                isSelected = device.id == selectedDevice?.id,
+                data = device
+            )
+        }.toMutableList()
+
+        binding.hostUrlInput.setDropdownItems(dropdownItems)
+        binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else deviceIcon
     }
 
     private fun hideCodeDialog() {
@@ -369,15 +381,26 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             }
 
             is LoginScreenState.LoginState -> {
-                if (state.isUnableToDetect || !state.errorMessage.isNullOrBlank()) {
-                    binding.scrollView.visibility = View.GONE
-                    binding.backButton.visibility = View.GONE
-                    if (!state.errorMessage.isNullOrBlank()) {
-                        setupUnableToConnectContent()
-                    } else if (state.isUnableToDetect) {
-                        setupUnableToDetectContent()
-                    }
-                    binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                changeLoadingState(state)
+                if (state.authError != null) {
+                     when (state.authError) {
+                         is LoginScreenState.AuthError.LoginError -> {
+                             binding.errorMessage.visibility = View.VISIBLE
+                             binding.errorMessage.text = state.authError.errorMessage
+                         }
+                         LoginScreenState.AuthError.UnableToConnect -> {
+                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                             binding.scrollView.visibility = View.GONE
+                             binding.backButton.visibility = View.GONE
+                             setupUnableToConnectContent()
+                         }
+                         LoginScreenState.AuthError.UnableToDetect -> {
+                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                             binding.scrollView.visibility = View.GONE
+                             binding.backButton.visibility = View.GONE
+                             setupUnableToDetectContent()
+                         }
+                     }
                 } else {
                     // Show main scroll view, hide unable to connect
                     binding.scrollView.visibility = View.VISIBLE
@@ -385,11 +408,10 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                     // Hide email input, show email text
                     binding.accountUsernameContainer.visibility = View.GONE
-                    binding.accountUsernameText.visibility = View.VISIBLE
                     binding.accountUsernameText.text = state.username
 
                     binding.backButton.visibility = View.VISIBLE
-                    updateDevices(state.devices)
+                    updateDevices(state.devices, state.selectedDevice)
                     binding.accountPassword.updateTextIfDiffers(state.password)
                     binding.hostUrlInput.removeTextChangedListener(connectFieldTextWatcher)
                     if (state.selectedDevice == null) {
@@ -398,37 +420,44 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                         binding.hostUrlInput.updateTextIfDiffers(state.selectedDevice.name)
                     }
                     connectFieldTextWatcher?.let { binding.hostUrlInput.addTextChangedListener(it) }
-                    binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
-                    binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
-                    if (state.isLoading) {
-                        binding.backButton.visibility = View.GONE
-                        binding.loadingLayout.visibility = View.VISIBLE
-                        binding.actionGroup.visibility = View.GONE
-                        binding.loginStateGroup.visibility = View.GONE
-                        binding.serversRefreshButton.visibility = View.INVISIBLE
-                    } else {
-                        binding.backButton.visibility = View.VISIBLE
-                        binding.loadingLayout.visibility = View.GONE
-                        binding.actionGroup.visibility = View.VISIBLE
-                        binding.loginStateGroup.visibility = View.VISIBLE
-                        binding.actionButton.setText(R.string.setup_btn_login)
-                        if (state.isActionButtonLoading) {
-                            binding.actionButton.setState(LoadingButton.State.LOADING)
-                        } else {
-                            val state =
-                                if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
-                                    (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
-                                    Patterns.EMAIL_ADDRESS.matcher(state.username)
-                                        .matches()
-                                ) {
-                                    LoadingButton.State.ENABLED
-                                } else {
-                                    LoadingButton.State.DISABLED
-                                }
-                            binding.actionButton.setState(state)
-                        }
-                    }
                 }
+            }
+        }
+    }
+
+    private fun changeLoadingState(state: LoginScreenState.LoginState) {
+        if (state.isLoading) {
+            binding.accountUsernameText.visibility = View.GONE
+            binding.errorMessage.visibility = View.GONE
+            binding.serversRefreshButton.visibility = View.INVISIBLE
+            binding.serversRefreshLoading.visibility = View.GONE
+            binding.backButton.visibility = View.GONE
+            binding.loadingLayout.visibility = View.VISIBLE
+            binding.actionGroup.visibility = View.GONE
+            binding.loginStateGroup.visibility = View.GONE
+        } else {
+            binding.accountUsernameText.visibility = View.VISIBLE
+            binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
+            binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
+            binding.backButton.visibility = View.VISIBLE
+            binding.loadingLayout.visibility = View.GONE
+            binding.actionGroup.visibility = View.VISIBLE
+            binding.loginStateGroup.visibility = View.VISIBLE
+            binding.actionButton.setText(R.string.setup_btn_login)
+            if (state.isActionButtonLoading) {
+                binding.actionButton.setState(LoadingButton.State.LOADING)
+            } else {
+                val state =
+                    if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
+                        (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
+                        Patterns.EMAIL_ADDRESS.matcher(state.username)
+                            .matches()
+                    ) {
+                        LoadingButton.State.ENABLED
+                    } else {
+                        LoadingButton.State.DISABLED
+                    }
+                binding.actionButton.setState(state)
             }
         }
     }

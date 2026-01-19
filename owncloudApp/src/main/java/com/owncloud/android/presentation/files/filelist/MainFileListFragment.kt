@@ -365,7 +365,6 @@ class MainFileListFragment : FileFragment(),
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
         (menu.findItem(R.id.action_search).actionView as SearchView).run {
             setOnQueryTextListener(this@MainFileListFragment)
             queryHint = resources.getString(R.string.actionbar_search)

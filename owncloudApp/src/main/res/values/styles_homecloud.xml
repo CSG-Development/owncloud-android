@@ -39,7 +39,7 @@
         <item name="colorAccent">@color/homecloud_color_accent</item>
         <item name="colorSurface">@color/homecloud_surface</item>
         <item name="colorSecondaryContainer">@android:color/white</item>
-        <item name="colorOnSecondaryContainer">@color/homecloud_blue_darken_2</item>
+        <item name="colorOnSecondaryContainer">@color/homecloud_color_on_secondary_container</item>
         <item name="colorOnSurface">?attr/colorPrimary</item>
         <item name="colorOnSurfaceVariant">?attr/colorPrimary</item>
         <item name="colorControlNormal">?attr/colorPrimary</item>
@@ -288,7 +288,7 @@
     </style>
 
     <!-- Custom TextInputLayout Style -->
-    <style name="homeCloud.TextInputLayout.OutlinedBox" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <style name="homeCloud.TextInputLayout.OutlinedBox" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundColor">@android:color/transparent</item>
         <item name="boxStrokeColor">@color/selector_input_border</item>
         <item name="boxStrokeErrorColor">@color/homecloud_error</item>

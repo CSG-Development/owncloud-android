@@ -58,6 +58,7 @@ import com.owncloud.android.domain.user.usecases.GetStoredQuotaUseCase
 import com.owncloud.android.extensions.createNotificationChannel
 import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
 import com.owncloud.android.presentation.migration.StorageMigrationActivity
 import com.owncloud.android.presentation.releasenotes.ReleaseNotesActivity
 import com.owncloud.android.presentation.security.biometric.BiometricActivity
@@ -129,7 +130,8 @@ class MainApp : Application() {
                 // have finished
                 if (activity !is PassCodeActivity &&
                     activity !is PatternActivity &&
-                    activity !is BiometricActivity
+                    activity !is BiometricActivity &&
+                    activity !is LoginActivity
                 ) {
                     StorageMigrationActivity.runIfNeeded(activity)
                     ReleaseNotesActivity.runIfNeeded(activity)

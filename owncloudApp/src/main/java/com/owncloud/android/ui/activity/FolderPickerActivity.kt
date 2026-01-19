@@ -36,6 +36,7 @@ import com.owncloud.android.datamodel.FileDataStorageManager
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.spaces.model.OCSpace
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.spaces.SpacesListFragment
@@ -320,13 +321,13 @@ open class FolderPickerActivity : FileActivity(),
 
         if (isRootFromPersonalInCopyOrCameraFolderMode) {
             updateStandardToolbar(
-                title = getString(R.string.default_display_name_for_root_folder),
+                title = getAppName(),
                 homeButtonDisplayed = true,
                 showBackArrow = true,
             )
         } else if (isRootFromPersonal) {
             updateStandardToolbar(
-                title = getString(R.string.default_display_name_for_root_folder),
+                title = getAppName(),
                 homeButtonDisplayed = true,
                 showBackArrow = true
             )
@@ -358,7 +359,7 @@ open class FolderPickerActivity : FileActivity(),
 
         val atRoot = (currentDir == null || currentDir.parentId == 0L)
         updateStandardToolbar(
-            title = if (atRoot) getString(R.string.default_display_name_for_root_folder) else currentDir!!.fileName,
+            title = if (atRoot) getAppName() else currentDir!!.fileName,
             homeButtonDisplayed = true,
             showBackArrow = !atRoot,
         )

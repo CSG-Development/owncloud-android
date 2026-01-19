@@ -292,16 +292,16 @@
     <string name="sync_fail_in_favourites_content">Contents of %1$d files could not be sync\'ed (%2$d conflicts)</string>
     <string name="sync_current_folder_was_removed">Folder %1$s does not exist anymore.</string>
 
-    <string name="pass_code_enter_pass_code">Please insert your passcode.</string>
-    <string name="pass_code_configure_your_pass_code">Enter your passcode.</string>
+    <string name="pass_code_enter_pass_code">Please enter your passcode</string>
+    <string name="pass_code_configure_your_pass_code">Enter your passcode</string>
     <string name="pass_code_configure_your_pass_code_migration">Enter a new %1$d-digit passcode.</string>
-    <string name="pass_code_configure_your_pass_code_explanation">The passcode will be requested every time the app is started.</string>
-    <string name="pass_code_reenter_your_pass_code">Please reenter your passcode.</string>
-    <string name="pass_code_remove_your_pass_code">Remove your passcode.</string>
-    <string name="pass_code_mismatch">The passcodes are not the same.</string>
+    <string name="pass_code_configure_your_pass_code_explanation">The passcode will be requested every time the app is started</string>
+    <string name="pass_code_reenter_your_pass_code">Please reenter your passcode</string>
+    <string name="pass_code_remove_your_pass_code">Remove your passcode</string>
+    <string name="pass_code_mismatch">The passcodes are not the same</string>
     <string name="pass_code_wrong">Incorrect passcode</string>
-    <string name="pass_code_error_set">An error occurred while setting the passcode lock.</string>
-    <string name="pass_code_error_remove">An error occurred while removing the passcode lock.</string>
+    <string name="pass_code_error_set">An error occurred while setting the passcode lock</string>
+    <string name="pass_code_error_remove">An error occurred while removing the passcode lock</string>
     <string name="numberkeyboard_backspace_button_content_description">Backspace button</string>
     <string name="numberkeyboard_biometric_button_content_description">Biometric button</string>
 
@@ -823,6 +823,7 @@
     <string name="content_description_sort_by_name_ascending">Sort by %1$s ascending</string>
     <string name="content_description_sort_by_name_descending">Sort by %1$s descending</string>
     <string name="content_description_create_new_folder">Create new folder</string>
+    <string name="content_description_passcode_dot">Passcode digit indicator</string>
 
     <string name="create_shortcut_dialog_title">Create a shortcut</string>
     <string name="create_shortcut_dialog_url">URL</string>

@@ -6,6 +6,7 @@
     <color name="homecloud_secondary">#DDFFFFFF</color>
     <color name="homecloud_color_accent">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_color_outline">#616161</color>
+    <color name="homecloud_color_on_secondary_container">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_surface">#3D3E41</color>
     <color name="homecloud_error">#F28F8C</color>
     <color name="homecloud_error_transparent">#3DF28F8C</color>
@@ -68,5 +69,15 @@
     <color name="homecloud_toolbar_icon_tint">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_dot_unselected">@color/white_transparent</color>
 
+    <color name="homecloud_highlight_background">@color/homecloud_blue_lighten_2_20</color>
     <color name="homecloud_bottom_sheet_divider">#616161</color>
+    <color name="homecloud_pattern_lock">@color/white</color>
+    <color name="homecloud_passcode_lock_pressed">@color/white_pressed</color>
+    <color name="homecloud_passcode_lock_backspace">@color/homecloud_white_87</color>
+    <color name="homecloud_passcode_text_lock">@color/homecloud_white_70</color>
+    <color name="homecloud_text_error_lock">#F28F8C</color>
+
+    <color name="homecloud_server_list_dropdown">#1D1E21</color>
+
+
 </resources>

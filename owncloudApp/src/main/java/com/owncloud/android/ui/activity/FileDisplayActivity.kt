@@ -78,6 +78,7 @@ import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.checkPasscodeEnforced
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
+import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.extensions.goToUrl
 import com.owncloud.android.extensions.isDownloadPending
 import com.owncloud.android.extensions.isLandscapeMode
@@ -260,10 +261,12 @@ class FileDisplayActivity : FileActivity(),
 
         // setup toolbar
         setupStandardToolbar(
-            title = getString(R.string.default_display_name_for_root_folder),
+            title = getAppName(),
             homeButtonEnabled = true,
             displayShowTitleEnabled = true
         )
+
+        binding.root.findViewById<TextView>(R.id.drawer_header_title).text = getAppName()
 
         // setup drawer
         setupDrawer()
@@ -1072,7 +1075,7 @@ class FileDisplayActivity : FileActivity(),
                         getString(R.string.bottom_nav_links)
                     }
 
-                    FileListOption.ALL_FILES -> getString(R.string.default_display_name_for_root_folder)
+                    FileListOption.ALL_FILES -> getAppName()
                     FileListOption.SPACES_LIST -> getString(R.string.bottom_nav_spaces)
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
                     FileListOption.GLOBAL_SEARCH -> ""

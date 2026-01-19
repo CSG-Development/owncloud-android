@@ -14,6 +14,7 @@
 -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activityPatternLockLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -23,12 +24,13 @@
         android:id="@+id/header_pattern"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/standard_margin"
+        android:layout_marginBottom="@dimen/standard_margin"
         android:text="@string/pass_code_enter_pass_code"
         android:textSize="16sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@id/explanation_pattern" />
 
     <TextView
         android:id="@+id/explanation_pattern"
@@ -41,14 +43,14 @@
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header_pattern" />
+        app:layout_constraintBottom_toTopOf="@id/error_pattern" />
 
     <TextView
         android:id="@+id/error_pattern"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/standard_margin"
-        android:textColor="@color/warning"
+        android:textColor="@color/homecloud_text_error_lock"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@id/patternContainer"
         app:layout_constraintEnd_toEndOf="parent"
@@ -56,10 +58,12 @@
 
     <com.owncloud.android.presentation.security.passcode.SquareFrameLayout
         android:id="@+id/patternContainer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/standard_margin"
         android:layout_marginVertical="@dimen/standard_margin"
+        app:layout_constraintVertical_bias="0.6"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_chainStyle="packed"
@@ -70,14 +74,27 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:focusable="true"
-            app:correctStateColor="@color/primary"
+            app:dotNormalSize="20dp"
+            app:correctStateColor="@color/homecloud_pattern_lock"
             app:dotCount="3"
-            app:normalStateColor="@color/primary"
-            app:wrongStateColor="@color/primary">
+            app:normalStateColor="@color/homecloud_pattern_lock"
+            app:wrongStateColor="@color/homecloud_pattern_lock">
 
             <requestFocus />
 
         </com.andrognito.patternlockview.PatternLockView>
     </com.owncloud.android.presentation.security.passcode.SquareFrameLayout>
+
+    <Button
+        android:id="@+id/logout_button"
+        style="@style/Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="@string/homecloud_logout_title"
+        android:visibility="gone"
+        tools:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

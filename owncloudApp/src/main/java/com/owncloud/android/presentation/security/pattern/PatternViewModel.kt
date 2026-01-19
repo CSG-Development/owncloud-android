@@ -21,11 +21,20 @@
 package com.owncloud.android.presentation.security.pattern
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.owncloud.android.data.providers.SharedPreferencesProvider
+import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.security.biometric.BiometricActivity
+import com.owncloud.android.providers.ContextProvider
+import com.owncloud.android.providers.CoroutinesDispatcherProvider
+import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
+import kotlinx.coroutines.launch
 
 class PatternViewModel(
-    private val preferencesProvider: SharedPreferencesProvider
+    private val preferencesProvider: SharedPreferencesProvider,
+    private val removeAccountUseCase: RemoveAccountUseCase,
+    private val appContextProvider: ContextProvider,
+    private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
 
     fun setPattern(pattern: String) {
@@ -36,6 +45,13 @@ class PatternViewModel(
     fun removePattern() {
         preferencesProvider.removePreference(PatternActivity.PREFERENCE_PATTERN)
         preferencesProvider.putBoolean(PatternActivity.PREFERENCE_SET_PATTERN, false)
+    }
+
+    fun logout() {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val currentAccount = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())
+            removeAccountUseCase(RemoveAccountUseCase.Params(accountName = currentAccount.name))
+        }
     }
 
     fun checkPatternIsValid(patternValue: String?): Boolean {

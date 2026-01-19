@@ -24,6 +24,7 @@
 
 package com.owncloud.android.dependecyinjection
 
+import com.owncloud.android.domain.GetFirebaseInstallationIdUseCase
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryWhichAllowCreationAsStreamUseCase
@@ -51,6 +52,7 @@ import com.owncloud.android.domain.capabilities.usecases.GetCapabilitiesAsLiveDa
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
+import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
@@ -309,6 +311,7 @@ val useCaseModule = module {
     factoryOf(::GetExistingRemoteAccessUserUseCase)
     factoryOf(::SaveCurrentDeviceUseCase)
     factoryOf(::GetCurrentDevicePathsUseCase)
+    factoryOf(::GetSavedDeviceCertificateUseCase)
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
@@ -321,4 +324,6 @@ val useCaseModule = module {
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
+
+    factoryOf(::GetFirebaseInstallationIdUseCase)
 }

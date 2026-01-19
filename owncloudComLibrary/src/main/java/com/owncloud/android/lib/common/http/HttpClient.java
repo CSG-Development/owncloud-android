@@ -48,10 +48,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client used to perform network operations
@@ -90,16 +90,16 @@ public class HttpClient {
 
     public OkHttpClient getOkHttpClient() {
         return getOkHttpClient(
-                Duration.ofSeconds(HttpConstants.DEFAULT_CONNECTION_TIMEOUT),
-                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT),
-                Duration.ofSeconds(HttpConstants.DEFAULT_DATA_TIMEOUT)
+                HttpConstants.DEFAULT_CONNECTION_TIMEOUT,
+                HttpConstants.DEFAULT_DATA_TIMEOUT,
+                HttpConstants.DEFAULT_DATA_TIMEOUT
         );
     }
 
     public OkHttpClient getOkHttpClient(
-            Duration connectionTimeOut,
-            Duration readTimeOut,
-            Duration writeTimeOut
+            long connectionTimeOutInSec,
+            long readTimeOutInSec,
+            long writeTimeOutInSec
     ) {
         if (mOkHttpClient == null) {
             try {
@@ -113,7 +113,7 @@ public class HttpClient {
                 // Automatic cookie handling, NOT PERSISTENT
                 final CookieJar cookieJar = new CookieJarImpl(mCookieStore);
                 mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar,
-                        connectionTimeOut, readTimeOut, writeTimeOut
+                        connectionTimeOutInSec, readTimeOutInSec, writeTimeOutInSec
                 );
 
             } catch (NoSuchAlgorithmException nsae) {
@@ -150,17 +150,17 @@ public class HttpClient {
 
     private OkHttpClient buildNewOkHttpClient(SSLSocketFactory sslSocketFactory, X509TrustManager trustManager,
                                               CookieJar cookieJar,
-                                              Duration connectionTimeOut,
-                                              Duration readTimeOut,
-                                              Duration writeTimeOut
+                                              long connectionTimeOutInSec,
+                                              long readTimeOutInSec,
+                                              long writeTimeOutInSec
     ) {
         return new OkHttpClient.Builder()
                 .addNetworkInterceptor(getLogInterceptor())
                 .addNetworkInterceptor(DebugInterceptorFactory.INSTANCE.getInterceptor())
                 .protocols(Collections.singletonList(Protocol.HTTP_1_1))
-                .readTimeout(readTimeOut)
-                .writeTimeout(writeTimeOut)
-                .connectTimeout(connectionTimeOut)
+                .readTimeout(readTimeOutInSec, TimeUnit.SECONDS)
+                .writeTimeout(writeTimeOutInSec, TimeUnit.SECONDS)
+                .connectTimeout(connectionTimeOutInSec, TimeUnit.SECONDS)
                 .followRedirects(false)
                 .sslSocketFactory(sslSocketFactory, trustManager)
                 .hostnameVerifier((asdf, usdf) -> true)

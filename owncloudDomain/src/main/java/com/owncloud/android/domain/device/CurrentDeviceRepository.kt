@@ -6,6 +6,7 @@ import com.owncloud.android.domain.device.model.DevicePathType
 interface CurrentDeviceRepository {
     fun saveCurrentDevice(device: Device)
     fun getCurrentDevicePaths(): Map<DevicePathType, String>
+    fun getSavedCertificateCommonName(): String?
 
     fun clearCurrentDevicePaths()
 }

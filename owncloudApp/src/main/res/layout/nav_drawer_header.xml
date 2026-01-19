@@ -44,9 +44,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginVertical="@dimen/standard_margin"
-            android:text="@string/default_display_name_for_root_folder"
-            android:textSize="22sp"
-            />
+            android:textSize="22sp" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/drawer_current_account"
@@ -81,10 +79,24 @@
             android:layout_marginBottom="@dimen/standard_half_margin"
             android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/drawer_current_base_url"
             app:layout_constraintEnd_toEndOf="@id/drawer_username"
             app:layout_constraintStart_toStartOf="@id/drawer_username"
             tools:text="@string/app_name" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/drawer_current_base_url"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginBottom="@dimen/standard_half_margin"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/drawer_username"
+            app:layout_constraintStart_toStartOf="@id/drawer_username"
+            tools:text="https://" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

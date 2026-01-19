@@ -89,7 +89,7 @@ val viewModelModule = module {
     viewModelOf(::GlobalSearchViewModel)
 
     viewModel { (accountName: String) -> CapabilityViewModel(accountName, get(), get(), get(), get()) }
-    viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action) }
+    viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action, get(), get(), get()) }
     viewModel { (filePath: String, accountName: String) ->
         ShareViewModel(filePath, accountName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }

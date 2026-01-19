@@ -25,6 +25,10 @@ class HCCurrentDeviceRepository(
         return paths
     }
 
+    override fun getSavedCertificateCommonName(): String? {
+        return currentDeviceStorage.getCertificateCommonName()
+    }
+
     override fun clearCurrentDevicePaths() {
         currentDeviceStorage.clearDevicePaths()
     }

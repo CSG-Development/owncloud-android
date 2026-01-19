@@ -17,4 +17,11 @@
     <dimen name="loading_button_min_height">40dp</dimen>
     <dimen name="loading_button_corner_radius">28dp</dimen>
 
+    <!-- Custom AutoComplete -->
+    <dimen name="custom_autocomplete_max_height">300dp</dimen>
+    <dimen name="custom_autocomplete_item_height">56dp</dimen>
+    <dimen name="custom_autocomplete_icon_size">24dp</dimen>
+    <dimen name="custom_autocomplete_horizontal_padding">16dp</dimen>
+    <dimen name="custom_autocomplete_vertical_padding">12dp</dimen>
+
 </resources>

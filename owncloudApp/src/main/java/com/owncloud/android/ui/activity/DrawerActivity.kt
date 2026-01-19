@@ -185,7 +185,7 @@ abstract class DrawerActivity : ToolbarActivity() {
         drawerToggle?.toolbarNavigationClickListener = View.OnClickListener { onBackPressed() }
     }
 
-    override fun updateStandardToolbar(title: String, homeButtonDisplayed: Boolean, showBackArrow: Boolean) {
+    override fun updateStandardToolbar(title: CharSequence, homeButtonDisplayed: Boolean, showBackArrow: Boolean) {
         drawerToggle?.isDrawerIndicatorEnabled = !showBackArrow
         setDrawerLockMode(
             if (showBackArrow) {
@@ -571,6 +571,9 @@ abstract class DrawerActivity : ToolbarActivity() {
             }
         }
         setOnAccountsUpdatedListener()
+        collectLatestLifecycleFlow(drawerViewModel.observeBaseUrl()) {
+            getCurrentBaseUrl()?.text = drawerViewModel.getCurrentBaseUrl().orEmpty()
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -612,6 +615,8 @@ abstract class DrawerActivity : ToolbarActivity() {
     private fun getDrawerUserName(): TextView? = findViewById(R.id.drawer_username)
     private fun getDrawerUserNameFull(): TextView? = findViewById(R.id.drawer_username_full)
     private fun getScreenContent(): View? = findViewById<View>(R.id.nav_coordinator_layout)
+
+    private fun getCurrentBaseUrl(): TextView? = findViewById(R.id.drawer_current_base_url)
 
     /**
      * Finds a view that was identified by the id attribute from the drawer header.
