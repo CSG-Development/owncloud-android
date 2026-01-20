@@ -130,7 +130,8 @@ val viewModelModule = module {
             get(),
             get(),
             get(),
-            get()
+            get(),
+            get(),
         )
     }
     viewModel { MigrationViewModel(MainApp.dataFolder, get(), get(), get(), get(), get(), get(), get()) }

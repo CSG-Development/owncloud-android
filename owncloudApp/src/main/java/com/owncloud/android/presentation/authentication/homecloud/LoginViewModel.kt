@@ -12,8 +12,9 @@ import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFrom
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
-import com.owncloud.android.domain.device.usecases.StaticDeviceUseCase
+import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -60,7 +61,8 @@ class LoginViewModel(
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
     private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
-    private val staticDeviceUseCase: StaticDeviceUseCase,
+    private val saveStaticDeviceUseCase: SaveStaticDeviceUseCase,
+    private val getStaticDeviceUseCase: GetStaticDeviceUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -377,7 +379,7 @@ class LoginViewModel(
         staticDeviceUrl: String,
         isSettingsMenuEnabled: Boolean,
     ) {
-        staticDeviceUseCase.execute(staticDeviceUrl)
+        saveStaticDeviceUseCase.execute(staticDeviceUrl)
         _state.update {
             it.copyGeneralState(isSettingsVisible = isSettingsMenuEnabled)
         }
@@ -385,7 +387,7 @@ class LoginViewModel(
 
     fun onDeveloperOptionsClicked() {
         viewModelScope.launch {
-            val staticDevice = staticDeviceUseCase.getStaticDevice()
+            val staticDevice = getStaticDeviceUseCase.execute()
             val staticDeviceUrl = staticDevice?.availablePaths?.get(DevicePathType.REMOTE)
             _events.emit(LoginEvent.ShowDeveloperOptions(staticDeviceUrl.orEmpty(), _state.value.isSettingsVisible))
         }

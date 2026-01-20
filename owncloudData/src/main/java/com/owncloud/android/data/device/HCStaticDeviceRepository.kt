@@ -19,19 +19,9 @@ class HCStaticDeviceRepository(
 
     private val _staticDeviceUrlFlow = MutableStateFlow(developerOptionsStorage.getStaticDeviceUrl())
 
-    override fun saveStaticDevice(device: Device) {
-        val remoteUrl = device.availablePaths[DevicePathType.REMOTE]
-        if (remoteUrl != null) {
-            developerOptionsStorage.saveStaticDeviceUrl(remoteUrl)
-            _staticDeviceUrlFlow.update { remoteUrl }
-        } else {
-            // If no REMOTE path, try to get any available path
-            val anyUrl = device.availablePaths.values.firstOrNull()
-            if (anyUrl != null) {
-                developerOptionsStorage.saveStaticDeviceUrl(anyUrl)
-                _staticDeviceUrlFlow.update { anyUrl }
-            }
-        }
+    override fun saveStaticDeviceUrl(remoteUrl: String) {
+        developerOptionsStorage.saveStaticDeviceUrl(remoteUrl)
+        _staticDeviceUrlFlow.update { remoteUrl }
     }
 
     override fun getStaticDeviceAsFlow(): Flow<Device?> {

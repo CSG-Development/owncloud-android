@@ -1,9 +1,9 @@
 package com.owncloud.android.domain.server.usecases
 
+import com.owncloud.android.domain.device.StaticDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
-import com.owncloud.android.domain.device.usecases.StaticDeviceUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +19,7 @@ class GetAvailableDevicesUseCase(
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase,
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase,
     private val getSavedDeviceCertificateUseCase: GetSavedDeviceCertificateUseCase,
-    private val staticDeviceUseCase: StaticDeviceUseCase,
+    private val staticDeviceRepository: StaticDeviceRepository,
 ) {
 
     companion object {
@@ -44,7 +44,7 @@ class GetAvailableDevicesUseCase(
         return combine(
             remoteAccessDevicesFlow,
             localNetworkDevicesFlow,
-            staticDeviceUseCase.getStaticDeviceFlow()
+            staticDeviceRepository.getStaticDeviceAsFlow()
         ) { remoteDevices, localDevice, staticDevice ->
             Timber.d("Remote access devices: $remoteDevices, Local network server: $localDevice")
 

@@ -14,7 +14,8 @@ interface StaticDeviceRepository {
      * Only the REMOTE path URL will be stored.
      * @param device Device to save (only REMOTE path will be extracted)
      */
-    fun saveStaticDevice(device: Device)
+    fun saveStaticDeviceUrl(remoteUrl: String)
+
 
     /**
      * Get the current static device as a Flow.
