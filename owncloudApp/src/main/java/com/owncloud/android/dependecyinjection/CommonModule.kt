@@ -21,6 +21,7 @@
 package com.owncloud.android.dependecyinjection
 
 import androidx.work.WorkManager
+import com.owncloud.android.data.device.DeveloperOptionsStorage
 import com.owncloud.android.data.lifecycle.AppLifecycleObserver
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
 import com.owncloud.android.presentation.avatar.AvatarManager
@@ -59,5 +60,10 @@ val commonModule = module {
             mainScope,
             get(),
         )
+    }
+
+    // Developer Options Storage
+    single {
+        DeveloperOptionsStorage(get())
     }
 }

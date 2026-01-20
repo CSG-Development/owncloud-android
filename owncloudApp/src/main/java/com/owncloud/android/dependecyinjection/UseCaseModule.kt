@@ -54,6 +54,7 @@ import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFrom
 import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.StaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
@@ -312,6 +313,7 @@ val useCaseModule = module {
     factoryOf(::SaveCurrentDeviceUseCase)
     factoryOf(::GetCurrentDevicePathsUseCase)
     factoryOf(::GetSavedDeviceCertificateUseCase)
+    factoryOf(::StaticDeviceUseCase)
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)

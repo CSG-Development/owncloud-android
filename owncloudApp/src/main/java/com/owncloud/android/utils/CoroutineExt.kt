@@ -21,7 +21,7 @@ suspend fun runCatchingException(
 suspend fun <T> runCatchingException(
     block: suspend () -> T,
     exceptionHandlerBlock: suspend (Exception) -> Unit,
-    completeBlock: suspend (T) -> Unit = {}
+    completeBlock: suspend (T?) -> Unit = {}
 ) {
     var result: T? = null
     try {
@@ -31,6 +31,6 @@ suspend fun <T> runCatchingException(
     } catch (e: Exception) {
         exceptionHandlerBlock(e)
     } finally {
-        result?.let { completeBlock(it) }
+        completeBlock(result)
     }
 }
