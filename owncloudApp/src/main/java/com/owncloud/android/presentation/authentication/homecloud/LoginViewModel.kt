@@ -10,8 +10,11 @@ import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCas
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.model.Device
+import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
+import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
@@ -58,6 +61,8 @@ class LoginViewModel(
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
     private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
+    private val saveStaticDeviceUseCase: SaveStaticDeviceUseCase,
+    private val getStaticDeviceUseCase: GetStaticDeviceUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -114,7 +119,6 @@ class LoginViewModel(
                             _state.update {
                                 currentState.copy(errorCodeException = e)
                             }
-                            _events.emit(LoginEvent.ShowCodeDialog)
                         }
 
                         is LoginScreenState.LoginState -> {
@@ -131,13 +135,15 @@ class LoginViewModel(
 
                 },
                 completeBlock = { reference ->
-                    _state.update {
-                        LoginScreenState.EmailState(
-                            username = currentState.username,
-                            reference = reference,
-                            errorEmailInvalidMessage = null,
-                            isActionButtonLoading = false,
-                        )
+                    reference?.let { ref ->
+                        _state.update {
+                            LoginScreenState.EmailState(
+                                username = currentState.username,
+                                reference = ref,
+                                errorEmailInvalidMessage = null,
+                                isActionButtonLoading = false,
+                            )
+                        }
                     }
                     _events.emit(LoginEvent.ShowCodeDialog)
                     startObserveServers()
@@ -369,6 +375,24 @@ class LoginViewModel(
         }
     }
 
+    fun onDeveloperOptionsChanged(
+        staticDeviceUrl: String,
+        isSettingsMenuEnabled: Boolean,
+    ) {
+        saveStaticDeviceUseCase.execute(staticDeviceUrl)
+        _state.update {
+            it.copyGeneralState(isSettingsVisible = isSettingsMenuEnabled)
+        }
+    }
+
+    fun onDeveloperOptionsClicked() {
+        viewModelScope.launch {
+            val staticDevice = getStaticDeviceUseCase.execute()
+            val staticDeviceUrl = staticDevice?.availablePaths?.get(DevicePathType.REMOTE)
+            _events.emit(LoginEvent.ShowDeveloperOptions(staticDeviceUrl.orEmpty(), _state.value.isSettingsVisible))
+        }
+    }
+
     fun onActionClicked() {
         // Validate email before proceeding
         val currentState = _state.value
@@ -537,11 +561,23 @@ class LoginViewModel(
     }
 
     sealed class LoginScreenState {
+
+        abstract val isSettingsVisible: Boolean
+
         abstract val username: String
 
         abstract val devices: List<Device>
 
         abstract val isActionButtonLoading: Boolean
+
+        fun copyGeneralState(
+            isSettingsVisible: Boolean = this.isSettingsVisible,
+        ): LoginScreenState {
+            return when (this) {
+                is LoginState -> copy(isSettingsVisible = isSettingsVisible)
+                is EmailState -> copy(isSettingsVisible = isSettingsVisible)
+            }
+        }
 
         sealed class AuthError {
             data class LoginError(val errorMessage: String) : AuthError()
@@ -556,7 +592,8 @@ class LoginViewModel(
             val errorCodeException: Throwable? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
-            override val isActionButtonLoading: Boolean = false
+            override val isActionButtonLoading: Boolean = false,
+            override val isSettingsVisible: Boolean = false
         ) : LoginScreenState()
 
         data class LoginState(
@@ -568,12 +605,15 @@ class LoginViewModel(
             val selectedDevice: Device? = null,
             val serverUrl: String = "",
             override val devices: List<Device> = emptyList(),
-            override val isActionButtonLoading: Boolean = false
+            override val isActionButtonLoading: Boolean = false,
+            override val isSettingsVisible: Boolean = false
         ) : LoginScreenState()
     }
 
     sealed class LoginEvent {
         data object ShowCodeDialog : LoginEvent()
+
+        data class ShowDeveloperOptions(val staticDeviceUrl: String, val isSettingsMenuEnabled: Boolean = false): LoginEvent()
         data object DismissCodeDialog : LoginEvent()
 
         data object Close : LoginEvent()

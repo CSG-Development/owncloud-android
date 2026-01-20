@@ -1,5 +1,6 @@
 package com.owncloud.android.domain.server.usecases
 
+import com.owncloud.android.domain.device.StaticDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
@@ -18,6 +19,7 @@ class GetAvailableDevicesUseCase(
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase,
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase,
     private val getSavedDeviceCertificateUseCase: GetSavedDeviceCertificateUseCase,
+    private val staticDeviceRepository: StaticDeviceRepository,
 ) {
 
     companion object {
@@ -39,7 +41,11 @@ class GetAvailableDevicesUseCase(
         val localNetworkDevicesFlow = discoverLocalNetworkDevicesUseCase.execute(discoverLocalNetworkDevicesParams)
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
 
-        return combine(remoteAccessDevicesFlow, localNetworkDevicesFlow) { remoteDevices, localDevice ->
+        return combine(
+            remoteAccessDevicesFlow,
+            localNetworkDevicesFlow,
+            staticDeviceRepository.getStaticDeviceAsFlow()
+        ) { remoteDevices, localDevice, staticDevice ->
             Timber.d("Remote access devices: $remoteDevices, Local network server: $localDevice")
 
             val mutableDevices = remoteDevices.toMutableList()
@@ -78,6 +84,7 @@ class GetAvailableDevicesUseCase(
                     mutableDevices.add(localDevice)
                 }
             }
+            staticDevice?.let { mutableDevices.add(it) }
             sortDevicesByPriority(mutableDevices)
         }.stateIn(
             scope = scope,
