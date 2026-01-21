@@ -84,8 +84,9 @@ class GetAvailableDevicesUseCase(
                     mutableDevices.add(localDevice)
                 }
             }
-            staticDevice?.let { mutableDevices.add(it) }
             sortDevicesByPriority(mutableDevices)
+            staticDevice?.let { mutableDevices.add(0, it) }
+            mutableDevices
         }.stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
