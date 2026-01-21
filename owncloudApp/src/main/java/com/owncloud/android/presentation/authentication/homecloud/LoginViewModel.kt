@@ -171,26 +171,8 @@ class LoginViewModel(
     }
 
     fun onDeviceSelected(selectedDevice: Device) {
-        changeDevice(selectedDevice)
-    }
-
-    fun onServerUrlChanged(serverUrl: String) {
-        changeDevice(hostUrl = serverUrl)
-    }
-
-    private fun changeDevice(selectedDevice: Device? = null, hostUrl: String = "") {
         _state.update { currentState ->
-            when (currentState) {
-                is LoginScreenState.LoginState -> {
-                    if (selectedDevice == null) {
-                        currentState.copy(serverUrl = hostUrl, selectedDevice = null)
-                    } else {
-                        currentState.copy(selectedDevice = selectedDevice, serverUrl = "")
-                    }
-                }
-
-                is LoginScreenState.EmailState -> currentState
-            }
+            currentState.copyGeneralState(selectedDevice = selectedDevice)
         }
     }
 
@@ -263,7 +245,9 @@ class LoginViewModel(
         _state.update {
             LoginScreenState.LoginState(
                 username = currentState.username,
-                devices = currentState.devices
+                devices = currentState.devices,
+                selectedDevice = currentState.selectedDevice,
+                isSettingsVisible = currentState.isSettingsVisible
             )
         }
         _events.emit(LoginEvent.DismissCodeDialog)
@@ -287,7 +271,9 @@ class LoginViewModel(
             _state.update {
                 LoginScreenState.LoginState(
                     username = existingUserName,
-                    devices = it.devices
+                    devices = it.devices,
+                    selectedDevice = it.selectedDevice,
+                    isSettingsVisible = it.isSettingsVisible
                 )
             }
             _events.emit(LoginEvent.DismissCodeDialog)
@@ -303,14 +289,16 @@ class LoginViewModel(
             ).collect { devices ->
                 Timber.d("DEBUG devices: $devices")
                 _state.update { currentState ->
+                    val selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice
                     when (currentState) {
                         is LoginScreenState.EmailState -> currentState.copy(
-                            devices = devices
+                            devices = devices,
+                            selectedDevice = selectedDevice,
                         )
 
                         is LoginScreenState.LoginState -> currentState.copy(
                             devices = devices,
-                            selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice,
+                            selectedDevice = selectedDevice,
                             authError = if (devices.isEmpty()) LoginScreenState.AuthError.UnableToConnect else null
                         )
                     }
@@ -422,60 +410,55 @@ class LoginViewModel(
     private fun performLogin() {
         viewModelScope.launch {
             val currentState = _state.value as LoginScreenState.LoginState
-            _state.update { currentState.copy(isLoading = true, authError = null) }
-            runCatchingException(
-                block = {
-                    val serverInfoResult = withContext(coroutinesDispatcherProvider.io) {
-                        val enforceOIDC = contextProvider.getBoolean(R.bool.enforce_oidc)
-                        val secureConnectionEnforced = contextProvider.getBoolean(R.bool.enforce_secure_connection)
-                        if (currentState.selectedDevice == null) {
+            val selectedDevice = currentState.selectedDevice
+            if (selectedDevice != null) {
+                _state.update { currentState.copy(isLoading = true, authError = null) }
+                runCatchingException(
+                    block = {
+                        val serverInfoResult = withContext(coroutinesDispatcherProvider.io) {
+                            val enforceOIDC = contextProvider.getBoolean(R.bool.enforce_oidc)
+                            val secureConnectionEnforced = contextProvider.getBoolean(R.bool.enforce_secure_connection)
                             getAvailableServerInfoUseCase.getAvailableServerInfo(
-                                currentState.serverUrl,
-                                enforceOIDC = enforceOIDC,
-                                secureConnectionEnforced = secureConnectionEnforced
-                            )
-                        } else {
-                            getAvailableServerInfoUseCase.getAvailableServerInfo(
-                                currentState.selectedDevice,
+                                selectedDevice,
                                 enforceOIDC = enforceOIDC,
                                 secureConnectionEnforced = secureConnectionEnforced
                             )
                         }
-                    }
 
-                    if (serverInfoResult.isSuccess) {
-                        val accountNameResult = withContext(coroutinesDispatcherProvider.io) {
-                            loginBasicAsyncUseCase(
-                                LoginBasicAsyncUseCase.Params(
-                                    serverInfo = serverInfoResult.getDataOrNull(),
-                                    username = currentState.username,
-                                    password = currentState.password,
-                                    updateAccountWithUsername = if (loginAction != ACTION_CREATE) account?.name else null
+                        if (serverInfoResult.isSuccess) {
+                            val accountNameResult = withContext(coroutinesDispatcherProvider.io) {
+                                loginBasicAsyncUseCase(
+                                    LoginBasicAsyncUseCase.Params(
+                                        serverInfo = serverInfoResult.getDataOrNull(),
+                                        username = currentState.username,
+                                        password = currentState.password,
+                                        updateAccountWithUsername = if (loginAction != ACTION_CREATE) account?.name else null
+                                    )
                                 )
-                            )
-                        }
+                            }
 
-                        if (accountNameResult.isSuccess) {
-                            val accountName = accountNameResult.getDataOrNull().orEmpty()
-                            dynamicUrlSwitchingController.startDynamicUrlSwitching()
-                            discoverAccount(accountName, loginAction == ACTION_CREATE)
-                            currentState.selectedDevice?.let { saveCurrentDeviceUseCase(it) }
-                            _events.emit(LoginEvent.LoginResult(accountName = accountName))
+                            if (accountNameResult.isSuccess) {
+                                val accountName = accountNameResult.getDataOrNull().orEmpty()
+                                dynamicUrlSwitchingController.startDynamicUrlSwitching()
+                                discoverAccount(accountName, loginAction == ACTION_CREATE)
+                                saveCurrentDeviceUseCase(selectedDevice)
+                                _events.emit(LoginEvent.LoginResult(accountName = accountName))
+                            } else {
+                                handleLoginError(accountNameResult.getThrowableOrNull())
+                            }
+
                         } else {
-                            handleLoginError(accountNameResult.getThrowableOrNull())
+                            handleDeviceError()
                         }
-
-                    } else {
-                        handleDeviceError()
+                    },
+                    exceptionHandlerBlock = {
+                        val state = _state.value as LoginScreenState.LoginState
+                        _state.update { state.copy(isLoading = false) }
+                    },
+                    completeBlock = {
                     }
-                },
-                exceptionHandlerBlock = {
-                    val state = _state.value as LoginScreenState.LoginState
-                    _state.update { state.copy(isLoading = false) }
-                },
-                completeBlock = {
-                }
-            )
+                )
+            }
         }
     }
 
@@ -568,14 +551,33 @@ class LoginViewModel(
 
         abstract val devices: List<Device>
 
+        abstract val selectedDevice: Device?
+
         abstract val isActionButtonLoading: Boolean
 
         fun copyGeneralState(
             isSettingsVisible: Boolean = this.isSettingsVisible,
+            username: String = this.username,
+            devices: List<Device> = this.devices,
+            selectedDevice: Device? = this.selectedDevice,
+            isActionButtonLoading: Boolean = this.isActionButtonLoading
         ): LoginScreenState {
             return when (this) {
-                is LoginState -> copy(isSettingsVisible = isSettingsVisible)
-                is EmailState -> copy(isSettingsVisible = isSettingsVisible)
+                is LoginState -> copy(
+                    isSettingsVisible = isSettingsVisible,
+                    username = username,
+                    devices = devices,
+                    selectedDevice = selectedDevice,
+                    isActionButtonLoading = isActionButtonLoading
+                )
+
+                is EmailState -> copy(
+                    isSettingsVisible = isSettingsVisible,
+                    username = username,
+                    devices = devices,
+                    selectedDevice = selectedDevice,
+                    isActionButtonLoading = isActionButtonLoading
+                )
             }
         }
 
@@ -592,8 +594,9 @@ class LoginViewModel(
             val errorCodeException: Throwable? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
+            override val selectedDevice: Device? = null,
             override val isActionButtonLoading: Boolean = false,
-            override val isSettingsVisible: Boolean = false
+            override val isSettingsVisible: Boolean = false,
         ) : LoginScreenState()
 
         data class LoginState(
@@ -602,18 +605,17 @@ class LoginViewModel(
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
             val authError: AuthError? = null,
-            val selectedDevice: Device? = null,
-            val serverUrl: String = "",
             override val devices: List<Device> = emptyList(),
+            override val selectedDevice: Device? = null,
             override val isActionButtonLoading: Boolean = false,
-            override val isSettingsVisible: Boolean = false
+            override val isSettingsVisible: Boolean = false,
         ) : LoginScreenState()
     }
 
     sealed class LoginEvent {
         data object ShowCodeDialog : LoginEvent()
 
-        data class ShowDeveloperOptions(val staticDeviceUrl: String, val isSettingsMenuEnabled: Boolean = false): LoginEvent()
+        data class ShowDeveloperOptions(val staticDeviceUrl: String, val isSettingsMenuEnabled: Boolean = false) : LoginEvent()
         data object DismissCodeDialog : LoginEvent()
 
         data object Close : LoginEvent()

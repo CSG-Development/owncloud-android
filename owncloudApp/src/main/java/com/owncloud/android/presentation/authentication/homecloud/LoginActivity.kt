@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
-import android.text.TextWatcher
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
@@ -59,8 +58,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private lateinit var binding: AccountSetupHomecloudBinding
     private val dialogBinding by lazy { AccountDialogCodeBinding.inflate(layoutInflater) }
     private val developerOptionsDialogBinding by lazy { AccountDialogDeveloperOptionsBinding.inflate(layoutInflater) }
-
-    private var connectFieldTextWatcher: TextWatcher? = null
 
     // Two-finger tap detection for developer options
     private var twoFingerTapCount = 0
@@ -168,9 +165,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         // Show dropdown when clicking on the TextInputLayout end icon
         binding.hostUrlInputLayout.setEndIconOnClickListener {
             binding.hostUrlInput.toggleDropdown()
-        }
-        connectFieldTextWatcher = binding.hostUrlInput.doAfterTextChanged { text ->
-            loginViewModel.onServerUrlChanged(text.toString())
         }
         binding.serversRefreshButton.setOnClickListener {
             loginViewModel.refreshServers()
@@ -332,6 +326,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun updateLoginState(state: LoginScreenState) {
         binding.settingsLink.isVisible = state.isSettingsVisible
+        setSelectedDevice(state.selectedDevice)
         when (state) {
             is LoginScreenState.EmailState -> {
                 // Show main scroll view, hide unable to connect
@@ -439,15 +434,15 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.backButton.visibility = View.VISIBLE
                     updateDevices(state.devices, state.selectedDevice)
                     binding.accountPassword.updateTextIfDiffers(state.password)
-                    binding.hostUrlInput.removeTextChangedListener(connectFieldTextWatcher)
-                    if (state.selectedDevice == null) {
-                        binding.hostUrlInput.updateTextIfDiffers(state.serverUrl)
-                    } else {
-                        binding.hostUrlInput.updateTextIfDiffers(state.selectedDevice.name)
-                    }
-                    connectFieldTextWatcher?.let { binding.hostUrlInput.addTextChangedListener(it) }
                 }
             }
+        }
+    }
+
+    private fun setSelectedDevice(selectedDevice: Device?) {
+        val selectedDevice = selectedDevice
+        if (selectedDevice != null) {
+            binding.hostUrlInput.updateTextIfDiffers(selectedDevice.name)
         }
     }
 
@@ -475,7 +470,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             } else {
                 val state =
                     if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
-                        (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
+                        state.selectedDevice != null &&
                         Patterns.EMAIL_ADDRESS.matcher(state.username)
                             .matches()
                     ) {

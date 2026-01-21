@@ -10,14 +10,6 @@ class GetAvailableServerInfoUseCase(
     private val deviceUrlResolver: DeviceUrlResolver
 ) {
 
-    fun getAvailableServerInfo(
-        manualUrl: String,
-        enforceOIDC: Boolean,
-        secureConnectionEnforced: Boolean
-    ): UseCaseResult<ServerInfo> {
-        return callServerInfo(manualUrl, enforceOIDC = enforceOIDC, secureConnectionEnforced = secureConnectionEnforced)
-    }
-
     suspend fun getAvailableServerInfo(
         device: Device,
         enforceOIDC: Boolean,
