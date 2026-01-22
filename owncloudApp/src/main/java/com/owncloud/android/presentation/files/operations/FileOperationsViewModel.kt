@@ -161,7 +161,9 @@ class FileOperationsViewModel(
     }
 
     fun handleBaseUrlUpdate() {
-        updateBaseUrlUseCase.execute()
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            updateBaseUrlUseCase.execute()
+        }
     }
 
     fun showRemoveDialog(filesToRemove: List<OCFile>) {

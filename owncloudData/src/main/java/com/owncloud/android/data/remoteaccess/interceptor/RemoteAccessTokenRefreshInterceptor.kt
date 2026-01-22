@@ -141,7 +141,6 @@ class RemoteAccessTokenRefreshInterceptor(
                 if (e is retrofit2.HttpException && (e.code() == 401 || e.code() == 403)) {
                     Timber.w("Refresh token is invalid, clearing tokens and device paths")
                     tokenStorage.clearTokens()
-                    currentDeviceStorage.clearDevicePaths()
                 }
 
                 // Return null to indicate refresh failure

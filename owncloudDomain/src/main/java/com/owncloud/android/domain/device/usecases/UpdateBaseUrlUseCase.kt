@@ -6,6 +6,9 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.owncloud.android.domain.device.BaseUrlUpdateWorker
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import timber.log.Timber
 import java.util.UUID
 
@@ -20,10 +23,19 @@ import java.util.UUID
  * 4. Triggers one-shot dynamic URL switching
  */
 class UpdateBaseUrlUseCase(
-    private val workManager: WorkManager
+    private val workManager: WorkManager,
+    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase
 ) {
 
-    fun execute(): UUID {
+    private val _tokenRequired: MutableSharedFlow<Unit> = MutableSharedFlow()
+    val tokenRequired: Flow<Unit> = _tokenRequired
+
+    suspend fun execute(): UUID? {
+        if (!getRemoteAccessTokenUseCase.hasToken()) {
+            _tokenRequired.emit(Unit)
+            return null
+        }
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
