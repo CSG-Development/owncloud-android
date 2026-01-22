@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 class VerificationCodeViewModel(
     private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
-    private val savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerificationCodeState())
@@ -29,7 +29,7 @@ class VerificationCodeViewModel(
     private val _events = MutableSharedFlow<VerificationCodeEvent>()
     val events: SharedFlow<VerificationCodeEvent> = _events.asSharedFlow()
 
-    private var email: String = ""
+    private val email: String by lazy { savedStateHandle.get<String>(ARG_EMAIL).orEmpty() }
     private var reference: String = ""
 
     companion object {
@@ -37,18 +37,6 @@ class VerificationCodeViewModel(
     }
 
     init {
-        savedStateHandle.get<String>(ARG_EMAIL)?.let { savedEmail ->
-            email = savedEmail
-            initiateAuthentication()
-        }
-    }
-
-    /**
-     * Sets the email and initiates authentication.
-     * Use this when creating the ViewModel without SavedStateHandle arguments.
-     */
-    fun setEmail(email: String) {
-        this.email = email
         initiateAuthentication()
     }
 
