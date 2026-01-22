@@ -321,7 +321,7 @@ val useCaseModule = module {
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
 
     // Device / Base URL
-    factoryOf(::UpdateBaseUrlUseCase)
+    single<UpdateBaseUrlUseCase>{ UpdateBaseUrlUseCase(get(), get()) }
 
     factoryOf(::GetAvailableServerInfoUseCase)
     factoryOf(::SwitchToBestAvailableBaseUrlUseCase)
