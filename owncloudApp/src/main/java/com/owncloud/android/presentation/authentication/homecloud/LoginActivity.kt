@@ -23,12 +23,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.R
-import com.owncloud.android.databinding.AccountDialogCodeBinding
 import com.owncloud.android.databinding.AccountDialogDeveloperOptionsBinding
 import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.device.model.Device
-import com.owncloud.android.domain.exceptions.CodeExpiredException
-import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
 import com.owncloud.android.extensions.getAppName
@@ -56,7 +53,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private val loginViewModel by viewModel<LoginViewModel>()
 
     private lateinit var binding: AccountSetupHomecloudBinding
-    private val dialogBinding by lazy { AccountDialogCodeBinding.inflate(layoutInflater) }
     private val developerOptionsDialogBinding by lazy { AccountDialogDeveloperOptionsBinding.inflate(layoutInflater) }
 
     // Two-finger tap detection for developer options
@@ -72,12 +68,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private val unableToDetectMessage: SpannableStringBuilder by lazy {
         createUnableToDetectMessage()
-    }
-
-    private val dialog by lazy {
-        val builder = MaterialAlertDialogBuilder(this)
-        builder.setView(dialogBinding.root)
-            .create()
     }
 
     private val developerOptionsDialog by lazy {
@@ -259,8 +249,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun handleEvents(event: LoginViewModel.LoginEvent) {
         when (event) {
-            LoginViewModel.LoginEvent.ShowCodeDialog -> showCodeDialog()
-            LoginViewModel.LoginEvent.DismissCodeDialog -> hideCodeDialog()
+            is LoginViewModel.LoginEvent.ShowCodeDialog -> showCodeDialog(event.email)
             is LoginViewModel.LoginEvent.LoginResult -> handleLoginResult(event)
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
             LoginViewModel.LoginEvent.Close -> finish()
@@ -299,29 +288,22 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         binding.hostUrlInputLayout.startIconDrawable = if (devices.isEmpty()) null else deviceIcon
     }
 
-    private fun hideCodeDialog() {
-        dialog.dismiss()
-    }
+    private fun showCodeDialog(email: String) {
+        VerificationCodeDialogFragment.newInstance(email)
+            .setListener(object : VerificationCodeDialogFragment.VerificationCodeDialogListener {
+                override fun onCodeVerified() {
+                    loginViewModel.onRemoteAccessVerified()
+                }
 
-    private fun showCodeDialog() {
-        dialogBinding.codeEditVerification.clearCode()
-        dialogBinding.codeEditVerification.onCodeChangedListener = { code ->
-            dialogBinding.allowButton.isEnabled = code.length == dialogBinding.codeEditVerification.getFilledCodeLength()
-        }
-        dialogBinding.allowButton.setOnClickListener {
-            loginViewModel.onCodeEntered(dialogBinding.codeEditVerification.getCode())
-        }
-        dialogBinding.resendButton.setOnClickListener {
-            loginViewModel.onActionClicked()
-        }
-        dialogBinding.skipButton.setOnClickListener {
-            loginViewModel.onSkipClicked()
-        }
-        dialog.setOnDismissListener {
-            loginViewModel.onCodeDialogDismissed()
-        }
-        dialogBinding.allowButton.isEnabled = dialogBinding.codeEditVerification.getCode().isNotEmpty()
-        dialog.show()
+                override fun onSkipped() {
+                    loginViewModel.onRemoteAccessSkipped()
+                }
+
+                override fun onDismissed() {
+                    // Dialog dismissed without action - nothing to do
+                }
+            })
+            .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)
     }
 
     private fun updateLoginState(state: LoginScreenState) {
@@ -357,45 +339,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
                 binding.serversRefreshButton.visibility = View.INVISIBLE
                 binding.serversRefreshLoading.visibility = View.GONE
-                when {
-                    state.isAllowLoading -> {
-                        dialogBinding.allowButton.visibility = View.INVISIBLE
-                        dialogBinding.resendButton.visibility = View.INVISIBLE
-                        dialogBinding.allowLoading.visibility = View.VISIBLE
-                    }
-
-                    state.errorCodeException == null -> {
-                        dialogBinding.allowButton.visibility = View.VISIBLE
-                        dialogBinding.allowButton.isEnabled = true
-                        dialogBinding.resendButton.visibility = View.INVISIBLE
-                        dialogBinding.allowLoading.visibility = View.INVISIBLE
-                        dialogBinding.codeEditVerification.clearError()
-                    }
-
-                    state.errorCodeException is WrongCodeException -> {
-                        dialogBinding.allowButton.visibility = View.VISIBLE
-                        dialogBinding.allowButton.isEnabled = false
-                        dialogBinding.resendButton.visibility = View.INVISIBLE
-                        dialogBinding.allowLoading.visibility = View.INVISIBLE
-                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_incorrect_code))
-                    }
-
-                    state.errorCodeException is CodeExpiredException -> {
-                        dialogBinding.allowButton.visibility = View.INVISIBLE
-                        dialogBinding.resendButton.visibility = View.VISIBLE
-                        dialogBinding.allowLoading.visibility = View.INVISIBLE
-                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_expired_code))
-                    }
-
-                    else -> {
-                        dialogBinding.allowButton.visibility = View.INVISIBLE
-                        dialogBinding.allowButton.isEnabled = false
-                        dialogBinding.resendButton.visibility = View.VISIBLE
-                        dialogBinding.allowLoading.visibility = View.INVISIBLE
-                        dialogBinding.codeEditVerification.setError(getString(R.string.homecloud_code_unknown_error))
-                    }
-                }
-
                 binding.accountUsername.isEnabled = true
             }
 

@@ -24,7 +24,6 @@ import com.owncloud.android.domain.exceptions.UnknownErrorException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
-import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableServerInfoUseCase
 import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncUseCase
@@ -54,9 +53,9 @@ class LoginViewModel(
     private val workManagerProvider: WorkManagerProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val contextProvider: ContextProvider,
-    private val initiateRemoteAccessAuthenticationUseCase: InitiateRemoteAccessAuthenticationUseCase,
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val getServersUseCase: GetAvailableDevicesUseCase,
+    private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase,
     private val getExistingRemoteAccessUserUseCase: GetExistingRemoteAccessUserUseCase,
     private val saveCurrentDeviceUseCase: SaveCurrentDeviceUseCase,
     private val dynamicUrlSwitchingController: DynamicUrlSwitchingController,
@@ -86,69 +85,10 @@ class LoginViewModel(
         restorePreviousUserIfExists()
     }
 
-    private fun initiateToken() {
+    private fun showRemoteAccessCodeDialog() {
         viewModelScope.launch {
-            val currentState = _state.value
-            runCatchingException(
-                block = {
-                    when (currentState) {
-                        is LoginScreenState.EmailState -> {
-                            _state.update {
-                                currentState.copy(
-                                    devices = emptyList(),
-                                    isActionButtonLoading = true
-                                )
-                            }
-                        }
-
-                        is LoginScreenState.LoginState -> {
-                            _state.update {
-                                currentState.copy(
-                                    devices = emptyList(),
-                                    isRefreshServersLoading = true
-                                )
-                            }
-                        }
-                    }
-
-                    initiateRemoteAccessAuthenticationUseCase.execute(currentState.username)
-                },
-                exceptionHandlerBlock = { e ->
-                    when (currentState) {
-                        is LoginScreenState.EmailState -> {
-                            _state.update {
-                                currentState.copy(errorCodeException = e)
-                            }
-                        }
-
-                        is LoginScreenState.LoginState -> {
-                            _state.update {
-                                currentState.copy(
-                                    isRefreshServersLoading = false,
-                                    isActionButtonLoading = false,
-                                    authError = LoginScreenState.AuthError.UnableToDetect
-                                )
-                            }
-
-                        }
-                    }
-
-                },
-                completeBlock = { reference ->
-                    reference?.let { ref ->
-                        _state.update {
-                            LoginScreenState.EmailState(
-                                username = currentState.username,
-                                reference = ref,
-                                errorEmailInvalidMessage = null,
-                                isActionButtonLoading = false,
-                            )
-                        }
-                    }
-                    _events.emit(LoginEvent.ShowCodeDialog)
-                    startObserveServers()
-                }
-            )
+            _events.emit(LoginEvent.ShowCodeDialog(_state.value.username))
+            startObserveServers()
         }
     }
 
@@ -176,41 +116,35 @@ class LoginViewModel(
         }
     }
 
-    fun onCodeEntered(code: String) {
+    fun onRemoteAccessVerified() {
         viewModelScope.launch {
-            runCatchingException(
-                block = {
-                    val currentState = _state.value as LoginScreenState.EmailState
-                    _state.update { currentState.copy(isAllowLoading = true, errorCodeException = null) }
-                    getRemoteAccessTokenUseCase.execute(currentState.reference, code, currentState.username)
-                    switchToLoginState()
-                },
-                exceptionHandlerBlock = {
-                    handleCodeError(it)
-                },
-                completeBlock = {
-                    when (val currentState = _state.value) {
-                        is LoginScreenState.EmailState -> _state.update { currentState.copy(isAllowLoading = false) }
-                        is LoginScreenState.LoginState -> {} // Already switched
-                    }
-                    refreshServers()
-                }
-            )
+            switchToLoginState()
+            refreshServers()
         }
     }
 
-    private fun handleCodeError(e: Throwable) {
-        _state.update { currentState ->
-            when (currentState) {
-                is LoginScreenState.EmailState -> currentState.copy(errorCodeException = e)
-                is LoginScreenState.LoginState -> currentState
+    fun onRemoteAccessSkipped() {
+        switchToLoginState()
+        val currentState = _state.value
+        if (currentState is LoginScreenState.LoginState && currentState.devices.isEmpty()) {
+            _state.update {
+                currentState.copy(authError = LoginScreenState.AuthError.UnableToDetect)
             }
         }
     }
 
-    fun onSkipClicked() {
+    private fun checkMdns() {
         viewModelScope.launch {
-            switchToLoginState()
+            _state.update { currentState -> currentState.copyGeneralState(isActionButtonLoading = true) }
+            val device = withContext(coroutinesDispatcherProvider.io) {
+                discoverLocalNetworkDevicesUseCase.oneShot()
+            }
+            if (device == null) {
+                showRemoteAccessCodeDialog()
+            } else {
+                switchToLoginState(device)
+            }
+            _state.update { currentState -> currentState.copyGeneralState(isActionButtonLoading = false) }
         }
     }
 
@@ -240,17 +174,16 @@ class LoginViewModel(
         }
     }
 
-    private suspend fun switchToLoginState() {
+    private fun switchToLoginState(device: Device? = null) {
         val currentState = _state.value
         _state.update {
             LoginScreenState.LoginState(
                 username = currentState.username,
-                devices = currentState.devices,
-                selectedDevice = currentState.selectedDevice,
+                devices = if (device == null) currentState.devices else listOf(device),
+                selectedDevice = device ?: currentState.selectedDevice,
                 isSettingsVisible = currentState.isSettingsVisible
             )
         }
-        _events.emit(LoginEvent.DismissCodeDialog)
     }
 
     private fun restorePreviousUserIfExists() {
@@ -267,16 +200,13 @@ class LoginViewModel(
     }
 
     private fun onPreviousUserRestore(existingUserName: String) {
-        viewModelScope.launch {
-            _state.update {
-                LoginScreenState.LoginState(
-                    username = existingUserName,
-                    devices = it.devices,
-                    selectedDevice = it.selectedDevice,
-                    isSettingsVisible = it.isSettingsVisible
-                )
-            }
-            _events.emit(LoginEvent.DismissCodeDialog)
+        _state.update {
+            LoginScreenState.LoginState(
+                username = existingUserName,
+                devices = it.devices,
+                selectedDevice = it.selectedDevice,
+                isSettingsVisible = it.isSettingsVisible
+            )
         }
     }
 
@@ -290,18 +220,10 @@ class LoginViewModel(
                 Timber.d("DEBUG devices: $devices")
                 _state.update { currentState ->
                     val selectedDevice = if (devices.isNotEmpty()) devices.firstOrNull() else currentState.selectedDevice
-                    when (currentState) {
-                        is LoginScreenState.EmailState -> currentState.copy(
-                            devices = devices,
-                            selectedDevice = selectedDevice,
-                        )
-
-                        is LoginScreenState.LoginState -> currentState.copy(
-                            devices = devices,
-                            selectedDevice = selectedDevice,
-                            authError = if (devices.isEmpty()) LoginScreenState.AuthError.UnableToConnect else null
-                        )
-                    }
+                    currentState.copyGeneralState(
+                        devices = devices,
+                        selectedDevice = selectedDevice
+                    )
                 }
             }
         }
@@ -359,7 +281,7 @@ class LoginViewModel(
         if (getRemoteAccessTokenUseCase.hasToken()) {
             refreshServers()
         } else {
-            initiateToken()
+            showRemoteAccessCodeDialog()
         }
     }
 
@@ -393,7 +315,7 @@ class LoginViewModel(
                     if (currentState.username == previousUser) {
                         restorePreviousUser(previousUser)
                     } else {
-                        initiateToken()
+                        checkMdns()
                     }
                 } else {
                     // Show validation error if somehow the button was clicked with invalid email
@@ -534,15 +456,6 @@ class LoginViewModel(
         workManagerProvider.enqueueAccountDiscovery(accountName)
     }
 
-    fun onCodeDialogDismissed() {
-        val currentState = _state.value
-        if (currentState is LoginScreenState.EmailState) {
-            _state.update {
-                currentState.copy(errorCodeException = null)
-            }
-        }
-    }
-
     sealed class LoginScreenState {
 
         abstract val isSettingsVisible: Boolean
@@ -589,9 +502,6 @@ class LoginViewModel(
 
         data class EmailState(
             override val username: String = "",
-            val reference: String = "",
-            val isAllowLoading: Boolean = false,
-            val errorCodeException: Throwable? = null,
             val errorEmailInvalidMessage: String? = null,
             override val devices: List<Device> = emptyList(),
             override val selectedDevice: Device? = null,
@@ -613,10 +523,9 @@ class LoginViewModel(
     }
 
     sealed class LoginEvent {
-        data object ShowCodeDialog : LoginEvent()
+        data class ShowCodeDialog(val email: String) : LoginEvent()
 
         data class ShowDeveloperOptions(val staticDeviceUrl: String, val isSettingsMenuEnabled: Boolean = false) : LoginEvent()
-        data object DismissCodeDialog : LoginEvent()
 
         data object Close : LoginEvent()
 

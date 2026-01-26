@@ -51,6 +51,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
     private val viewModel: VerificationCodeViewModel by viewModel()
 
     private var listener: VerificationCodeDialogListener? = null
+    private var isHandled = false
 
     /**
      * Listener interface for verification code dialog events.
@@ -215,11 +216,13 @@ class VerificationCodeDialogFragment : DialogFragment() {
     private fun handleEvent(event: VerificationCodeViewModel.VerificationCodeEvent) {
         when (event) {
             VerificationCodeViewModel.VerificationCodeEvent.CodeVerified -> {
+                isHandled = true
                 listener?.onCodeVerified()
                 dismiss()
             }
 
             VerificationCodeViewModel.VerificationCodeEvent.Skipped -> {
+                isHandled = true
                 listener?.onSkipped()
                 dismiss()
             }
@@ -233,6 +236,8 @@ class VerificationCodeDialogFragment : DialogFragment() {
 
     override fun dismiss() {
         super.dismiss()
-        listener?.onDismissed()
+        if (!isHandled) {
+            listener?.onDismissed()
+        }
     }
 }
