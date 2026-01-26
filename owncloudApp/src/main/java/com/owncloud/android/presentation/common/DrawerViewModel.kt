@@ -24,22 +24,27 @@
 package com.owncloud.android.presentation.common
 
 import android.accounts.Account
+import android.accounts.AccountManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.LocalStorageProvider
 import com.owncloud.android.domain.device.AccountBaseUrlManager
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.user.model.UserQuota
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaAsStreamUseCase
 import com.owncloud.android.domain.user.usecases.GetUserQuotasUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
+import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_EMAIL
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.providers.AccountProvider
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -53,14 +58,36 @@ class DrawerViewModel(
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val contextProvider: ContextProvider,
     private val accountBaseUrlManager: AccountBaseUrlManager,
+    private val accountProvider: AccountProvider,
+    private val accountManager: AccountManager,
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
 ) : ViewModel() {
 
     private val _userQuota = MutableStateFlow<Event<UIResult<Flow<UserQuota?>>>?>(null)
     val userQuota: StateFlow<Event<UIResult<Flow<UserQuota?>>>?> = _userQuota
 
+    private val _shouldShowCodeDialog = MutableSharedFlow<String>()
+    val shouldShowCodeDialog: Flow<String> = _shouldShowCodeDialog
+
     fun observeBaseUrl(): Flow<String?> = accountBaseUrlManager.baseUrlFlow
 
     fun getCurrentBaseUrl(): String? = accountBaseUrlManager.getCurrentBaseUrl()
+
+    init {
+        viewModelScope.launch {
+            updateBaseUrlUseCase.tokenRequired.collect {
+                val account = accountProvider.getCurrentOwnCloudAccount()
+                val email = accountManager.getUserData(account, KEY_EMAIL)
+                _shouldShowCodeDialog.emit(email)
+            }
+        }
+    }
+
+    fun onCodeVerified() {
+        viewModelScope.launch {
+            updateBaseUrlUseCase.execute()
+        }
+    }
 
     fun getUserQuota(accountName: String) {
         runUseCaseWithResult(

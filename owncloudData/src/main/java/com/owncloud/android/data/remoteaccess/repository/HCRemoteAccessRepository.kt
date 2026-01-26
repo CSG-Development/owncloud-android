@@ -41,7 +41,6 @@ class HCRemoteAccessRepository(
         )
 
         tokenStorage.clearTokens()
-        currentDeviceStorage.clearDevicePaths()
         return remoteAccessService.initiateAuthentication(request = request).reference
     }
 

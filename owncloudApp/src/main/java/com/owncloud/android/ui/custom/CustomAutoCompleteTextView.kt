@@ -2,6 +2,7 @@ package com.owncloud.android.ui.custom
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import android.text.InputType
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -26,6 +27,7 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
     private var onItemSelectedListener: OnItemSelectedListener? = null
     var onDropdownDismissListener: OnDropdownDismissListener? = null
     private var anchorView: View? = null
+    private var isInputEnabled: Boolean = true
 
     private val dropdownBackground: Drawable?
     private val dropdownElevation: Float
@@ -88,6 +90,10 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
             typed.recycle()
         }
         threshold = Int.MAX_VALUE
+        setInputEnabled(false)
+        setOnClickListener {
+            showDropDown()
+        }
     }
 
     fun <T> setDropdownItems(items: List<DropdownItem<T>>) {
@@ -97,6 +103,26 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
 
     fun setOnItemSelectedListener(listener: OnItemSelectedListener?) {
         this.onItemSelectedListener = listener
+    }
+
+    /**
+     * Enables or disables text input.
+     * When disabled, the field acts as a dropdown-only selector (no keyboard input).
+     * Click to show dropdown still works.
+     */
+    private fun setInputEnabled(enabled: Boolean) {
+        isInputEnabled = enabled
+        if (enabled) {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            isFocusable = true
+            isFocusableInTouchMode = true
+        } else {
+            inputType = InputType.TYPE_NULL
+            isFocusable = false
+            isFocusableInTouchMode = false
+            // Ensure click still works for dropdown
+            isClickable = true
+        }
     }
 
     override fun showDropDown() {

@@ -69,6 +69,7 @@ import com.owncloud.android.extensions.sendEmailOrOpenFeedbackDialogAction
 import com.owncloud.android.extensions.setAccessibilityRole
 import com.owncloud.android.lib.common.OwnCloudAccount
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeDialogFragment
 import com.owncloud.android.presentation.avatar.AvatarUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
@@ -574,6 +575,33 @@ abstract class DrawerActivity : ToolbarActivity() {
         collectLatestLifecycleFlow(drawerViewModel.observeBaseUrl()) {
             getCurrentBaseUrl()?.text = drawerViewModel.getCurrentBaseUrl().orEmpty()
         }
+        collectLatestLifecycleFlow(drawerViewModel.shouldShowCodeDialog) { email ->
+            showCodeDialogIfNotShown(email)
+        }
+    }
+
+    private fun showCodeDialogIfNotShown(email: String) {
+       if (supportFragmentManager.findFragmentByTag(VerificationCodeDialogFragment.TAG) == null) {
+           val fragment = VerificationCodeDialogFragment.newInstance(email)
+               .setListener(object : VerificationCodeDialogFragment.VerificationCodeDialogListener {
+                   override fun onCodeVerified() {
+                       Timber.d("onCodeVerified")
+                       drawerViewModel.onCodeVerified()
+                   }
+
+                   override fun onSkipped() {
+                       Timber.d("onSkipped")
+                   }
+
+                   override fun onDismissed() {
+                       Timber.d("onDismissed")
+                   }
+               })
+           fragment.show(
+               supportFragmentManager,
+               VerificationCodeDialogFragment.TAG
+           )
+       }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

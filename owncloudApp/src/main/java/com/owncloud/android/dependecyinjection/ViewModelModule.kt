@@ -29,6 +29,7 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.presentation.accounts.ManageAccountsViewModel
 import com.owncloud.android.presentation.authentication.homecloud.AuthenticationViewModel
 import com.owncloud.android.presentation.authentication.homecloud.LoginViewModel
+import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeViewModel
 import com.owncloud.android.presentation.authentication.oauth.OAuthViewModel
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
@@ -129,7 +130,16 @@ val viewModelModule = module {
             get(),
             get(),
             get(),
-            get()
+            get(),
+            get(),
+            get(),
+        )
+    }
+    viewModel {
+        VerificationCodeViewModel(
+            get(),
+            get(),
+            get(),
         )
     }
     viewModel { MigrationViewModel(MainApp.dataFolder, get(), get(), get(), get(), get(), get(), get()) }

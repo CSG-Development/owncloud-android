@@ -6,23 +6,25 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
-import android.text.TextWatcher
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.LeadingMarginSpan
 import android.util.Patterns
+import android.view.MotionEvent
 import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogCodeBinding
+import com.owncloud.android.databinding.AccountDialogDeveloperOptionsBinding
 import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.exceptions.CodeExpiredException
@@ -55,8 +57,18 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private lateinit var binding: AccountSetupHomecloudBinding
     private val dialogBinding by lazy { AccountDialogCodeBinding.inflate(layoutInflater) }
+    private val developerOptionsDialogBinding by lazy { AccountDialogDeveloperOptionsBinding.inflate(layoutInflater) }
 
-    private var connectFieldTextWatcher: TextWatcher? = null
+    // Two-finger tap detection for developer options
+    private var twoFingerTapCount = 0
+    private var lastTwoFingerTapTime = 0L
+    private var maxPointersDuringGesture = 0
+
+    private companion object {
+        private const val SUPPORT_LINK = "https://www.seagate.com/es/es/support/"
+        private const val TWO_FINGER_TAP_TIMEOUT_MS = 2000L
+        private const val REQUIRED_TAP_COUNT = 5
+    }
 
     private val unableToDetectMessage: SpannableStringBuilder by lazy {
         createUnableToDetectMessage()
@@ -65,6 +77,12 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private val dialog by lazy {
         val builder = MaterialAlertDialogBuilder(this)
         builder.setView(dialogBinding.root)
+            .create()
+    }
+
+    private val developerOptionsDialog by lazy {
+        val builder = MaterialAlertDialogBuilder(this)
+        builder.setView(developerOptionsDialogBinding.root)
             .create()
     }
 
@@ -122,6 +140,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             val settingsIntent = Intent(this, SettingsActivity::class.java)
             startActivity(settingsIntent)
         }
+        setupTwoFingerTapDetection()
         binding.accountUsername.doAfterTextChanged { text ->
             loginViewModel.onUserNameChanged(text.toString())
         }
@@ -146,9 +165,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         // Show dropdown when clicking on the TextInputLayout end icon
         binding.hostUrlInputLayout.setEndIconOnClickListener {
             binding.hostUrlInput.toggleDropdown()
-        }
-        connectFieldTextWatcher = binding.hostUrlInput.doAfterTextChanged { text ->
-            loginViewModel.onServerUrlChanged(text.toString())
         }
         binding.serversRefreshButton.setOnClickListener {
             loginViewModel.refreshServers()
@@ -248,6 +264,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             is LoginViewModel.LoginEvent.LoginResult -> handleLoginResult(event)
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
             LoginViewModel.LoginEvent.Close -> finish()
+            is LoginViewModel.LoginEvent.ShowDeveloperOptions -> showDeveloperOptionsDialog(event.staticDeviceUrl, event.isSettingsMenuEnabled)
         }
     }
 
@@ -308,6 +325,8 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun updateLoginState(state: LoginScreenState) {
+        binding.settingsLink.isVisible = state.isSettingsVisible
+        setSelectedDevice(state.selectedDevice)
         when (state) {
             is LoginScreenState.EmailState -> {
                 // Show main scroll view, hide unable to connect
@@ -383,24 +402,26 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             is LoginScreenState.LoginState -> {
                 changeLoadingState(state)
                 if (state.authError != null) {
-                     when (state.authError) {
-                         is LoginScreenState.AuthError.LoginError -> {
-                             binding.errorMessage.visibility = View.VISIBLE
-                             binding.errorMessage.text = state.authError.errorMessage
-                         }
-                         LoginScreenState.AuthError.UnableToConnect -> {
-                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
-                             binding.scrollView.visibility = View.GONE
-                             binding.backButton.visibility = View.GONE
-                             setupUnableToConnectContent()
-                         }
-                         LoginScreenState.AuthError.UnableToDetect -> {
-                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
-                             binding.scrollView.visibility = View.GONE
-                             binding.backButton.visibility = View.GONE
-                             setupUnableToDetectContent()
-                         }
-                     }
+                    when (state.authError) {
+                        is LoginScreenState.AuthError.LoginError -> {
+                            binding.errorMessage.visibility = View.VISIBLE
+                            binding.errorMessage.text = state.authError.errorMessage
+                        }
+
+                        LoginScreenState.AuthError.UnableToConnect -> {
+                            binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                            binding.scrollView.visibility = View.GONE
+                            binding.backButton.visibility = View.GONE
+                            setupUnableToConnectContent()
+                        }
+
+                        LoginScreenState.AuthError.UnableToDetect -> {
+                            binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
+                            binding.scrollView.visibility = View.GONE
+                            binding.backButton.visibility = View.GONE
+                            setupUnableToDetectContent()
+                        }
+                    }
                 } else {
                     // Show main scroll view, hide unable to connect
                     binding.scrollView.visibility = View.VISIBLE
@@ -413,15 +434,15 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     binding.backButton.visibility = View.VISIBLE
                     updateDevices(state.devices, state.selectedDevice)
                     binding.accountPassword.updateTextIfDiffers(state.password)
-                    binding.hostUrlInput.removeTextChangedListener(connectFieldTextWatcher)
-                    if (state.selectedDevice == null) {
-                        binding.hostUrlInput.updateTextIfDiffers(state.serverUrl)
-                    } else {
-                        binding.hostUrlInput.updateTextIfDiffers(state.selectedDevice.name)
-                    }
-                    connectFieldTextWatcher?.let { binding.hostUrlInput.addTextChangedListener(it) }
                 }
             }
+        }
+    }
+
+    private fun setSelectedDevice(selectedDevice: Device?) {
+        val selectedDevice = selectedDevice
+        if (selectedDevice != null) {
+            binding.hostUrlInput.updateTextIfDiffers(selectedDevice.name)
         }
     }
 
@@ -449,7 +470,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             } else {
                 val state =
                     if (state.username.isNotEmpty() && state.password.isNotEmpty() &&
-                        (state.selectedDevice != null || state.serverUrl.isNotEmpty()) &&
+                        state.selectedDevice != null &&
                         Patterns.EMAIL_ADDRESS.matcher(state.username)
                             .matches()
                     ) {
@@ -486,7 +507,60 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         manageOptionLockSelected(type)
     }
 
-    companion object {
-        private const val SUPPORT_LINK = "https://www.seagate.com/es/es/support/"
+    @Suppress("ClickableViewAccessibility")
+    private fun setupTwoFingerTapDetection() {
+        binding.thumbnailLogo.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    // Reset max pointers when a new gesture starts
+                    maxPointersDuringGesture = 1
+                    true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    // Track max number of pointers during this gesture
+                    maxPointersDuringGesture = maxOf(maxPointersDuringGesture, event.pointerCount)
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    // Check if we had 2 fingers at any point during this gesture
+                    if (maxPointersDuringGesture >= 2) {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastTwoFingerTapTime > TWO_FINGER_TAP_TIMEOUT_MS) {
+                            twoFingerTapCount = 0
+                        }
+                        twoFingerTapCount++
+                        lastTwoFingerTapTime = currentTime
+
+                        if (twoFingerTapCount >= REQUIRED_TAP_COUNT) {
+                            twoFingerTapCount = 0
+                            loginViewModel.onDeveloperOptionsClicked()
+                        }
+                    }
+                    maxPointersDuringGesture = 0
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showDeveloperOptionsDialog(
+        currentStaticDeviceUrl: String,
+        isSettingsMenuEnabled: Boolean
+    ) {
+        developerOptionsDialogBinding.staticDeviceInput.setText(currentStaticDeviceUrl)
+        developerOptionsDialogBinding.menuButtonSwitch.isChecked = isSettingsMenuEnabled
+        developerOptionsDialogBinding.cancelButton.setOnClickListener {
+            developerOptionsDialog.dismiss()
+        }
+        developerOptionsDialogBinding.okButton.setOnClickListener {
+            val staticDeviceUrl = developerOptionsDialogBinding.staticDeviceInput.text.toString()
+            loginViewModel.onDeveloperOptionsChanged(
+                staticDeviceUrl,
+                developerOptionsDialogBinding.menuButtonSwitch.isChecked
+            )
+            developerOptionsDialog.dismiss()
+        }
+        developerOptionsDialog.show()
     }
 }
