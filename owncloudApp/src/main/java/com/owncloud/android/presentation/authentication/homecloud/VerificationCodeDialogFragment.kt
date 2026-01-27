@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.StringRes
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
@@ -172,12 +173,16 @@ class VerificationCodeDialogFragment : DialogFragment() {
     }
 
     private fun updateUi(state: VerificationCodeViewModel.VerificationCodeState) {
-        // Handle loading state
         when {
             state.isVerifying -> {
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.VISIBLE
+                binding.codeEditVerification.visibility = View.VISIBLE
+                binding.skipButton.setText(R.string.homecloud_button_skip)
+                binding.resendButton.setText(R.string.homecloud_button_resend)
+                binding.titleTextView.setText(R.string.homecloud_code_dialog_title)
+                binding.messageTextView.setText(R.string.homecloud_code_dialog_description)
             }
 
             state.error == null -> {
@@ -185,6 +190,11 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 binding.allowButton.isEnabled = true
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
+                binding.codeEditVerification.visibility = View.VISIBLE
+                binding.skipButton.setText(R.string.homecloud_button_skip)
+                binding.resendButton.setText(R.string.homecloud_button_resend)
+                binding.titleTextView.setText(R.string.homecloud_code_dialog_title)
+                binding.messageTextView.setText(R.string.homecloud_code_dialog_description)
                 binding.codeEditVerification.clearError()
             }
 
@@ -193,6 +203,11 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 binding.allowButton.isEnabled = false
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
+                binding.codeEditVerification.visibility = View.VISIBLE
+                binding.skipButton.setText(R.string.homecloud_button_skip)
+                binding.resendButton.setText(R.string.homecloud_button_resend)
+                binding.titleTextView.setText(R.string.homecloud_code_dialog_title)
+                binding.messageTextView.setText(R.string.homecloud_code_dialog_description)
                 binding.codeEditVerification.setError(getString(R.string.homecloud_incorrect_code))
             }
 
@@ -200,7 +215,54 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.resendButton.visibility = View.VISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
+                binding.codeEditVerification.visibility = View.VISIBLE
+                binding.skipButton.setText(R.string.homecloud_button_skip)
+                binding.resendButton.setText(R.string.homecloud_button_resend)
+                binding.titleTextView.setText(R.string.homecloud_code_dialog_title)
+                binding.messageTextView.setText(R.string.homecloud_code_dialog_description)
                 binding.codeEditVerification.setError(getString(R.string.homecloud_expired_code))
+            }
+
+            state.error is VerificationCodeViewModel.VerificationCodeError.ServiceUnavailable -> {
+                binding.allowButton.visibility = View.INVISIBLE
+                binding.skipButton.visibility = View.VISIBLE
+                binding.resendButton.visibility = View.VISIBLE
+                binding.codeEditVerification.visibility = View.INVISIBLE
+                binding.resendButton.setText(R.string.homecloud_retry)
+                binding.skipButton.setText(R.string.homecloud_cancel)
+                binding.titleTextView.setText(R.string.homecloud_unable_to_connect_title)
+                binding.messageTextView.setText(R.string.homecloud_cant_connect_description)
+
+                setErrorState(
+                    titleResId = R.string.homecloud_unable_to_connect_title,
+                    messageResId = R.string.homecloud_cant_connect_description,
+                    skipButtonTextResId = R.string.homecloud_cancel,
+                    resendButtonTextResId = R.string.homecloud_retry,
+                    allowButtonVisibility = View.INVISIBLE,
+                    resendButtonVisibility = View.VISIBLE,
+                )
+            }
+
+            state.error is VerificationCodeViewModel.VerificationCodeError.TooManyRequests -> {
+                setErrorState(
+                    titleResId = R.string.homecloud_too_many_requests_dialog_title,
+                    messageResId = R.string.homecloud_too_many_requests_dialog_description,
+                    skipButtonTextResId = R.string.homecloud_ok,
+                    resendButtonTextResId = R.string.homecloud_button_resend,
+                    allowButtonVisibility = View.GONE,
+                    resendButtonVisibility = View.INVISIBLE,
+                )
+            }
+
+            state.error is VerificationCodeViewModel.VerificationCodeError.EmailNotRegistered -> {
+                setErrorState(
+                    titleResId = R.string.homecloud_email_not_registered_dialog_title,
+                    messageResId = R.string.homecloud_email_not_registered_dialog_description,
+                    skipButtonTextResId = R.string.homecloud_ok,
+                    resendButtonTextResId = R.string.homecloud_button_resend,
+                    allowButtonVisibility = View.GONE,
+                    resendButtonVisibility = View.INVISIBLE,
+                )
             }
 
             else -> {
@@ -208,9 +270,32 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 binding.allowButton.isEnabled = false
                 binding.resendButton.visibility = View.VISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
+                binding.codeEditVerification.visibility = View.VISIBLE
+                binding.skipButton.setText(R.string.homecloud_button_skip)
+                binding.resendButton.setText(R.string.homecloud_button_resend)
+                binding.titleTextView.setText(R.string.homecloud_code_dialog_title)
+                binding.messageTextView.setText(R.string.homecloud_code_dialog_description)
                 binding.codeEditVerification.setError(getString(R.string.homecloud_code_unknown_error))
             }
         }
+    }
+
+    private fun setErrorState(
+        @StringRes titleResId: Int,
+        @StringRes messageResId: Int,
+        @StringRes skipButtonTextResId: Int,
+        @StringRes resendButtonTextResId: Int,
+        allowButtonVisibility: Int,
+        resendButtonVisibility: Int,
+    ) {
+        binding.allowButton.visibility = allowButtonVisibility
+        binding.resendButton.visibility = resendButtonVisibility
+        binding.skipButton.visibility = View.VISIBLE
+        binding.codeEditVerification.visibility = View.GONE
+        binding.skipButton.setText(skipButtonTextResId)
+        binding.resendButton.setText(resendButtonTextResId)
+        binding.titleTextView.setText(titleResId)
+        binding.messageTextView.setText(messageResId)
     }
 
     private fun handleEvent(event: VerificationCodeViewModel.VerificationCodeEvent) {
