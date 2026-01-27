@@ -130,7 +130,6 @@ class VerificationCodeViewModel(
         val error: VerificationCodeError? = null,
     ) {
         val isLoading: Boolean get() = isInitiating || isVerifying
-        val showResendButton: Boolean get() = error is VerificationCodeError.CodeExpired
         val isAllowButtonEnabled: Boolean get() = !isLoading && error !is VerificationCodeError.WrongCode
     }
 
