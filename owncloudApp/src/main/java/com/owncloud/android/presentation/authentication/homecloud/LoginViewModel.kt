@@ -456,6 +456,21 @@ class LoginViewModel(
         workManagerProvider.enqueueAccountDiscovery(accountName)
     }
 
+    fun onRemoteAccessError(lastError: VerificationCodeViewModel.VerificationCodeError) {
+        when (lastError) {
+            is VerificationCodeViewModel.VerificationCodeError.EmailNotRegistered -> {
+                _state.update { currentState ->
+                    LoginScreenState.EmailState(
+                        username = currentState.username,
+                        errorEmailInvalidMessage = contextProvider.getString(R.string.homecloud_login_email_not_allowed)
+                    )
+                }
+            }
+
+            else -> {}
+        }
+    }
+
     sealed class LoginScreenState {
 
         abstract val isSettingsVisible: Boolean

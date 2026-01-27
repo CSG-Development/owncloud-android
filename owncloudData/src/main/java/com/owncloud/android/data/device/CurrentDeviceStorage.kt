@@ -48,7 +48,6 @@ class CurrentDeviceStorage(
         DevicePathType.entries.forEach { type ->
             sharedPreferencesProvider.removePreference(buildKey(type.name))
         }
-        sharedPreferencesProvider.removePreference(KEY_CERTIFICATE_COMMON_NAME)
     }
 
     /**

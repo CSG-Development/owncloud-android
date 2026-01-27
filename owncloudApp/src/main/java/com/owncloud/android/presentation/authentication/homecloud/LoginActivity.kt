@@ -299,8 +299,10 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                     loginViewModel.onRemoteAccessSkipped()
                 }
 
-                override fun onDismissed() {
-                    // Dialog dismissed without action - nothing to do
+                override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
+                    if (lastError != null) {
+                        loginViewModel.onRemoteAccessError(lastError)
+                    }
                 }
             })
             .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)

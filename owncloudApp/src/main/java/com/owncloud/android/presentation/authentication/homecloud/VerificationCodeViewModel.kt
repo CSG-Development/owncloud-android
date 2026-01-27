@@ -4,6 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.exceptions.CodeExpiredException
+import com.owncloud.android.domain.exceptions.EmailNotRegisteredException
+import com.owncloud.android.domain.exceptions.ServerTooManyRequestsException
+import com.owncloud.android.domain.exceptions.ServiceUnavailableException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.InitiateRemoteAccessAuthenticationUseCase
@@ -55,12 +58,7 @@ class VerificationCodeViewModel(
                     _state.update { it.copy(isInitiating = false, isCodeSent = true) }
                 },
                 exceptionHandlerBlock = { e ->
-                    _state.update {
-                        it.copy(
-                            isInitiating = false,
-                            error = VerificationCodeError.InitiationFailed(e)
-                        )
-                    }
+                    handleCodeError(e)
                 }
             )
         }
@@ -91,6 +89,9 @@ class VerificationCodeViewModel(
         val error = when (e) {
             is WrongCodeException -> VerificationCodeError.WrongCode
             is CodeExpiredException -> VerificationCodeError.CodeExpired
+            is ServerTooManyRequestsException -> VerificationCodeError.TooManyRequests
+            is ServiceUnavailableException -> VerificationCodeError.ServiceUnavailable
+            is EmailNotRegisteredException -> VerificationCodeError.EmailNotRegistered
             else -> VerificationCodeError.UnknownError(e)
         }
         _state.update { it.copy(isVerifying = false, error = error) }
@@ -129,7 +130,6 @@ class VerificationCodeViewModel(
         val error: VerificationCodeError? = null,
     ) {
         val isLoading: Boolean get() = isInitiating || isVerifying
-        val showResendButton: Boolean get() = error is VerificationCodeError.CodeExpired
         val isAllowButtonEnabled: Boolean get() = !isLoading && error !is VerificationCodeError.WrongCode
     }
 
@@ -139,7 +139,14 @@ class VerificationCodeViewModel(
     sealed class VerificationCodeError {
         data object WrongCode : VerificationCodeError()
         data object CodeExpired : VerificationCodeError()
-        data class InitiationFailed(val exception: Exception) : VerificationCodeError()
+
+        data object TooManyRequests : VerificationCodeError()
+
+        data object ServiceUnavailable : VerificationCodeError()
+
+        data object EmailNotRegistered : VerificationCodeError()
+
+
         data class UnknownError(val exception: Exception) : VerificationCodeError()
     }
 
