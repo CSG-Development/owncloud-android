@@ -143,6 +143,7 @@ class LoginViewModel(
                 showRemoteAccessCodeDialog()
             } else {
                 switchToLoginState(device)
+                startObserveServers()
             }
             _state.update { currentState -> currentState.copyGeneralState(isActionButtonLoading = false) }
         }
@@ -258,7 +259,6 @@ class LoginViewModel(
                     }
                 }
             )
-
         }
     }
 
