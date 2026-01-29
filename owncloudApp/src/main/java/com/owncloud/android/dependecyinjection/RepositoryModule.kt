@@ -38,6 +38,7 @@ import com.owncloud.android.data.sharing.sharees.repository.OCShareeRepository
 import com.owncloud.android.data.sharing.shares.repository.OCShareRepository
 import com.owncloud.android.data.spaces.repository.OCSpacesRepository
 import com.owncloud.android.data.transfers.repository.OCTransferRepository
+import com.owncloud.android.data.user.repository.HCCurrentUserRepository
 import com.owncloud.android.data.user.repository.OCUserRepository
 import com.owncloud.android.data.webfinger.repository.OCWebFingerRepository
 import com.owncloud.android.domain.appregistry.AppRegistryRepository
@@ -56,6 +57,7 @@ import com.owncloud.android.domain.sharing.sharees.ShareeRepository
 import com.owncloud.android.domain.sharing.shares.ShareRepository
 import com.owncloud.android.domain.spaces.SpacesRepository
 import com.owncloud.android.domain.transfers.TransferRepository
+import com.owncloud.android.domain.user.CurrentUserRepository
 import com.owncloud.android.domain.user.UserRepository
 import com.owncloud.android.domain.webfinger.WebFingerRepository
 import org.koin.core.module.dsl.factoryOf
@@ -81,5 +83,6 @@ val repositoryModule = module {
     factoryOf(::HCRemoteAccessRepository) bind RemoteAccessRepository::class
     factoryOf(::HCMdnsDiscoveryRepository) bind MdnsDiscoveryRepository::class
     factoryOf(::HCCurrentDeviceRepository) bind CurrentDeviceRepository::class
+    factoryOf(::HCCurrentUserRepository) bind CurrentUserRepository::class
     single<StaticDeviceRepository> { HCStaticDeviceRepository(get()) }
 }

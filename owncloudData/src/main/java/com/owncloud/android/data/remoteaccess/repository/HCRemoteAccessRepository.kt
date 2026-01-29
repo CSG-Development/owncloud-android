@@ -68,8 +68,6 @@ class HCRemoteAccessRepository(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
             )
-
-            tokenStorage.saveUserName(userName = userName)
         } catch (e: HttpException) {
             handleTokenError(e)
         }
@@ -111,10 +109,6 @@ class HCRemoteAccessRepository(
         } else {
             throw e
         }
-    }
-
-    override fun getUserName(): String? {
-        return tokenStorage.getUserName()
     }
 
     override fun hasAccessToken(): Boolean {

@@ -1,10 +1,10 @@
 package com.owncloud.android.domain.remoteaccess.usecases
 
-import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
+import com.owncloud.android.domain.user.CurrentUserRepository
 
 class GetExistingRemoteAccessUserUseCase(
-    private val remoteAccessRepository: RemoteAccessRepository
+    private val currentUserRepository: CurrentUserRepository
 ) {
 
-    fun execute(): String? = remoteAccessRepository.getUserName()
+    fun execute(): String? = currentUserRepository.getCurrentUserEmail()
 }
