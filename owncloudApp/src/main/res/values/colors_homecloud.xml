@@ -110,6 +110,6 @@
     <color name="homecloud_reconnecting_snackbar_background">#262729</color>
     <color name="homecloud_reconnecting_snackbar_progress_track">#E0E0E0</color>
     <color name="homecloud_reconnecting_snackbar_text">@color/white</color>
-    <color name="homecloud_reconnecting_snackbar_retry_button">@color/homecloud_blue_darken_2</color>
+    <color name="homecloud_reconnecting_snackbar_accent">@color/homecloud_blue_darken_2</color>
 
 </resources>
