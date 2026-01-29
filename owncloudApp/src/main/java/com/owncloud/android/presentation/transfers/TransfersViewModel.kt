@@ -24,6 +24,7 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import com.owncloud.android.domain.files.model.OCFile
@@ -90,6 +91,11 @@ class TransfersViewModel(
     )
 
     private var workInfosLiveData = workManagerProvider.getRunningUploadsWorkInfosLiveData()
+
+    val baseUrlSwitcherLiveData = workManagerProvider.getRunningBaseUrlUpdateWorkInfosLiveData().map { workInfos ->
+        val workInfo = workInfos.firstOrNull()
+        workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED
+    }
 
     init {
         _workInfosListLiveData.addSource(workInfosLiveData) { workInfos ->

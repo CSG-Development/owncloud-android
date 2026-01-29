@@ -208,6 +208,7 @@ class FileDisplayActivity : FileActivity(),
 
     private var isLightUser = false
     private var isMultiPersonal = false
+    private var reconnectingSnackbarDismissedByUser = false
 
     override fun onDrawerToggled() {
         mainFileListFragment?.onContentWidthChanged()
@@ -309,7 +310,32 @@ class FileDisplayActivity : FileActivity(),
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
+
+        setupReconnectingSnackbar()
+        observeBaseUrlUpdateWorker()
+
         Timber.v("onCreate() end")
+    }
+
+    private fun setupReconnectingSnackbar() {
+        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingCloseButton.setOnClickListener {
+            reconnectingSnackbarDismissedByUser = true
+            binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
+        }
+    }
+
+    private fun observeBaseUrlUpdateWorker() {
+        transfersViewModel.baseUrlSwitcherLiveData.observe(this) { isRunning ->
+            if (isRunning && !reconnectingSnackbarDismissedByUser) {
+                binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = true
+            } else {
+                binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
+                // Reset the flag when worker finishes so snackbar can show again on next run
+                if (!isRunning) {
+                    reconnectingSnackbarDismissedByUser = false
+                }
+            }
+        }
     }
 
     private fun checkNotificationPermission() {
@@ -540,11 +566,11 @@ class FileDisplayActivity : FileActivity(),
         return if (secondFragment != null) {
             secondFragment
 
-        // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
+            // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
         } else if (file.isFolder) {
             null
 
-        // Otherwise, decide which fragment should be shown.
+            // Otherwise, decide which fragment should be shown.
         } else {
             when {
                 PreviewAudioFragment.canBePreviewed(file) -> {
@@ -1065,7 +1091,8 @@ class FileDisplayActivity : FileActivity(),
 
         if (chosenFile == null || (chosenFile.remotePath == OCFile.ROOT_PATH && (space == null || isNotProjectSpaceAndMultiPersonalMode(space) ||
                     isMultiPersonalModeInAvailableOffline(space))
-                )) {
+                    )
+        ) {
             val title =
                 when (fileListOption) {
                     FileListOption.AV_OFFLINE -> getString(R.string.drawer_item_only_available_offline)
@@ -1483,7 +1510,8 @@ class FileDisplayActivity : FileActivity(),
                         showSnackMessage(getString(R.string.upload_enqueued_msg))
                     }
 
-                    null -> { /* Nothing to do */ }
+                    null -> { /* Nothing to do */
+                    }
                 }
             }
 
