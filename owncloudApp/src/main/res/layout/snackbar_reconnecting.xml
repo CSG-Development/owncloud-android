@@ -5,11 +5,9 @@
     android:id="@+id/reconnecting_snackbar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginBottom="16dp"
     android:visibility="gone"
     app:cardBackgroundColor="@color/homecloud_reconnecting_snackbar_background"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="4dp"
     app:cardElevation="4dp"
     tools:visibility="visible">
 
@@ -24,11 +22,27 @@
             android:layout_height="wrap_content"
             android:text="@string/homecloud_reconnecting_title"
             android:textColor="@color/homecloud_reconnecting_snackbar_text"
-            android:textSize="16sp"
+            android:textSize="20sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/reconnecting_close_button"
+            app:layout_constraintEnd_toStartOf="@id/reconnecting_retry_button"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/reconnecting_retry_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:paddingHorizontal="8dp"
+            android:layout_marginEnd="@dimen/standard_margin"
+            android:text="@string/homecloud_retry"
+            android:textColor="@color/homecloud_reconnecting_snackbar_retry_button"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/reconnecting_close_button"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
 
         <ImageButton
             android:id="@+id/reconnecting_close_button"
@@ -39,6 +53,7 @@
             android:src="@drawable/ic_close"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:tint="@color/homecloud_reconnecting_snackbar_text" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -47,11 +62,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:indeterminate="true"
-            app:indicatorColor="@color/homecloud_color_accent"
+            app:indicatorColor="@color/homecloud_progressbar_indicator"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/reconnecting_title"
-            app:trackColor="@color/homecloud_progressbar_track"
+            app:trackColor="@color/homecloud_reconnecting_snackbar_progress_track"
             app:trackCornerRadius="2dp"
             app:trackThickness="4dp" />
 

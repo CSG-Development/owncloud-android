@@ -49,6 +49,8 @@
         layout="@layout/snackbar_reconnecting"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/standard_half_margin"
+        android:layout_marginBottom="@dimen/standard_half_margin"
         app:layout_constraintBottom_toTopOf="@id/bottom_nav_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

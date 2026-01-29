@@ -80,7 +80,7 @@
     <color name="homecloud_server_list_dropdown">#1D1E21</color>
 
     <!-- Reconnecting snackbar -->
-    <color name="homecloud_reconnecting_snackbar_background">#262729</color>
-    <color name="homecloud_reconnecting_snackbar_text">@color/white</color>
+    <color name="homecloud_reconnecting_snackbar_background">#B8B8B8</color>
+    <color name="homecloud_reconnecting_snackbar_text">@color/black</color>
 
 </resources>

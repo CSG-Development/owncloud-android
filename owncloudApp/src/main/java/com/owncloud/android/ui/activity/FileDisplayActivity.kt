@@ -322,16 +322,35 @@ class FileDisplayActivity : FileActivity(),
             reconnectingSnackbarDismissedByUser = true
             binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
         }
+        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingRetryButton.setOnClickListener {
+            transfersViewModel.retryBaseUrlUpdate()
+        }
     }
 
     private fun observeBaseUrlUpdateWorker() {
-        transfersViewModel.baseUrlSwitcherLiveData.observe(this) { isRunning ->
-            if (isRunning && !reconnectingSnackbarDismissedByUser) {
-                binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = true
-            } else {
-                binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
-                // Reset the flag when worker finishes so snackbar can show again on next run
-                if (!isRunning) {
+        transfersViewModel.baseUrlSwitcherLiveData.observe(this) { state ->
+            val snackbarBinding = binding.navCoordinatorLayout.reconnectingSnackbarInclude
+            when (state) {
+                is TransfersViewModel.BaseUrlUpdateState.Running -> {
+                    if (!reconnectingSnackbarDismissedByUser) {
+                        snackbarBinding.reconnectingSnackbar.isVisible = true
+                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_reconnecting_title)
+                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_reconnecting_message)
+                        snackbarBinding.reconnectingProgress.isVisible = true
+                        snackbarBinding.reconnectingRetryButton.isVisible = false
+                    }
+                }
+                is TransfersViewModel.BaseUrlUpdateState.Failed -> {
+                    if (!reconnectingSnackbarDismissedByUser) {
+                        snackbarBinding.reconnectingSnackbar.isVisible = true
+                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_unable_to_reconnect_title)
+                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_unable_to_reconnect_message)
+                        snackbarBinding.reconnectingProgress.isVisible = false
+                        snackbarBinding.reconnectingRetryButton.isVisible = true
+                    }
+                }
+                is TransfersViewModel.BaseUrlUpdateState.Idle -> {
+                    snackbarBinding.reconnectingSnackbar.isVisible = false
                     reconnectingSnackbarDismissedByUser = false
                 }
             }

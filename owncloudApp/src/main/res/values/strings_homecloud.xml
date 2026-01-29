@@ -136,5 +136,7 @@
     <!-- Reconnecting snackbar -->
     <string name="homecloud_reconnecting_title">Reconnecting</string>
     <string name="homecloud_reconnecting_message">We are trying to reconnect to your device, please wait</string>
+    <string name="homecloud_unable_to_reconnect_title">Unable to reconnect</string>
+    <string name="homecloud_unable_to_reconnect_message">Please check your network or try again</string>
     <string name="homecloud_close">Close</string>
 </resources>

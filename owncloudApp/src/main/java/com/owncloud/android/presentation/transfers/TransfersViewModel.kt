@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.spaces.usecases.GetSpacesFromEveryAccountUseCaseAsStream
@@ -70,6 +71,7 @@ class TransfersViewModel(
     private val cancelDownloadsRecursivelyUseCase: CancelDownloadsRecursivelyUseCase,
     getSpacesFromEveryAccountUseCaseAsStream: GetSpacesFromEveryAccountUseCaseAsStream,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
     workManagerProvider: WorkManagerProvider,
 ) : ViewModel() {
     private val _workInfosListLiveData = MediatorLiveData<List<WorkInfo>>()
@@ -92,9 +94,19 @@ class TransfersViewModel(
 
     private var workInfosLiveData = workManagerProvider.getRunningUploadsWorkInfosLiveData()
 
-    val baseUrlSwitcherLiveData = workManagerProvider.getRunningBaseUrlUpdateWorkInfosLiveData().map { workInfos ->
+    val baseUrlSwitcherLiveData: LiveData<BaseUrlUpdateState> = workManagerProvider.getRunningBaseUrlUpdateWorkInfosLiveData().map { workInfos ->
         val workInfo = workInfos.firstOrNull()
-        workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED
+        when (workInfo?.state) {
+            WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> BaseUrlUpdateState.Running
+            WorkInfo.State.FAILED -> BaseUrlUpdateState.Failed
+            else -> BaseUrlUpdateState.Idle
+        }
+    }
+
+    sealed class BaseUrlUpdateState {
+        data object Idle : BaseUrlUpdateState()
+        data object Running : BaseUrlUpdateState()
+        data object Failed : BaseUrlUpdateState()
     }
 
     init {
@@ -200,6 +212,12 @@ class TransfersViewModel(
     fun clearSuccessfulTransfers() {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             clearSuccessfulTransfersUseCase(Unit)
+        }
+    }
+
+    fun retryBaseUrlUpdate() {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            updateBaseUrlUseCase.execute()
         }
     }
 }
