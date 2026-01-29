@@ -60,7 +60,6 @@ class BaseUrlUpdateWorker(
                 // Step 3: Try to choose best available base URL again with updated paths
                 switchToBestAvailableBaseUrlUseCase.execute()
             }
-
             Timber.d("BaseUrlUpdateWorker: Base URL update completed successfully")
             Result.success()
         } catch (e: IOException) {

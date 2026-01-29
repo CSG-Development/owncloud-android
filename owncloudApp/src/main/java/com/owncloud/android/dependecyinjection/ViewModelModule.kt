@@ -146,7 +146,7 @@ val viewModelModule = module {
     viewModel {
         TransfersViewModel(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get()
+            get(), get()
         )
     }
     viewModel { ReceiveExternalFilesViewModel(get(), get(), get(), get()) }
