@@ -28,8 +28,6 @@ interface RemoteAccessRepository {
         clientId: String,
     )
 
-    fun getUserName(): String?
-
     /**
      * Check if access token exists in storage
      * @return true if access token exists, false otherwise
