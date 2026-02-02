@@ -6,6 +6,7 @@ import com.owncloud.android.data.device.DynamicBaseUrlSwitcher
 import com.owncloud.android.data.device.HCAccountBaseUrlManager
 import com.owncloud.android.data.device.HCBaseUrlChooser
 import com.owncloud.android.data.device.HCDeviceUrlResolver
+import com.owncloud.android.data.remoteaccess.RemoteAccessTokenSaver
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessAuthInterceptor
@@ -13,6 +14,7 @@ import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessTokenRefre
 import com.owncloud.android.domain.device.AccountBaseUrlManager
 import com.owncloud.android.domain.device.BaseUrlChooser
 import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
+import com.owncloud.android.remoteaccess.HCRemoteAccessTokenSaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -113,6 +115,8 @@ val remoteAccessModule = module {
             getFirebaseInstallationIdUseCase = inject()
         )
     }
+
+    single<RemoteAccessTokenSaver> { HCRemoteAccessTokenSaver(get(), get(), get()) }
 
     single(named(RemoteAccessQualifiers.OKHTTP_CLIENT)) {
         val okHttpClient = get<OkHttpClient>(named(NetworkModuleQualifiers.OKHTTP_CLIENT_PINNED_HC_CERT))

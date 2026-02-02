@@ -39,6 +39,9 @@ const val KEY_OAUTH2_REFRESH_TOKEN = "oc_oauth2_refresh_token"
  */
 const val KEY_OAUTH2_SCOPE = "oc_oauth2_scope"
 
+const val KEY_RA_ACCESS_TOKEN = "oc_ra_access_token"
+const val KEY_RA_REFRESH_TOKEN = "oc_ra_refresh_token"
+
 /**
  * Features allowed for the account
  */

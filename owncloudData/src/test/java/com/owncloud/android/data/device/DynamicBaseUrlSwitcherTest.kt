@@ -4,9 +4,9 @@ import android.accounts.Account
 import com.owncloud.android.data.connectivity.Connectivity
 import com.owncloud.android.data.connectivity.NetworkStateObserver
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -42,7 +42,7 @@ class DynamicBaseUrlSwitcherTest {
         advanceUntilIdle()
 
         assertTrue(switcher.isActive())
-        verify { updateBaseUrlUseCase.execute() }
+        coVerify { updateBaseUrlUseCase.execute() }
     }
 
     @Test
@@ -54,7 +54,7 @@ class DynamicBaseUrlSwitcherTest {
         advanceUntilIdle()
 
         assertTrue(switcher.isActive())
-        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
+        coVerify(exactly = 0) { updateBaseUrlUseCase.execute() }
     }
 
     @Test
@@ -121,13 +121,13 @@ class DynamicBaseUrlSwitcherTest {
         advanceUntilIdle()
 
         // Initially no network - no update
-        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
+        coVerify(exactly = 0) { updateBaseUrlUseCase.execute() }
 
         // Network becomes available
         networkFlow.value = Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         advanceUntilIdle()
 
         // Should trigger update
-        verify(exactly = 1) { updateBaseUrlUseCase.execute() }
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute() }
     }
 }
