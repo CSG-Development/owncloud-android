@@ -2,6 +2,7 @@ package com.owncloud.android.data.remoteaccess.repository
 
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
+import com.owncloud.android.data.remoteaccess.RemoteAccessTokenSaver
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessDeviceResponse
@@ -26,6 +27,7 @@ class HCRemoteAccessRepository(
     private val deviceVerificationClient: HCDeviceVerificationClient,
     private val currentDeviceStorage: CurrentDeviceStorage,
     private val moshi: Moshi,
+    private val remoteAccessTokenSaver: RemoteAccessTokenSaver,
 ) : RemoteAccessRepository {
 
     private val tokenErrorAdapter by lazy {
@@ -68,6 +70,7 @@ class HCRemoteAccessRepository(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
             )
+            remoteAccessTokenSaver.saveTokensToCurrentAccount()
         } catch (e: HttpException) {
             handleTokenError(e)
         }

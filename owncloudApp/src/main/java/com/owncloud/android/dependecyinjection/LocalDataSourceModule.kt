@@ -82,7 +82,7 @@ val localDataSourceModule = module {
         }
     }
 
-    factory<LocalAuthenticationDataSource> { OCLocalAuthenticationDataSource(androidContext(), get(), get(), accountType) }
+    factory<LocalAuthenticationDataSource> { OCLocalAuthenticationDataSource(androidContext(), get(), get(), accountType, get()) }
     factoryOf(::OCLocalFolderBackupDataSource) bind LocalFolderBackupDataSource::class
     factoryOf(::OCLocalAppRegistryDataSource) bind LocalAppRegistryDataSource::class
     factoryOf(::OCLocalCapabilitiesDataSource) bind LocalCapabilitiesDataSource::class
