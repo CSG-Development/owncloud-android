@@ -328,7 +328,7 @@ class FileDisplayActivity : FileActivity(),
     }
 
     private fun observeBaseUrlUpdateWorker() {
-        transfersViewModel.baseUrlSwitcherLiveData.observe(this) { state ->
+        collectLatestLifecycleFlow(transfersViewModel.baseUrlUpdateStateFlow) { state ->
             val snackbarBinding = binding.navCoordinatorLayout.reconnectingSnackbarInclude
             when (state) {
                 is TransfersViewModel.BaseUrlUpdateState.Running -> {

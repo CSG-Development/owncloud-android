@@ -24,7 +24,7 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.map
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
@@ -48,10 +48,13 @@ import com.owncloud.android.usecases.transfers.uploads.RetryUploadFromContentUri
 import com.owncloud.android.usecases.transfers.uploads.RetryUploadFromSystemUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromContentUriUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromSystemUseCase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 class TransfersViewModel(
@@ -94,19 +97,45 @@ class TransfersViewModel(
 
     private var workInfosLiveData = workManagerProvider.getRunningUploadsWorkInfosLiveData()
 
-    val baseUrlSwitcherLiveData: LiveData<BaseUrlUpdateState> = workManagerProvider.getRunningBaseUrlUpdateWorkInfosLiveData().map { workInfos ->
-        val workInfo = workInfos.firstOrNull()
-        when (workInfo?.state) {
-            WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> BaseUrlUpdateState.Running
-            WorkInfo.State.FAILED -> BaseUrlUpdateState.Failed
-            else -> BaseUrlUpdateState.Idle
+    val baseUrlUpdateStateFlow: StateFlow<BaseUrlUpdateState> = workManagerProvider
+        .getRunningBaseUrlUpdateWorkInfosLiveData()
+        .asFlow()
+        .map { workInfos ->
+            val workInfo = workInfos.firstOrNull()
+            when (workInfo?.state) {
+                WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> BaseUrlUpdateState.Running
+                WorkInfo.State.FAILED -> BaseUrlUpdateState.Failed
+                else -> BaseUrlUpdateState.Idle
+            }
         }
-    }
+        .transformLatest { state ->
+            when (state) {
+                is BaseUrlUpdateState.Running -> {
+                    // Wait 5 seconds before showing the snackbar
+                    // If state changes before 5 seconds, this coroutine is cancelled
+                    delay(SNACKBAR_DELAY_MS)
+                    emit(state)
+                }
+                else -> {
+                    // Emit Failed and Idle states immediately
+                    emit(state)
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = BaseUrlUpdateState.Idle
+        )
 
     sealed class BaseUrlUpdateState {
         data object Idle : BaseUrlUpdateState()
         data object Running : BaseUrlUpdateState()
         data object Failed : BaseUrlUpdateState()
+    }
+
+    companion object {
+        private const val SNACKBAR_DELAY_MS = 5_000L
     }
 
     init {
