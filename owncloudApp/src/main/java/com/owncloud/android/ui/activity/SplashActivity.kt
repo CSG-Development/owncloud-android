@@ -29,6 +29,10 @@ import com.owncloud.android.MainApp
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
+import com.owncloud.android.extensions.collectLatestLifecycleFlow
+import com.owncloud.android.presentation.appupdate.AppUpdateDialogFragment
+import com.owncloud.android.presentation.appupdate.AppUpdateState
+import com.owncloud.android.presentation.appupdate.AppUpdateViewModel
 import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
 import com.owncloud.android.presentation.security.LockTimeout
 import com.owncloud.android.presentation.security.PREFERENCE_LOCK_TIMEOUT
@@ -44,10 +48,12 @@ import com.owncloud.android.utils.CONFIGURATION_SEND_LOGIN_HINT_AND_USER
 import com.owncloud.android.utils.CONFIGURATION_SERVER_URL
 import com.owncloud.android.utils.CONFIGURATION_SERVER_URL_INPUT_VISIBILITY
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class SplashActivity : AppCompatActivity() {
+class SplashActivity : AppCompatActivity(), AppUpdateDialogFragment.AppUpdateDialogListener {
 
     private val sharedPreferences: SharedPreferencesProvider by inject()
+    private val appUpdateViewModel: AppUpdateViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,12 +77,58 @@ class SplashActivity : AppCompatActivity() {
 
         checkLockDelayEnforced(mdmProvider)
 
+        observeAppUpdateState()
+
+        appUpdateViewModel.checkForUpdate()
+    }
+
+    private fun observeAppUpdateState() {
+        collectLatestLifecycleFlow(appUpdateViewModel.updateState) { state ->
+            when (state) {
+                is AppUpdateState.Loading -> {
+                    // Optionally show loading indicator
+                }
+
+                is AppUpdateState.UpdateAvailable -> {
+                    showUpdateDialog(state)
+                }
+
+                is AppUpdateState.NoUpdateAvailable -> {
+                    navigateToNextScreen()
+                }
+
+                is AppUpdateState.Error -> {
+                    navigateToNextScreen()
+                }
+            }
+        }
+    }
+
+    private fun showUpdateDialog(state: AppUpdateState.UpdateAvailable) {
+        val dialog = AppUpdateDialogFragment.newInstance(
+            latestVersion = state.updateInfo.latestVersionName,
+            releaseNotes = state.updateInfo.releaseDate,
+            updateUrl = state.updateInfo.updateUrl,
+            listener = this
+        )
+        dialog.show(supportFragmentManager, AppUpdateDialogFragment.TAG)
+    }
+
+    private fun navigateToNextScreen() {
         val nextScreenIntent = Intent(
             this,
             if (isAccountAvailable()) FileDisplayActivity::class.java else LoginActivity::class.java
         )
         startActivity(nextScreenIntent)
         finish()
+    }
+
+    override fun onUpdateClicked() {
+        navigateToNextScreen()
+    }
+
+    override fun onSkipClicked() {
+        navigateToNextScreen()
     }
 
     private fun checkLockDelayEnforced(mdmProvider: MdmProvider) {

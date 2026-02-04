@@ -851,4 +851,11 @@
     <string name="details_label">Details</string>
     <string name="text_preview_label">Text preview</string>
 
+    <!-- App Update Dialog -->
+    <string name="app_update_dialog_title">Update Available</string>
+    <string name="app_update_dialog_message">A new version (%1$s) is available. We recommend updating to get the latest features and improvements.</string>
+    <string name="app_update_dialog_whats_new">What\'s new:</string>
+    <string name="app_update_dialog_update">Update</string>
+    <string name="app_update_dialog_skip">Skip</string>
+
 </resources>
