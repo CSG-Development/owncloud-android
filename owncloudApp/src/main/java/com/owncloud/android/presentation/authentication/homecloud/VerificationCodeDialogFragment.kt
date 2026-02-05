@@ -175,13 +175,11 @@ class VerificationCodeDialogFragment : DialogFragment() {
     private fun updateUi(state: VerificationCodeViewModel.VerificationCodeState) {
         when {
             state.isInitiating -> {
-                binding.content.isVisible = false
-                binding.loadingIndicator.isVisible = true
+                setContentLoadingState(true)
             }
 
             state.isVerifying -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.VISIBLE
@@ -193,8 +191,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error == null -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.VISIBLE
                 binding.allowButton.isEnabled = true
                 binding.resendButton.visibility = View.INVISIBLE
@@ -208,8 +205,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error is VerificationCodeViewModel.VerificationCodeError.WrongCode -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.VISIBLE
                 binding.allowButton.isEnabled = false
                 binding.resendButton.visibility = View.INVISIBLE
@@ -223,8 +219,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error is VerificationCodeViewModel.VerificationCodeError.CodeExpired -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.resendButton.visibility = View.VISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
@@ -237,8 +232,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error is VerificationCodeViewModel.VerificationCodeError.ServiceUnavailable -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.skipButton.visibility = View.VISIBLE
                 binding.resendButton.visibility = View.VISIBLE
@@ -259,8 +253,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error is VerificationCodeViewModel.VerificationCodeError.TooManyRequests -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 setErrorState(
                     titleResId = R.string.homecloud_too_many_requests_dialog_title,
                     messageResId = R.string.homecloud_too_many_requests_dialog_description,
@@ -272,8 +265,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             state.error is VerificationCodeViewModel.VerificationCodeError.EmailNotRegistered -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 setErrorState(
                     titleResId = R.string.homecloud_email_not_registered_dialog_title,
                     messageResId = R.string.homecloud_email_not_registered_dialog_description,
@@ -285,8 +277,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             }
 
             else -> {
-                binding.content.isVisible = true
-                binding.loadingIndicator.isVisible = false
+                setContentLoadingState(false)
                 binding.allowButton.visibility = View.INVISIBLE
                 binding.allowButton.isEnabled = false
                 binding.resendButton.visibility = View.VISIBLE
@@ -299,6 +290,16 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 binding.codeEditVerification.setError(getString(R.string.homecloud_code_unknown_error))
             }
         }
+    }
+
+    private fun setContentLoadingState(isLoading: Boolean) {
+        binding.allowButton.isVisible = !isLoading
+        binding.skipButton.isVisible = !isLoading
+        binding.resendButton.isVisible = !isLoading
+        binding.codeEditVerification.isVisible = !isLoading
+        binding.messageTextView.isVisible = !isLoading
+        binding.titleTextView.isVisible = !isLoading
+        binding.loadingIndicator.isVisible = isLoading
     }
 
     private fun setErrorState(

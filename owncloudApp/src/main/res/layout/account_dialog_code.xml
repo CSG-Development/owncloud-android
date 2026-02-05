@@ -31,12 +31,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleTextView" />
 
-    <androidx.constraintlayout.widget.Group
-        android:id="@+id/content"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:constraint_referenced_ids="allowButton,allowButton,skipButton,resendButton,codeEditVerification,messageTextView,titleTextView" />
-
     <com.google.android.material.button.MaterialButton
         android:id="@+id/resendButton"
         style="@style/Button.Borderless"
