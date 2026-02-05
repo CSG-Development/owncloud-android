@@ -18,22 +18,21 @@ class AppUpdateDialogFragment : DialogFragment() {
 
     private var listener: AppUpdateDialogListener? = null
 
-    private var latestVersion: String = ""
-    private var releaseNotes: String? = null
+    private val latestVersion: String by lazy { arguments?.getString(ARG_LATEST_VERSION) ?: throw IllegalArgumentException("latestVersion is null") }
+    private val releaseDate: String by lazy { arguments?.getString(ARG_RELEASE_DATE).orEmpty()}
     private val updateUrl: String by lazy { arguments?.getString(ARG_UPDATE_URL) ?: throw IllegalArgumentException("updateUrl is null") }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val message = buildMessage()
+        val message = getString(R.string.homecloud_app_update_dialog_message, latestVersion, releaseDate)
 
         val builder = MaterialAlertDialogBuilder(requireActivity())
-            .setIcon(R.drawable.ic_info_white)
-            .setTitle(R.string.app_update_dialog_title)
+            .setTitle(R.string.homecloud_app_update_dialog_title)
             .setMessage(message)
-            .setPositiveButton(R.string.app_update_dialog_update) { _, _ ->
+            .setPositiveButton(R.string.homecloud_app_update_dialog_update) { _, _ ->
                 openUpdateUrl()
                 listener?.onUpdateClicked()
             }
-            .setNegativeButton(R.string.app_update_dialog_skip) { _, _ ->
+            .setNegativeButton(R.string.homecloud_app_update_dialog_skip) { _, _ ->
                 listener?.onSkipClicked()
             }
 
@@ -41,15 +40,6 @@ class AppUpdateDialogFragment : DialogFragment() {
         dialog.setCanceledOnTouchOutside(true)
 
         return dialog
-    }
-
-    private fun buildMessage(): String {
-        val baseMessage = getString(R.string.app_update_dialog_message, latestVersion)
-        return if (!releaseNotes.isNullOrBlank()) {
-            "$baseMessage\n\n${getString(R.string.app_update_dialog_whats_new)}\n$releaseNotes"
-        } else {
-            baseMessage
-        }
     }
 
     private fun openUpdateUrl() {
@@ -74,12 +64,12 @@ class AppUpdateDialogFragment : DialogFragment() {
     companion object {
         const val TAG = "AppUpdateDialogFragment"
         private const val ARG_LATEST_VERSION = "arg_latest_version"
-        private const val ARG_RELEASE_NOTES = "arg_release_notes"
+        private const val ARG_RELEASE_DATE = "arg_release_notes"
         private const val ARG_UPDATE_URL = "arg_update_url"
 
         fun newInstance(
             latestVersion: String,
-            releaseNotes: String? = null,
+            releaseDate: String? = null,
             updateUrl: String,
             listener: AppUpdateDialogListener? = null
         ): AppUpdateDialogFragment {
@@ -87,7 +77,7 @@ class AppUpdateDialogFragment : DialogFragment() {
                 this.listener = listener
                 arguments = Bundle().apply {
                     putString(ARG_LATEST_VERSION, latestVersion)
-                    putString(ARG_RELEASE_NOTES, releaseNotes)
+                    putString(ARG_RELEASE_DATE, releaseDate)
                     putString(ARG_UPDATE_URL, updateUrl)
                 }
             }

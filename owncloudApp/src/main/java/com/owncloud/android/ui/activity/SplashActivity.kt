@@ -85,10 +85,6 @@ class SplashActivity : AppCompatActivity(), AppUpdateDialogFragment.AppUpdateDia
     private fun observeAppUpdateState() {
         collectLatestLifecycleFlow(appUpdateViewModel.updateState) { state ->
             when (state) {
-                is AppUpdateState.Loading -> {
-                    // Optionally show loading indicator
-                }
-
                 is AppUpdateState.UpdateAvailable -> {
                     showUpdateDialog(state)
                 }
@@ -107,7 +103,7 @@ class SplashActivity : AppCompatActivity(), AppUpdateDialogFragment.AppUpdateDia
     private fun showUpdateDialog(state: AppUpdateState.UpdateAvailable) {
         val dialog = AppUpdateDialogFragment.newInstance(
             latestVersion = state.updateInfo.latestVersionName,
-            releaseNotes = state.updateInfo.releaseDate,
+            releaseDate = state.updateInfo.releaseDate,
             updateUrl = state.updateInfo.updateUrl,
             listener = this
         )
@@ -124,7 +120,6 @@ class SplashActivity : AppCompatActivity(), AppUpdateDialogFragment.AppUpdateDia
     }
 
     override fun onUpdateClicked() {
-        navigateToNextScreen()
     }
 
     override fun onSkipClicked() {

@@ -133,6 +133,7 @@ android {
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""
         buildConfigField "String", "REMOTE_ACCESS_BASE_URL", "\"https://hc-remote-access-env-https.eba-a2nvhpbm.us-west-2.elasticbeanstalk.com/api/\""
         buildConfigField "String", "APP_UPDATE_BASE_URL", "\"https://softwareupdates.seagate.com\""
+        buildConfigField "boolean", "USE_APP_UPDATE_MECHANISM", hasUseAppUpdateMechanism()
 
         setProperty("archivesBaseName", "PersonalCloudFiles_${versionName}")
         setAppIdResources(delegate, applicationId)
@@ -302,4 +303,12 @@ static def getGitOriginRemote() {
 
     def found = values.find { it.startsWith("origin") && it.endsWith("(push)") }
     return found.replace("origin", "").replace("(push)", "").replace(".git", "").trim()
+}
+
+static def hasUseAppUpdateMechanism() {
+    if (System.env.USE_APP_UPDATE_MECHANISM) {
+        return "true"
+    } else {
+        return "false"
+    }
 }
