@@ -42,6 +42,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.data.providers.implementation.OCSharedPreferencesProvider
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.db.PreferenceManager
+import com.owncloud.android.dependecyinjection.appUpdateModule
 import com.owncloud.android.dependecyinjection.commonModule
 import com.owncloud.android.dependecyinjection.localDataSourceModule
 import com.owncloud.android.dependecyinjection.networkModule
@@ -392,7 +393,8 @@ class MainApp : Application() {
                         localDataSourceModule,
                         remoteDataSourceModule,
                         networkModule,
-                        remoteAccessModule
+                        remoteAccessModule,
+                        appUpdateModule
                     )
                 )
             }

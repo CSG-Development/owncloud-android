@@ -27,6 +27,7 @@ import com.owncloud.android.MainApp
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.presentation.accounts.ManageAccountsViewModel
+import com.owncloud.android.presentation.appupdate.AppUpdateViewModel
 import com.owncloud.android.presentation.authentication.homecloud.AuthenticationViewModel
 import com.owncloud.android.presentation.authentication.homecloud.LoginViewModel
 import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeViewModel
@@ -65,6 +66,7 @@ import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelModule = module {
+    viewModelOf(::AppUpdateViewModel)
     viewModelOf(::ManageAccountsViewModel)
     viewModelOf(::BiometricViewModel)
     viewModelOf(::DrawerViewModel)

@@ -139,4 +139,11 @@
     <string name="homecloud_unable_to_reconnect_title">Unable to reconnect</string>
     <string name="homecloud_unable_to_reconnect_message">Please check your network or try again</string>
     <string name="homecloud_close">Close</string>
+
+    <!-- App Update Dialog -->
+    <string name="homecloud_app_update_dialog_title">Update Available</string>
+    <string name="homecloud_app_update_dialog_message">A new version %1$s (%2$s) is available. We recommend updating to get the latest features and
+        improvements.</string>
+    <string name="homecloud_app_update_dialog_update">Update</string>
+    <string name="homecloud_app_update_dialog_skip">Skip</string>
 </resources>
