@@ -306,7 +306,7 @@ static def getGitOriginRemote() {
 }
 
 static def hasUseAppUpdateMechanism() {
-    if (System.env.USE_APP_UPDATE_MECHANISM) {
+    if (System.env.USE_APP_UPDATE_MECHANISM == "true") {
         return "true"
     } else {
         return "false"
