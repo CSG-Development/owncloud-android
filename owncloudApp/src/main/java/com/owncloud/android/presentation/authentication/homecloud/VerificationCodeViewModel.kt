@@ -94,7 +94,7 @@ class VerificationCodeViewModel(
             is EmailNotRegisteredException -> VerificationCodeError.EmailNotRegistered
             else -> VerificationCodeError.UnknownError(e)
         }
-        _state.update { it.copy(isVerifying = false, error = error) }
+        _state.update { it.copy(isInitiating = false, isVerifying = false, error = error) }
     }
 
     /**

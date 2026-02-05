@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_margin="16dp"
     android:padding="24dp">
 
     <!-- Title -->
@@ -32,50 +31,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleTextView" />
 
-
-    <com.owncloud.android.presentation.authentication.homecloud.VerificationCodeView
-        android:id="@+id/codeEditVerification"
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/content"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:visibility="gone"
-        app:codeLength="6"
-        app:borderColor="@color/homecloud_input_stroke_nonfocused"
-        app:borderWidth="1dp"
-        app:errorTextColor="@color/homecloud_error"
-        app:focusBorderColor="@color/homecloud_input_stroke_focused"
-        app:focusBorderWidth="3dp"
-        app:cornerRadius="20dp"
-        app:cursorColor="@color/homecloud_input_stroke_focused"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/messageTextView"/>
-
-    <com.google.android.material.progressindicator.CircularProgressIndicator
-        android:id="@+id/allowLoading"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginTop="8dp"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:layout_goneMarginTop="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@id/allowButton"
-        app:layout_constraintTop_toBottomOf="@id/codeEditVerification"/>
-
-    <!-- Action Buttons -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/allowButton"
-        style="@style/Button.Borderless"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/homecloud_button_allow_access"
-        android:visibility="gone"
-        app:layout_goneMarginTop="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/codeEditVerification" />
+        android:layout_height="0dp"
+        app:constraint_referenced_ids="allowButton,allowButton,skipButton,resendButton,codeEditVerification,messageTextView,titleTextView" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/resendButton"
@@ -84,23 +44,78 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/homecloud_button_resend"
-        tools:visibility="invisible"
-        app:layout_goneMarginTop="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/codeEditVerification" />
+        app:layout_constraintTop_toBottomOf="@id/codeEditVerification"
+        app:layout_goneMarginTop="32dp"
+        tools:visibility="invisible" />
 
+    <!-- Action Buttons -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/skipButton"
         style="@style/Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
         android:text="@string/homecloud_button_skip"
-        app:layout_goneMarginTop="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/allowButton"
-        app:layout_constraintTop_toBottomOf="@id/codeEditVerification" />
+        app:layout_constraintTop_toBottomOf="@id/codeEditVerification"
+        app:layout_goneMarginTop="32dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/allowButton"
+        style="@style/Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/homecloud_button_allow_access"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/codeEditVerification"
+        app:layout_goneMarginTop="32dp" />
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/allowLoading"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="8dp"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@id/allowButton"
+        app:layout_constraintTop_toBottomOf="@id/codeEditVerification"
+        app:layout_goneMarginTop="32dp" />
+
+    <com.owncloud.android.presentation.authentication.homecloud.VerificationCodeView
+        android:id="@+id/codeEditVerification"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:borderColor="@color/homecloud_input_stroke_nonfocused"
+        app:borderWidth="1dp"
+        app:codeLength="6"
+        app:cornerRadius="20dp"
+        app:cursorColor="@color/homecloud_input_stroke_focused"
+        app:errorTextColor="@color/homecloud_error"
+        app:focusBorderColor="@color/homecloud_input_stroke_focused"
+        app:focusBorderWidth="3dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/messageTextView" />
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/loadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
