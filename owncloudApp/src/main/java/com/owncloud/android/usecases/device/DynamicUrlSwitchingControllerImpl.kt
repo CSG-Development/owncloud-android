@@ -20,17 +20,17 @@ class DynamicUrlSwitchingControllerImpl(
         coroutineScope.launch {
             appLifecycleObserver.appState.collect {
                 when (it) {
-                    AppState.FOREGROUND -> startDynamicUrlSwitching()
+                    AppState.FOREGROUND -> startDynamicUrlSwitching(true)
                     AppState.BACKGROUND -> stopDynamicUrlSwitching()
                 }
             }
         }
     }
 
-    override fun startDynamicUrlSwitching() {
+    override fun startDynamicUrlSwitching(fromBackground: Boolean) {
         val account = getCurrentOwnCloudAccount(appContext)
         account?.let {
-            dynamicBaseUrlSwitcher.startDynamicUrlSwitching(it)
+            dynamicBaseUrlSwitcher.startDynamicUrlSwitching(it, fromBackground)
         }
     }
 

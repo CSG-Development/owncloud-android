@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
+import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.spaces.model.OCSpace
@@ -102,8 +103,20 @@ class TransfersViewModel(
         .asFlow()
         .map { workInfos ->
             val workInfo = workInfos.firstOrNull()
+
+            // Read fromBackground from worker's progress data (available when RUNNING)
+            // Default to false if not available (e.g., ENQUEUED state before worker starts)
+            val isFromBackground = workInfo?.progress?.getBoolean(BaseUrlUpdateWorker.KEY_FROM_BACKGROUND, false) ?: false
+
             when (workInfo?.state) {
-                WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> BaseUrlUpdateState.Running
+                WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> {
+                    // Skip showing the reconnecting popup if this was triggered from background
+                    if (isFromBackground) {
+                        BaseUrlUpdateState.Idle
+                    } else {
+                        BaseUrlUpdateState.Running
+                    }
+                }
                 WorkInfo.State.FAILED -> BaseUrlUpdateState.Failed
                 else -> BaseUrlUpdateState.Idle
             }
@@ -124,7 +137,7 @@ class TransfersViewModel(
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.WhileSubscribed(SNACKBAR_DELAY_MS),
             initialValue = BaseUrlUpdateState.Idle
         )
 

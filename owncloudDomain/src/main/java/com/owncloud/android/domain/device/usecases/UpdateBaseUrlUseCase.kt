@@ -5,6 +5,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,7 @@ class UpdateBaseUrlUseCase(
     private val _tokenRequired: MutableSharedFlow<Unit> = MutableSharedFlow()
     val tokenRequired: Flow<Unit> = _tokenRequired
 
-    suspend fun execute(): UUID? {
+    suspend fun execute(fromBackground: Boolean = false): UUID? {
         if (!getRemoteAccessTokenUseCase.hasToken()) {
             _tokenRequired.emit(Unit)
             return null
@@ -40,8 +41,13 @@ class UpdateBaseUrlUseCase(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
+        val inputData = workDataOf(
+            BaseUrlUpdateWorker.KEY_FROM_BACKGROUND to fromBackground
+        )
+
         val baseUrlUpdateWork = OneTimeWorkRequestBuilder<BaseUrlUpdateWorker>()
             .setConstraints(constraints)
+            .setInputData(inputData)
             .build()
 
         workManager.enqueueUniqueWork(
@@ -50,7 +56,7 @@ class UpdateBaseUrlUseCase(
             baseUrlUpdateWork
         )
 
-        Timber.i("Base URL update worker has been enqueued.")
+        Timber.i("Base URL update worker has been enqueued (fromBackground=$fromBackground).")
 
         return baseUrlUpdateWork.id
     }
