@@ -36,6 +36,7 @@ class DynamicBaseUrlSwitcher(
 
     private var observationJob: Job? = null
     private var currentAccount: Account? = null
+    private var isInitialForegroundCheck: Boolean = false
 
     /**
      * Start observing network state and triggering URL updates for the given account.
@@ -47,8 +48,9 @@ class DynamicBaseUrlSwitcher(
      *
      * @param account The account to manage
      */
-    fun startDynamicUrlSwitching(account: Account) {
+    fun startDynamicUrlSwitching(account: Account, fromBackground: Boolean) {
         stopDynamicUrlSwitching()
+        isInitialForegroundCheck = fromBackground
 
         currentAccount = account
 
@@ -64,11 +66,12 @@ class DynamicBaseUrlSwitcher(
                     Timber.d("DynamicBaseUrlSwitcher: Network state changed: $connectivity")
 
                     if (connectivity.hasAnyNetwork()) {
-                        Timber.d("DynamicBaseUrlSwitcher: Network available, triggering base URL update")
-                        updateBaseUrlUseCase.execute()
+                        Timber.d("DynamicBaseUrlSwitcher: Network available, triggering base URL update (fromBackground=$isInitialForegroundCheck)")
+                        updateBaseUrlUseCase.execute(fromBackground = isInitialForegroundCheck)
                     } else {
                         Timber.d("DynamicBaseUrlSwitcher: No network available, skipping update")
                     }
+                    isInitialForegroundCheck = false
                 }
         }
     }

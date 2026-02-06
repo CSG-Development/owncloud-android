@@ -361,7 +361,7 @@ class LoginViewModel(
 
                             if (accountNameResult.isSuccess) {
                                 val accountName = accountNameResult.getDataOrNull().orEmpty()
-                                dynamicUrlSwitchingController.startDynamicUrlSwitching()
+                                dynamicUrlSwitchingController.startDynamicUrlSwitching(false)
                                 discoverAccount(accountName, loginAction == ACTION_CREATE)
                                 saveCurrentDeviceUseCase(selectedDevice)
                                 _events.emit(LoginEvent.LoginResult(accountName = accountName))

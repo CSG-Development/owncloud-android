@@ -4,7 +4,7 @@ interface DynamicUrlSwitchingController {
 
     fun initDynamicUrlSwitching()
 
-    fun startDynamicUrlSwitching()
+    fun startDynamicUrlSwitching(fromBackground: Boolean)
     
     fun stopDynamicUrlSwitching()
 }
