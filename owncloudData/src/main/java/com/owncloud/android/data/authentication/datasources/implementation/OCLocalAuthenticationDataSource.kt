@@ -37,7 +37,6 @@ import com.owncloud.android.data.authentication.KEY_OAUTH2_SCOPE
 import com.owncloud.android.data.authentication.SELECTED_ACCOUNT
 import com.owncloud.android.data.authentication.datasources.LocalAuthenticationDataSource
 import com.owncloud.android.data.providers.SharedPreferencesProvider
-import com.owncloud.android.data.remoteaccess.RemoteAccessTokenSaver
 import com.owncloud.android.domain.authentication.oauth.model.ClientRegistrationInfo
 import com.owncloud.android.domain.exceptions.AccountNotFoundException
 import com.owncloud.android.domain.exceptions.AccountNotNewException
@@ -45,6 +44,7 @@ import com.owncloud.android.domain.exceptions.AccountNotTheSameException
 import com.owncloud.android.domain.server.model.ServerInfo
 import com.owncloud.android.domain.user.model.UserInfo
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.ACCOUNT_VERSION
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_DISPLAY_NAME
@@ -64,7 +64,7 @@ class OCLocalAuthenticationDataSource(
     private val accountManager: AccountManager,
     private val preferencesProvider: SharedPreferencesProvider,
     private val accountType: String,
-    private val tokenSaver: RemoteAccessTokenSaver,
+    private val accountDataStorage: AccountDataStorage,
 ) : LocalAuthenticationDataSource {
 
     override fun addBasicAccount(
@@ -180,7 +180,7 @@ class OCLocalAuthenticationDataSource(
                 )
             }
 
-            tokenSaver.saveTokensToAccount(newAccount)
+            accountDataStorage.saveTokensToAccount(newAccount)
 
             // Only fresh accounts will support spaces
             accountManager.setUserData(newAccount, KEY_FEATURE_SPACES, KEY_FEATURE_ALLOWED)
