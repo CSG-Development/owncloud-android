@@ -136,7 +136,7 @@ android {
         buildConfigField "boolean", "USE_APP_UPDATE_MECHANISM", hasUseAppUpdateMechanism()
 
         setProperty("archivesBaseName", "PersonalCloudFiles_${versionName}")
-        setAppIdResources(delegate, applicationId)
+        setAppIdResources(delegate, "com.seagate.curator")
     }
 
     compileOptions {
@@ -201,7 +201,6 @@ android {
             applicationId = "com.seagate.owncloud"
             applicationIdSuffix ".preprod"
             versionNameSuffix "-preprod"
-            setAppIdResources(delegate, applicationId)
             resValue "string", "app_name", "PersonalCloudFiles-preprod"
         }
     }

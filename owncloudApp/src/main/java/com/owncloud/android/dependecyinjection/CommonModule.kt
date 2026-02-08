@@ -21,9 +21,11 @@
 package com.owncloud.android.dependecyinjection
 
 import androidx.work.WorkManager
+import com.owncloud.android.account.HCAccountDataStorage
 import com.owncloud.android.data.device.DeveloperOptionsStorage
 import com.owncloud.android.data.lifecycle.AppLifecycleObserver
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 import com.owncloud.android.presentation.avatar.AvatarManager
 import com.owncloud.android.providers.AccountProvider
 import com.owncloud.android.providers.ContextProvider
@@ -66,4 +68,6 @@ val commonModule = module {
     single {
         DeveloperOptionsStorage(get())
     }
+
+    single<AccountDataStorage> { HCAccountDataStorage(get(), get(), get(), get()) }
 }

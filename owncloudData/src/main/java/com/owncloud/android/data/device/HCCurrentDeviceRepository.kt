@@ -3,9 +3,11 @@ package com.owncloud.android.data.device
 import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 
 class HCCurrentDeviceRepository(
-    private val currentDeviceStorage: CurrentDeviceStorage
+    private val currentDeviceStorage: CurrentDeviceStorage,
+    private val accountDataStorage: AccountDataStorage,
 ) : CurrentDeviceRepository {
 
     override fun saveCurrentDevice(device: Device) {
@@ -13,6 +15,7 @@ class HCCurrentDeviceRepository(
             currentDeviceStorage.saveDeviceBaseUrl(pathType = it.key.name, baseUrl = it.value)
         }
         currentDeviceStorage.saveCertificateCommonName(device.certificateCommonName)
+        accountDataStorage.saveDeviceCertCommonName(device.certificateCommonName)
     }
 
     override fun getCurrentDevicePaths(): Map<DevicePathType, String> {
