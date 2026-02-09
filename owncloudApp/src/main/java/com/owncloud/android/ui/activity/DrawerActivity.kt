@@ -70,6 +70,7 @@ import com.owncloud.android.extensions.setAccessibilityRole
 import com.owncloud.android.lib.common.OwnCloudAccount
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeDialogFragment
+import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeViewModel
 import com.owncloud.android.presentation.avatar.AvatarUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
@@ -593,7 +594,7 @@ abstract class DrawerActivity : ToolbarActivity() {
                        Timber.d("onSkipped")
                    }
 
-                   override fun onDismissed() {
+                   override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
                        Timber.d("onDismissed")
                    }
                })

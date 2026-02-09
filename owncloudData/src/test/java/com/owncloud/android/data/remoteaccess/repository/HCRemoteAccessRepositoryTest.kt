@@ -10,6 +10,8 @@ import com.owncloud.android.data.remoteaccess.remote.RemoteAccessPath
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessPathType
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
+import com.squareup.moshi.Moshi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,11 +27,18 @@ class HCRemoteAccessRepositoryTest {
     private val deviceVerificationClient: HCDeviceVerificationClient = mockk()
     private val currentDeviceStorage: CurrentDeviceStorage = mockk(relaxed = true)
 
+    private val moshi: Moshi = mockk(relaxed = true)
+
+    private val tokenSaver: AccountDataStorage = mockk(relaxed = true)
+
+
     private val repository = HCRemoteAccessRepository(
         remoteAccessService,
         tokenStorage,
         deviceVerificationClient,
-        currentDeviceStorage
+        currentDeviceStorage,
+        moshi,
+        tokenSaver
     )
 
     @Test

@@ -208,6 +208,7 @@ class FileDisplayActivity : FileActivity(),
 
     private var isLightUser = false
     private var isMultiPersonal = false
+    private var reconnectingSnackbarDismissedByUser = false
 
     override fun onDrawerToggled() {
         mainFileListFragment?.onContentWidthChanged()
@@ -309,7 +310,51 @@ class FileDisplayActivity : FileActivity(),
 
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
+
+        setupReconnectingSnackbar()
+        observeBaseUrlUpdateWorker()
+
         Timber.v("onCreate() end")
+    }
+
+    private fun setupReconnectingSnackbar() {
+        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingCloseButton.setOnClickListener {
+            reconnectingSnackbarDismissedByUser = true
+            binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
+        }
+        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingRetryButton.setOnClickListener {
+            transfersViewModel.retryBaseUrlUpdate()
+        }
+    }
+
+    private fun observeBaseUrlUpdateWorker() {
+        collectLatestLifecycleFlow(transfersViewModel.baseUrlUpdateStateFlow) { state ->
+            val snackbarBinding = binding.navCoordinatorLayout.reconnectingSnackbarInclude
+            when (state) {
+                is TransfersViewModel.BaseUrlUpdateState.Running -> {
+                    if (!reconnectingSnackbarDismissedByUser) {
+                        snackbarBinding.reconnectingSnackbar.isVisible = true
+                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_reconnecting_title)
+                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_reconnecting_message)
+                        snackbarBinding.reconnectingProgress.isVisible = true
+                        snackbarBinding.reconnectingRetryButton.isVisible = false
+                    }
+                }
+                is TransfersViewModel.BaseUrlUpdateState.Failed -> {
+                    if (!reconnectingSnackbarDismissedByUser) {
+                        snackbarBinding.reconnectingSnackbar.isVisible = true
+                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_unable_to_reconnect_title)
+                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_unable_to_reconnect_message)
+                        snackbarBinding.reconnectingProgress.isVisible = false
+                        snackbarBinding.reconnectingRetryButton.isVisible = true
+                    }
+                }
+                is TransfersViewModel.BaseUrlUpdateState.Idle -> {
+                    snackbarBinding.reconnectingSnackbar.isVisible = false
+                    reconnectingSnackbarDismissedByUser = false
+                }
+            }
+        }
     }
 
     private fun checkNotificationPermission() {
@@ -540,11 +585,11 @@ class FileDisplayActivity : FileActivity(),
         return if (secondFragment != null) {
             secondFragment
 
-        // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
+            // Return null if we receive a folder. This way, second fragment will be cleared. We should move this logic out of here.
         } else if (file.isFolder) {
             null
 
-        // Otherwise, decide which fragment should be shown.
+            // Otherwise, decide which fragment should be shown.
         } else {
             when {
                 PreviewAudioFragment.canBePreviewed(file) -> {
@@ -1065,7 +1110,8 @@ class FileDisplayActivity : FileActivity(),
 
         if (chosenFile == null || (chosenFile.remotePath == OCFile.ROOT_PATH && (space == null || isNotProjectSpaceAndMultiPersonalMode(space) ||
                     isMultiPersonalModeInAvailableOffline(space))
-                )) {
+                    )
+        ) {
             val title =
                 when (fileListOption) {
                     FileListOption.AV_OFFLINE -> getString(R.string.drawer_item_only_available_offline)
@@ -1483,7 +1529,8 @@ class FileDisplayActivity : FileActivity(),
                         showSnackMessage(getString(R.string.upload_enqueued_msg))
                     }
 
-                    null -> { /* Nothing to do */ }
+                    null -> { /* Nothing to do */
+                    }
                 }
             }
 

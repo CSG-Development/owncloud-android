@@ -3,6 +3,7 @@ package com.owncloud.android.domain.device
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
@@ -38,8 +39,11 @@ class BaseUrlUpdateWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            Timber.d("BaseUrlUpdateWorker: Starting base URL update")
+            // Set progress data with fromBackground flag so it's accessible via WorkInfo.progress
+            val fromBackground = inputData.getBoolean(KEY_FROM_BACKGROUND, false)
+            setProgress(workDataOf(KEY_FROM_BACKGROUND to fromBackground))
 
+            Timber.d("BaseUrlUpdateWorker: Starting base URL update (fromBackground=$fromBackground)")
             if (!accountBaseUrlManager.hasActiveAccount()) {
                 Timber.d("BaseUrlUpdateWorker: No active account, skipping")
                 return Result.success()
@@ -60,7 +64,6 @@ class BaseUrlUpdateWorker(
                 // Step 3: Try to choose best available base URL again with updated paths
                 switchToBestAvailableBaseUrlUseCase.execute()
             }
-
             Timber.d("BaseUrlUpdateWorker: Base URL update completed successfully")
             Result.success()
         } catch (e: IOException) {
@@ -103,5 +106,6 @@ class BaseUrlUpdateWorker(
 
     companion object {
         const val BASE_URL_UPDATE_WORKER = "BASE_URL_UPDATE_WORKER"
+        const val KEY_FROM_BACKGROUND = "KEY_FROM_BACKGROUND"
     }
 }

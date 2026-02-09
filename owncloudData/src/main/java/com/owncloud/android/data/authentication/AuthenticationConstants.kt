@@ -39,6 +39,11 @@ const val KEY_OAUTH2_REFRESH_TOKEN = "oc_oauth2_refresh_token"
  */
 const val KEY_OAUTH2_SCOPE = "oc_oauth2_scope"
 
+const val KEY_RA_ACCESS_TOKEN = "ra_access_token"
+const val KEY_RA_REFRESH_TOKEN = "ra_refresh_token"
+
+const val KEY_RA_FAVORITE_DEVICE_CERT_COMMON_NAME = "ra_favorite_device_cert_common_name"
+
 /**
  * Features allowed for the account
  */

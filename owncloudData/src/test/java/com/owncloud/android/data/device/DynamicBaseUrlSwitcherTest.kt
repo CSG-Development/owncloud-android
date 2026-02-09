@@ -4,9 +4,9 @@ import android.accounts.Account
 import com.owncloud.android.data.connectivity.Connectivity
 import com.owncloud.android.data.connectivity.NetworkStateObserver
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -34,15 +34,16 @@ class DynamicBaseUrlSwitcherTest {
     private val testAccount: Account = mockk(relaxed = true)
 
     @Test
-    fun `startDynamicUrlSwitching triggers update when network available`() = runTest(testDispatcher) {
+    fun `startDynamicUrlSwitching triggers update when network available with fromBackground true`() = runTest(testDispatcher) {
         val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
         every { networkStateObserver.observeNetworkState() } returns networkFlow
 
-        switcher.startDynamicUrlSwitching(testAccount)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
         advanceUntilIdle()
 
         assertTrue(switcher.isActive())
-        verify { updateBaseUrlUseCase.execute() }
+        // First call should have fromBackground = true
+        coVerify { updateBaseUrlUseCase.execute(fromBackground = true) }
     }
 
     @Test
@@ -50,11 +51,11 @@ class DynamicBaseUrlSwitcherTest {
         val networkFlow = MutableStateFlow(Connectivity.unavailable())
         every { networkStateObserver.observeNetworkState() } returns networkFlow
 
-        switcher.startDynamicUrlSwitching(testAccount)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
         advanceUntilIdle()
 
         assertTrue(switcher.isActive())
-        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
+        coVerify(exactly = 0) { updateBaseUrlUseCase.execute(any()) }
     }
 
     @Test
@@ -62,7 +63,7 @@ class DynamicBaseUrlSwitcherTest {
         val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
         every { networkStateObserver.observeNetworkState() } returns networkFlow
 
-        switcher.startDynamicUrlSwitching(testAccount)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
         advanceUntilIdle()
         
         assertTrue(switcher.isActive())
@@ -80,13 +81,13 @@ class DynamicBaseUrlSwitcherTest {
         val account1 = Account("user1@example.com", "owncloud")
         val account2 = Account("user2@example.com", "owncloud")
 
-        switcher.startDynamicUrlSwitching(account1)
+        switcher.startDynamicUrlSwitching(account1, fromBackground)
         advanceUntilIdle()
         
         assertTrue(switcher.isActive())
 
         // Start with a different account - should cancel previous
-        switcher.startDynamicUrlSwitching(account2)
+        switcher.startDynamicUrlSwitching(account2, fromBackground)
         advanceUntilIdle()
         
         assertTrue(switcher.isActive())
@@ -102,7 +103,7 @@ class DynamicBaseUrlSwitcherTest {
         val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
         every { networkStateObserver.observeNetworkState() } returns networkFlow
 
-        switcher.startDynamicUrlSwitching(testAccount)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
         advanceUntilIdle()
         
         assertTrue(switcher.isActive())
@@ -113,21 +114,41 @@ class DynamicBaseUrlSwitcherTest {
     }
 
     @Test
-    fun `network state change triggers update`() = runTest(testDispatcher) {
+    fun `network state change triggers update with fromBackground true on first network availability`() = runTest(testDispatcher) {
         val networkFlow = MutableStateFlow(Connectivity.unavailable())
         every { networkStateObserver.observeNetworkState() } returns networkFlow
 
-        switcher.startDynamicUrlSwitching(testAccount)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
         advanceUntilIdle()
 
         // Initially no network - no update
-        verify(exactly = 0) { updateBaseUrlUseCase.execute() }
+        coVerify(exactly = 0) { updateBaseUrlUseCase.execute(any()) }
 
-        // Network becomes available
+        // Network becomes available - this IS the initial foreground check (first network availability),
+        // so fromBackground should be true
         networkFlow.value = Connectivity(setOf(Connectivity.ConnectionType.WIFI))
         advanceUntilIdle()
 
-        // Should trigger update
-        verify(exactly = 1) { updateBaseUrlUseCase.execute() }
+        // Should trigger update with fromBackground = true (first network availability after start)
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(fromBackground = true) }
+    }
+
+    @Test
+    fun `subsequent network state changes trigger update with fromBackground false`() = runTest(testDispatcher) {
+        val networkFlow = MutableStateFlow(Connectivity(setOf(Connectivity.ConnectionType.WIFI)))
+        every { networkStateObserver.observeNetworkState() } returns networkFlow
+
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground)
+        advanceUntilIdle()
+
+        // First call has fromBackground = true
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(fromBackground = true) }
+
+        // Network changes (e.g., switches to mobile)
+        networkFlow.value = Connectivity(setOf(Connectivity.ConnectionType.MOBILE))
+        advanceUntilIdle()
+
+        // Second call should have fromBackground = false
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(fromBackground = false) }
     }
 }

@@ -126,15 +126,17 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_00_17_0
-        versionName = "1.0.17"
+        versionCode = 1_00_18_0
+        versionName = "1.0.18"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""
         buildConfigField "String", "REMOTE_ACCESS_BASE_URL", "\"https://hc-remote-access-env-https.eba-a2nvhpbm.us-west-2.elasticbeanstalk.com/api/\""
+        buildConfigField "String", "APP_UPDATE_BASE_URL", "\"https://softwareupdates.seagate.com\""
+        buildConfigField "boolean", "USE_APP_UPDATE_MECHANISM", hasUseAppUpdateMechanism()
 
         setProperty("archivesBaseName", "PersonalCloudFiles_${versionName}")
-        setAppIdResources(delegate, applicationId)
+        setAppIdResources(delegate, "com.seagate.curator")
     }
 
     compileOptions {
@@ -199,7 +201,6 @@ android {
             applicationId = "com.seagate.owncloud"
             applicationIdSuffix ".preprod"
             versionNameSuffix "-preprod"
-            setAppIdResources(delegate, applicationId)
             resValue "string", "app_name", "PersonalCloudFiles-preprod"
         }
     }
@@ -301,4 +302,12 @@ static def getGitOriginRemote() {
 
     def found = values.find { it.startsWith("origin") && it.endsWith("(push)") }
     return found.replace("origin", "").replace("(push)", "").replace(".git", "").trim()
+}
+
+static def hasUseAppUpdateMechanism() {
+    if (System.env.USE_APP_UPDATE_MECHANISM == "true") {
+        return "true"
+    } else {
+        return "false"
+    }
 }

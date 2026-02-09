@@ -25,6 +25,7 @@ import android.accounts.Account
 import android.accounts.AccountManager
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import com.owncloud.android.data.authentication.KEY_CLIENT_REGISTRATION_CLIENT_EXPIRATION_DATE
 import com.owncloud.android.data.authentication.KEY_CLIENT_REGISTRATION_CLIENT_ID
 import com.owncloud.android.data.authentication.KEY_CLIENT_REGISTRATION_CLIENT_SECRET
@@ -43,6 +44,7 @@ import com.owncloud.android.domain.exceptions.AccountNotTheSameException
 import com.owncloud.android.domain.server.model.ServerInfo
 import com.owncloud.android.domain.user.model.UserInfo
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.ACCOUNT_VERSION
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_DISPLAY_NAME
@@ -61,7 +63,8 @@ class OCLocalAuthenticationDataSource(
     private val context: Context,
     private val accountManager: AccountManager,
     private val preferencesProvider: SharedPreferencesProvider,
-    private val accountType: String
+    private val accountType: String,
+    private val accountDataStorage: AccountDataStorage,
 ) : LocalAuthenticationDataSource {
 
     override fun addBasicAccount(
@@ -168,6 +171,16 @@ class OCLocalAuthenticationDataSource(
 
             // with external authorizations, the password is never input in the app
             accountManager.addAccountExplicitly(newAccount, password, null)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                accountManager.setAccountVisibility(
+                    newAccount,
+                    AccountManager.PACKAGE_NAME_KEY_LEGACY_VISIBLE,
+                    AccountManager.VISIBILITY_VISIBLE
+                )
+            }
+
+            accountDataStorage.saveTokensToAccount(newAccount)
 
             // Only fresh accounts will support spaces
             accountManager.setUserData(newAccount, KEY_FEATURE_SPACES, KEY_FEATURE_ALLOWED)

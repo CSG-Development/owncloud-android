@@ -24,8 +24,11 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
+import com.owncloud.android.domain.device.BaseUrlUpdateWorker
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.spaces.usecases.GetSpacesFromEveryAccountUseCaseAsStream
@@ -46,10 +49,13 @@ import com.owncloud.android.usecases.transfers.uploads.RetryUploadFromContentUri
 import com.owncloud.android.usecases.transfers.uploads.RetryUploadFromSystemUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromContentUriUseCase
 import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromSystemUseCase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 class TransfersViewModel(
@@ -69,6 +75,7 @@ class TransfersViewModel(
     private val cancelDownloadsRecursivelyUseCase: CancelDownloadsRecursivelyUseCase,
     getSpacesFromEveryAccountUseCaseAsStream: GetSpacesFromEveryAccountUseCaseAsStream,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
     workManagerProvider: WorkManagerProvider,
 ) : ViewModel() {
     private val _workInfosListLiveData = MediatorLiveData<List<WorkInfo>>()
@@ -90,6 +97,59 @@ class TransfersViewModel(
     )
 
     private var workInfosLiveData = workManagerProvider.getRunningUploadsWorkInfosLiveData()
+
+    val baseUrlUpdateStateFlow: StateFlow<BaseUrlUpdateState> = workManagerProvider
+        .getRunningBaseUrlUpdateWorkInfosLiveData()
+        .asFlow()
+        .map { workInfos ->
+            val workInfo = workInfos.firstOrNull()
+
+            // Read fromBackground from worker's progress data (available when RUNNING)
+            // Default to false if not available (e.g., ENQUEUED state before worker starts)
+            val isFromBackground = workInfo?.progress?.getBoolean(BaseUrlUpdateWorker.KEY_FROM_BACKGROUND, false) ?: false
+
+            when (workInfo?.state) {
+                WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> {
+                    // Skip showing the reconnecting popup if this was triggered from background
+                    if (isFromBackground) {
+                        BaseUrlUpdateState.Idle
+                    } else {
+                        BaseUrlUpdateState.Running
+                    }
+                }
+                WorkInfo.State.FAILED -> BaseUrlUpdateState.Failed
+                else -> BaseUrlUpdateState.Idle
+            }
+        }
+        .transformLatest { state ->
+            when (state) {
+                is BaseUrlUpdateState.Running -> {
+                    // Wait 5 seconds before showing the snackbar
+                    // If state changes before 5 seconds, this coroutine is cancelled
+                    delay(SNACKBAR_DELAY_MS)
+                    emit(state)
+                }
+                else -> {
+                    // Emit Failed and Idle states immediately
+                    emit(state)
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(SNACKBAR_DELAY_MS),
+            initialValue = BaseUrlUpdateState.Idle
+        )
+
+    sealed class BaseUrlUpdateState {
+        data object Idle : BaseUrlUpdateState()
+        data object Running : BaseUrlUpdateState()
+        data object Failed : BaseUrlUpdateState()
+    }
+
+    companion object {
+        private const val SNACKBAR_DELAY_MS = 5_000L
+    }
 
     init {
         _workInfosListLiveData.addSource(workInfosLiveData) { workInfos ->
@@ -194,6 +254,12 @@ class TransfersViewModel(
     fun clearSuccessfulTransfers() {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             clearSuccessfulTransfersUseCase(Unit)
+        }
+    }
+
+    fun retryBaseUrlUpdate() {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            updateBaseUrlUseCase.execute()
         }
     }
 }

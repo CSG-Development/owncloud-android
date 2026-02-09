@@ -46,6 +46,7 @@ import com.owncloud.android.data.sharing.shares.datasources.implementation.OCRem
 import com.owncloud.android.data.sharing.shares.datasources.mapper.RemoteShareMapper
 import com.owncloud.android.data.spaces.datasources.RemoteSpacesDataSource
 import com.owncloud.android.data.spaces.datasources.implementation.OCRemoteSpacesDataSource
+import com.owncloud.android.data.user.CurrentUserStorage
 import com.owncloud.android.data.user.datasources.RemoteUserDataSource
 import com.owncloud.android.data.user.datasources.implementation.OCRemoteUserDataSource
 import com.owncloud.android.data.webfinger.datasources.RemoteWebFingerDataSource
@@ -83,6 +84,7 @@ val remoteDataSourceModule = module {
     singleOf(::OCRemoteWebFingerDataSource) bind RemoteWebFingerDataSource::class
     single<RemoteUserDataSource> { OCRemoteUserDataSource(get(), androidContext().resources.getDimension(R.dimen.file_avatar_size).toInt()) }
     single<NsdManager?>{ androidContext().getSystemService(NsdManager::class.java) }
+    single<CurrentUserStorage>{ CurrentUserStorage(get()) }
 
     singleOf(::HCLocalMdnsDiscoveryDataSource) bind LocalMdnsDiscoveryDataSource::class
 

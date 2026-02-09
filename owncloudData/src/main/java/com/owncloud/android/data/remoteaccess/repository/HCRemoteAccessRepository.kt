@@ -11,8 +11,12 @@ import com.owncloud.android.data.remoteaccess.remote.RemoteAccessTokenRequest
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.exceptions.CodeExpiredException
+import com.owncloud.android.domain.exceptions.EmailNotRegisteredException
+import com.owncloud.android.domain.exceptions.ServerTooManyRequestsException
+import com.owncloud.android.domain.exceptions.ServiceUnavailableException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 import com.owncloud.android.lib.common.http.HttpConstants
 import com.squareup.moshi.Moshi
 import retrofit2.HttpException
@@ -23,6 +27,7 @@ class HCRemoteAccessRepository(
     private val deviceVerificationClient: HCDeviceVerificationClient,
     private val currentDeviceStorage: CurrentDeviceStorage,
     private val moshi: Moshi,
+    private val accountDataStorage: AccountDataStorage,
 ) : RemoteAccessRepository {
 
     private val tokenErrorAdapter by lazy {
@@ -41,7 +46,15 @@ class HCRemoteAccessRepository(
         )
 
         tokenStorage.clearTokens()
-        return remoteAccessService.initiateAuthentication(request = request).reference
+        var reference = ""
+        try {
+            reference = remoteAccessService.initiateAuthentication(request = request).reference
+        } catch (e: HttpException) {
+            handleInitiateError(e)
+        } catch (e: Throwable) {
+            throw e
+        }
+        return reference
     }
 
     override suspend fun getToken(reference: String, code: String, userName: String, clientId: String) {
@@ -57,10 +70,24 @@ class HCRemoteAccessRepository(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
             )
-
-            tokenStorage.saveUserName(userName = userName)
+            accountDataStorage.saveTokensToCurrentAccount()
         } catch (e: HttpException) {
             handleTokenError(e)
+        }
+    }
+
+    private fun handleInitiateError(e: HttpException) {
+        when (e.code()) {
+            HttpConstants.HTTP_UNAUTHORIZED -> {
+                throw EmailNotRegisteredException(e)
+            }
+            HttpConstants.HTTP_TOO_MANY_REQUESTS -> {
+                throw ServerTooManyRequestsException(e)
+            }
+            HttpConstants.HTTP_INTERNAL_SERVER_ERROR -> {
+                throw ServiceUnavailableException()
+            }
+            else -> throw e
         }
     }
 
@@ -73,20 +100,18 @@ class HCRemoteAccessRepository(
                     "invalid credentials" -> {
                         throw WrongCodeException(e)
                     }
+
                     "verification code expired" -> {
                         throw CodeExpiredException(e)
                     }
-                    else -> { }
+
+                    else -> {}
                 }
             }
             throw e
         } else {
             throw e
         }
-    }
-
-    override fun getUserName(): String? {
-        return tokenStorage.getUserName()
     }
 
     override fun hasAccessToken(): Boolean {

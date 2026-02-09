@@ -52,6 +52,14 @@
     <string name="homecloud_expired_code">Your code has expired</string>
     <string name="homecloud_code_unknown_error">Something went wrong.</string>
     <string name="homecloud_login_invalid_email_message">Incorrect email</string>
+    <string name="homecloud_login_email_not_allowed">Not allowed. Contact the device owner.</string>
+    <string name="homecloud_cant_connect_description">Could not reach your Personal Cloud.</string>
+    <string name="homecloud_too_many_requests_dialog_title">Access to Personal Cloud</string>
+    <string name="homecloud_too_many_requests_dialog_description">There have been too many attempts for access within the last minute. Please wait at least two minutes before retrying.</string>
+    <string name="homecloud_email_not_registered_dialog_title">Email not registered</string>
+    <string name="homecloud_email_not_registered_dialog_description">This email isn’t authorized to access this device. Please contact the owner.</string>
+    <string name="homecloud_cancel">Cancel</string>
+    <string name="homecloud_ok">OK</string>
 
     <!-- Unable to connect state -->
     <string name="homecloud_unable_to_detect_title">Unable to detect</string>
@@ -124,4 +132,18 @@
     <string name="homecloud_developer_options_title">Developer options</string>
     <string name="homecloud_developer_options_static_device">Static Device</string>
     <string name="homecloud_set_menu_button_visible">Set menu button visible</string>
+
+    <!-- Reconnecting snackbar -->
+    <string name="homecloud_reconnecting_title">Reconnecting</string>
+    <string name="homecloud_reconnecting_message">We are trying to reconnect to your device, please wait</string>
+    <string name="homecloud_unable_to_reconnect_title">Unable to reconnect</string>
+    <string name="homecloud_unable_to_reconnect_message">Please check your network or try again</string>
+    <string name="homecloud_close">Close</string>
+
+    <!-- App Update Dialog -->
+    <string name="homecloud_app_update_dialog_title">Update Available</string>
+    <string name="homecloud_app_update_dialog_message">A new version %1$s (%2$s) is available. We recommend updating to get the latest features and
+        improvements.</string>
+    <string name="homecloud_app_update_dialog_update">Update</string>
+    <string name="homecloud_app_update_dialog_skip">Skip</string>
 </resources>
