@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">გაზიარება</string>
   <string name="actionbar_mkdir">ახალი ფოლდერი</string>
   <string name="actionbar_send_file">გაგზავნა</string>

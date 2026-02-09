@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">ھەمبەھىرلەش</string>
   <string name="action_upload_clear">Clear</string>
   <string name="action_upload_retry">قايتا سىناڭ</string>
@@ -98,7 +99,7 @@
   <string name="confirmation_remove_account_alert">راستىنلا% 1 $ s ھېساباتنى ئۆچۈرمەكچىمۇ؟</string>
   <string name="confirmation_remove_account_alert_camera_uploads">بۇ ھېساباتقا كامېرا يوللاش باغلانغان بولۇپ ، ھېساباتنى ئۆچۈرگەندە كامېرا يوللاشنى چەكلەيدۇ. راستىنلا% 1 $ s ھېساباتنى ئۆچۈرمەكچىمۇ؟</string>
   <string name="confirmation_remove_file_alert">راستىنلا% 1 $ s نى ئۆچۈرمەكچىمۇ؟</string>
-  <string name="confirmation_remove_files_alert">بۇ% s تۈرلەرنى ئۆچۈرمەكچىمۇ؟</string>
+  <string name="confirmation_remove_files_alert">بۇ%s تۈرلەرنى ئۆچۈرمەكچىمۇ؟</string>
   <string name="confirmation_remove_folders_alert">تاللانغان تۈرلەر ۋە ئۇلارنىڭ مەزمۇنىنى ئۆچۈرمەكچىمۇ؟</string>
   <string name="confirmation_remove_local">پەقەت يەرلىك</string>
   <string name="confirmation_remove_private_share_title">شەخسىي ئۈلۈشنى ئۆچۈرۈڭ</string>
@@ -162,7 +163,7 @@
   <string name="drawer_loading_quota">نورما يۈكلەۋاتىدۇ</string>
   <string name="drawer_manage_accounts">ھېساباتنى باشقۇرۇش</string>
   <string name="drawer_open">ئېچىڭ</string>
-  <string name="drawer_quota">ئىشلىتىلگەن% 2 $ s نىڭ% 1 $ s (% 3 $ s %%)</string>
+  <string name="drawer_quota">ئىشلىتىلگەن% 2 $ s نىڭ% 1 $ s (% 3 $ s %)</string>
   <string name="drawer_unavailable_free_storage">ئىشلىتىلىۋاتقان% 1 $ s</string>
   <string name="drawer_unavailable_used_storage">ساقلاش ئىشلىتىش ئۇچۇرى يوق</string>
   <string name="edit_share_done">تاماملاندى</string>
@@ -225,7 +226,7 @@
   <string name="folder_picker_move_here_button_text">بۇ يەرگە يۆتكىڭ</string>
   <string name="folder_picker_no_permissions_message_text">بۇ يەرگە مەزمۇن قوشۇش ھوقۇقىڭىز يوق!</string>
   <string name="folder_upload_some_content_or_sync_devices">بىر قىسىم مەزمۇننى چىقىرىش ياكى ئۈسكۈنىلىرىڭىز بىلەن ماس-قەدەملەڭ!</string>
-  <string name="forbidden_permissions">سىزنىڭ% s رۇخسىتىڭىز يوق</string>
+  <string name="forbidden_permissions">سىزنىڭ%s رۇخسىتىڭىز يوق</string>
   <string name="forbidden_permissions_create">ھۆججەت قۇرۇش</string>
   <string name="forbidden_permissions_delete">بۇ ھۆججەتنى ئۆچۈرۈش</string>
   <string name="forbidden_permissions_move">بۇ ھۆججەتنى يۆتكەش</string>
@@ -551,26 +552,26 @@
   <string name="uploader_upload_failed_credentials_error">يۈكلەش مەغلۇپ بولدى ، قايتا كىرىشىڭىز كېرەك.</string>
   <string name="uploader_upload_failed_ticker">يۈكلەش مەغلۇپ بولدى</string>
   <string name="uploader_upload_forbidden">يۈكلەشكە بولمايدۇ</string>
-  <string name="uploader_upload_in_progress_content">% 1 $ d %% يۈكلەش% 2 $ s</string>
+  <string name="uploader_upload_in_progress_content">% 1 $ d % يۈكلەش% 2 $ s</string>
   <string name="uploader_upload_in_progress_ticker">يۈكلەش…</string>
-  <string name="uploader_upload_picture_upload_files">% d يېڭى رەسىملەر يوللىنىدۇ.</string>
+  <string name="uploader_upload_picture_upload_files">%d يېڭى رەسىملەر يوللىنىدۇ.</string>
   <string name="uploader_upload_requested_from_wifi_files">Wifi ھۆججىتىدىن تەلەپ قىلىنغان يۈكلەش</string>
   <string name="uploader_upload_succeeded_content_single">% 1 $ s يوللاندى</string>
   <string name="uploader_upload_succeeded_ticker">يۈكلەش مۇۋەپپەقىيەتلىك بولدى</string>
   <string name="uploader_upload_text_dialog_filename_error_empty">ھۆججەت ئىسمى بوش بولماسلىقى كېرەك.</string>
-  <string name="uploader_upload_text_dialog_filename_error_length_max">ھۆججەت ئىسمى% d ھەرپتىن ئېشىپ كەتمەسلىكى كېرەك.</string>
+  <string name="uploader_upload_text_dialog_filename_error_length_max">ھۆججەت ئىسمى%d ھەرپتىن ئېشىپ كەتمەسلىكى كېرەك.</string>
   <string name="uploader_upload_text_dialog_title">يېڭى ھۆججەتكە ئىسىم قىستۇرۇڭ.</string>
   <string name="uploader_upload_text_filename_hint">ھۆججەت ئىسمى</string>
   <string name="uploader_upload_video_upload_error">سىن يوللاش مەنبە يولى ئەمدى ئىناۋەتلىك ئەمەس.</string>
-  <string name="uploader_upload_video_upload_files">% d يېڭى سىنلار يوللىنىدۇ.</string>
+  <string name="uploader_upload_video_upload_files">%d يېڭى سىنلار يوللىنىدۇ.</string>
   <string name="uploader_wrn_no_account_quit_btn_text">چېكىنىش</string>
   <string name="uploader_wrn_no_account_setup_btn_text">تەڭشەش</string>
   <string name="uploader_wrn_no_account_text">ئۈسكۈنىڭىزدە% 1 $ s ھېسابات يوق. ئالدى بىلەن ھېسابات قۇرۇڭ.</string>
   <string name="uploader_wrn_no_account_title">ھېسابات تېپىلمىدى</string>
   <string name="uploads_view_group_current_uploads">نۆۋەتتىكى</string>
   <string name="uploads_view_group_failed_uploads">مەغلۇپ بولدى (قايتا چېكىش ئۈچۈن چېكىڭ)</string>
-  <string name="uploads_view_group_file_count">% d ھۆججەتلەر</string>
-  <string name="uploads_view_group_file_count_single">% d ھۆججەت</string>
+  <string name="uploads_view_group_file_count">%d ھۆججەتلەر</string>
+  <string name="uploads_view_group_file_count_single">%d ھۆججەت</string>
   <string name="uploads_view_group_finished_uploads">يۈكلەندى</string>
   <string name="uploads_view_group_queued_uploads">Enqueued</string>
   <string name="uploads_view_later_waiting_to_upload">يوللاشنى ساقلاۋاتىدۇ</string>

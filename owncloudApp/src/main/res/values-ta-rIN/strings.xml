@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="actionbar_mkdir">புதிய கோப்புறை</string>
   <string name="actionbar_open_with">இதனுடன் திற</string>
   <string name="actionbar_see_details">விவரங்கள்</string>

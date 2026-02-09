@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">اشتراک</string>
   <string name="actionbar_send_file">بھجیں</string>
   <string name="actionbar_settings">سیٹینگز</string>

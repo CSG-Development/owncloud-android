@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="actionbar_upload_files">ဖိုင်များ</string>
   <string name="auth_password">စကားဝှက်</string>
   <string name="auth_username">သုံးစွဲသူအမည်</string>

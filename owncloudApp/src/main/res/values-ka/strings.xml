@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="actionbar_upload_files">ფაილები</string>
   <string name="auth_password">პაროლი</string>
   <string name="filedetails_download">გადმოწერა</string>

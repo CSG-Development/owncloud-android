@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Διαμοιρασμός</string>
   <string name="action_upload_clear">Εκκαθάριση</string>
   <string name="action_upload_retry">Επανάληψη</string>

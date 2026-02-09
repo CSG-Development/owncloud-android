@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Deljenje</string>
   <string name="actionbar_mkdir">Novi direktorijum</string>
   <string name="actionbar_open_with">Otvori sa</string>

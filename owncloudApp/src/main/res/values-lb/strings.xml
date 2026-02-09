@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Deelen</string>
   <string name="actionbar_logger">Protokoller</string>
   <string name="actionbar_mkdir">Neien Dossier</string>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Del</string>
   <string name="action_upload_clear">Ryd</string>
   <string name="action_upload_retry">Forsøg igen</string>

@@ -1,0 +1,19 @@
+input:
+  frontend: "spreadsheet"
+  spreadsheet_key: "19hst4kSiZtin54cHnIc925wquhXXWMR6_E3Wih1sTGk"
+  credentials_json: "Scripts/L10n/homecloud-l10n-5f2611435b25.json"
+  worksheet_names: ["Android"]
+  key_column_name: "KEY"
+  value_column_names: ["af-rZA", "ar", "ast", "az", "be", "bg-rBG", "bn-rBD", "bn-rIN", "bs", "ca", "cs-rCZ", "cy-rGB", "da", "de", "de-rAT", "de-rCH", "de-rDE", "en", "el", "en-rGB", "eo", "es", "es-rAR", "es-rCL", "es-rCR", "es-rMX", "et-rEE", "eu", "eu-rES", "fa", "fi-rFI", "fr", "fr-rFR", "gl", "gu", "he", "hi", "hr", "hu-rHU", "hy", "ia", "id", "is", "it", "ja-rJP", "jv", "ka", "ka-rGE", "km", "ko", "ku-rIQ", "lb", "lo", "lt-rLT", "lv", "mk", "ml-rIN", "mn", "ms-rMY", "my", "nb-rNO", "nl", "nn-rNO", "oc", "pa", "pl", "pt-rBR", "pt-rPT", "ro", "ru", "ru-rRU", "si-rLK", "sk", "sk-rSK", "sl", "sq", "sr", "sr-rSP", "sv", "ta-rIN", "ta-rLK", "te", "th-rTH", "tr", "ug", "uk", "ur", "ur-rPK", "vi", "zh-rCN", "zh-rHK", "zh-rTW"]
+  namespace_column_name: "NAMESPACE"
+
+output:
+  - backend: "android"
+    namespace_paths:
+      - [ "Android", "main" ]      
+    output_dir: "owncloudApp/src/main/res/"
+    default_locale: "en"
+    ignore_empty_strings: true
+    indent: 2
+    escape_doublequotes: true
+    indent_plural_quantities: true

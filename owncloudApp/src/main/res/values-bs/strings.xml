@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Dijeli</string>
   <string name="actionbar_mkdir">Nova fascikla</string>
   <string name="actionbar_send_file">Pošalji</string>

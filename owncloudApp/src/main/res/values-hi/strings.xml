@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">साझा करें</string>
   <string name="actionbar_mkdir">नया फ़ोल्डर</string>
   <string name="actionbar_open_with">के साथ खोलें </string>

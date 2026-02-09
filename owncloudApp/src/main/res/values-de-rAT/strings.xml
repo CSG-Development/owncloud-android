@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Freigeben</string>
   <string name="actionbar_mkdir">Neuer Ordner</string>
   <string name="actionbar_open_with">Öffnen mit</string>

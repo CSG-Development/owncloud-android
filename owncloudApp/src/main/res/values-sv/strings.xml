@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Dela</string>
   <string name="action_upload_clear">Rensa</string>
   <string name="action_upload_retry">Försök igen</string>
@@ -240,7 +241,7 @@
   <string name="media_err_unsupported">Saknar stöd för denna mediatyp</string>
   <string name="media_event_done">%1$s spelat färdigt</string>
   <string name="media_forward_description">Snappspolningsknapp</string>
-  <string name="media_notif_ticker">%1$ musikspelare</string>
+  <string name="media_notif_ticker">%1$s musikspelare</string>
   <string name="media_play_pause_description">Spela- / Pausknapp</string>
   <string name="media_rewind_description">Bakåtspolningsknapp</string>
   <string name="media_service_notification_channel_description">Se musikspelare</string>

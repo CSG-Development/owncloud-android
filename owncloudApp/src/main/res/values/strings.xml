@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Share</string>
   <string name="action_upload_clear">Clear</string>
   <string name="action_upload_retry">Retry</string>
@@ -224,7 +225,7 @@
   <string name="fab_refresh_sync_in_progress">Synchronization already in progress</string>
   <string name="fab_refresh_text">Refresh</string>
   <string name="failed_upload_quota_exceeded_text">Not enough space in the account</string>
-  <string name="feedback_dialog_get_in_contact_description"><![CDATA[ Ask for help in our <a href=\"%1$s\"><b>forum</b></a> or contribute in our <a href=\"%2$s\"><b>GitHub repo</b></a>]]></string>
+  <string name="feedback_dialog_get_in_contact_description"><![CDATA[ Ask for help in our <a href="%1$s"><b>forum</b></a> or contribute in our <a href="%2$s"><b>GitHub repo</b></a>]]></string>
   <string name="file_already_exists">File already exists</string>
   <string name="file_already_exists_description">File with name %1$s already exists.</string>
   <string name="file_list__footer__file">1 file</string>
@@ -268,7 +269,7 @@
   <string name="filedetails_sync_file">Synchronize</string>
   <string name="filedetails_type">Type:</string>
   <string name="filedisplay_no_file_selected">No file was selected</string>
-  <string name="filedisplay_unexpected_bad_get_content">"Unexpected problem; please select the file from a different app"</string>
+  <string name="filedisplay_unexpected_bad_get_content">\"Unexpected problem; please select the file from a different app\"</string>
   <string name="filename_empty">File name cannot be empty</string>
   <string name="filename_forbidden_characters">Forbidden characters: / \\</string>
   <string name="filename_forbidden_characters_from_server">File name contains at least one invalid character</string>
@@ -305,9 +306,9 @@
   <string name="insecure_http_url_title_dialog">Insecure HTTP URL</string>
   <string name="invalid_deep_link_format">Invalid link format</string>
   <plurals name="items_selected_count">
-        <item quantity="one">%d selected</item>
-        <item quantity="other">%d selected</item>
-    </plurals>
+    <item quantity="one">%d selected</item>
+    <item quantity="other">%d selected</item>
+  </plurals>
   <string name="light_users_subtitle">Personal space is not available</string>
   <string name="link_role_accessibility">Link</string>
   <string name="list_layout">List layout</string>
@@ -522,7 +523,7 @@
   <string name="rate_dialog_title">Rate %1$s app!</string>
   <string name="receive_external_files_label">Receive external files</string>
   <string name="recommend_subject">Try %1$s on your smartphone!</string>
-  <string name="recommend_text">"I want to invite you to use %1$s on your smartphone!\nDownload here: %2$s"</string>
+  <string name="recommend_text">\"I want to invite you to use %1$s on your smartphone!\nDownload here: %2$s\"</string>
   <string name="release_notes_4_6_1_subtitle_bearer_token_handling">Multiple accounts can be logged in at the same time on the same Infinite Scale server. Additionally, fixed a problem related with session handling</string>
   <string name="release_notes_4_6_1_subtitle_duplicated_automatic_uploads">Automatic uploads are more consistent against duplications</string>
   <string name="release_notes_4_6_1_subtitle_shares_space_docs_provider">Shares space now appears next to the other spaces in Documents Provider for Infinite Scale accounts</string>
@@ -539,8 +540,8 @@
   <string name="remove_fail_msg">Removal failed</string>
   <string name="remove_success_msg">Removal succeeded</string>
   <string name="rename_dialog_title">Enter a new name</string>
-  <string name="rename_local_fail_msg">"Local copy could not be renamed; try a different name"</string>
-  <string name="rename_server_fail_msg">"Rename could not be completed"</string>
+  <string name="rename_local_fail_msg">\"Local copy could not be renamed; try a different name\"</string>
+  <string name="rename_server_fail_msg">\"Rename could not be completed\"</string>
   <string name="resource_locked_error_message">Resource is locked</string>
   <string name="scoped_storage_wizard_explanation">Found %1$s of data on your external storage. It will be moved to the safe storage on your device. Remaining files will be cleaned from your external storage after the migration to avoid duplicates and vulnerability.</string>
   <string name="scoped_storage_wizard_intro">Your app has been updated. This app update migrates your files to a more secure location on your device. This one-time data migration is required and can take up to a minute or more.</string>
@@ -596,12 +597,12 @@
   <string name="share_via_link_edit_permission_upload_only_label">Upload Only (File Drop)</string>
   <string name="share_via_link_edit_title">Edit link share</string>
   <string name="share_via_link_empty_password">The password is empty.</string>
-  <string name="share_via_link_expiration_date_enforced_label">"Expiration *"</string>
+  <string name="share_via_link_expiration_date_enforced_label">\"Expiration *\"</string>
   <string name="share_via_link_expiration_date_explanation_label">The public link will expire no later than %1$d days after it has been created.</string>
   <string name="share_via_link_expiration_date_label">Expiration</string>
   <string name="share_via_link_generate_password_button">Generate</string>
   <string name="share_via_link_name_label">Link name</string>
-  <string name="share_via_link_password_enforced_label">"Password *"</string>
+  <string name="share_via_link_password_enforced_label">\"Password *\"</string>
   <string name="share_via_link_password_label">Password</string>
   <string name="share_via_link_password_title">Secured</string>
   <string name="share_via_link_section_title">Public links</string>

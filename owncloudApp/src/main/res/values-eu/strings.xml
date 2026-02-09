@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">Partekatu</string>
   <string name="actionbar_descending">Beherantz</string>
   <string name="actionbar_logger">Egunkariak</string>

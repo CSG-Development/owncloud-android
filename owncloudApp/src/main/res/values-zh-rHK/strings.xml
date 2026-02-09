@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">分享</string>
   <string name="actionbar_mkdir">新資料夾</string>
   <string name="actionbar_see_details">詳述</string>

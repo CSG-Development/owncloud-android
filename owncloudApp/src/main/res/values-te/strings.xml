@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="actionbar_mkdir">కొత్త సంచయం</string>
   <string name="actionbar_send_file">పంపించు</string>
   <string name="actionbar_settings">అమరికలు</string>

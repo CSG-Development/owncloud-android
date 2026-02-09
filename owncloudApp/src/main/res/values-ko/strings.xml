@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="action_share">공유</string>
   <string name="action_upload_clear">비우기</string>
   <string name="action_upload_retry">다시 시도</string>
