@@ -116,6 +116,15 @@ class OCLocalFileDataSource(
             fileList.map { it.toModel() }
         }
 
+    override fun getFavoriteFilesWithSyncInfoForAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>> =
+        fileDao.getFavoriteFilesWithSyncInfoForAccountAsFlow(owner).map { fileList ->
+            fileList.map { it.toModel() }
+        }
+
+    override fun setFileFavoriteStatus(fileId: Long, isFavorite: Boolean) {
+        fileDao.updateFileFavoriteStatus(fileId, isFavorite)
+    }
+
     override fun getFilesAvailableOfflineFromAccount(owner: String): List<OCFile> =
         fileDao.getFilesAvailableOfflineFromAccount(accountOwner = owner).map {
             it.toModel()
@@ -276,6 +285,7 @@ class OCLocalFileDataSource(
                 etagInConflict = etagInConflict,
                 treeEtag = treeEtag,
                 spaceId = spaceId,
+                isFavorite = isFavorite,
             )
 
         @VisibleForTesting
@@ -305,6 +315,7 @@ class OCLocalFileDataSource(
                 treeEtag = treeEtag,
                 name = fileName,
                 spaceId = spaceId,
+                isFavorite = isFavorite,
             ).apply { this@toEntity.id?.let { modelId -> this.id = modelId } }
     }
 }

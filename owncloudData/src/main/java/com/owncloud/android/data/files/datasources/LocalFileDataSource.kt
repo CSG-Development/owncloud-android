@@ -42,6 +42,8 @@ interface LocalFileDataSource {
     fun getFolderImages(folderId: Long): List<OCFile>
     fun getSharedByLinkWithSyncInfoForAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>>
     fun getFilesWithSyncInfoAvailableOfflineFromAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>>
+    fun getFavoriteFilesWithSyncInfoForAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>>
+    fun setFileFavoriteStatus(fileId: Long, isFavorite: Boolean)
     fun getFilesAvailableOfflineFromAccount(owner: String): List<OCFile>
     fun getFilesAvailableOfflineFromEveryAccount(): List<OCFile>
     fun getDownloadedFilesForAccount(owner: String): List<OCFile>

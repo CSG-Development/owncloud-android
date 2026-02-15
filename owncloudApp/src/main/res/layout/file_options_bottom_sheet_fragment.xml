@@ -28,7 +28,7 @@
         android:ellipsize="end"
         android:maxLines="3"
         android:textSize="@dimen/two_line_primary_text_size"
-        app:layout_constraintEnd_toStartOf="@id/close_bottom_sheet"
+        app:layout_constraintEnd_toStartOf="@id/favorite_bottom_sheet"
         app:layout_constraintStart_toEndOf="@id/thumbnail_bottom_sheet"
         app:layout_constraintTop_toBottomOf="@id/drag_handle"
         tools:text="File name" />
@@ -67,7 +67,7 @@
         tools:text="Mod Date" />
 
     <ImageView
-        android:id="@+id/close_bottom_sheet"
+        android:id="@+id/favorite_bottom_sheet"
         android:layout_width="@dimen/icon_button_size"
         android:layout_height="@dimen/icon_button_size"
         android:layout_gravity="center_vertical"
@@ -75,10 +75,11 @@
         android:clickable="true"
         android:focusable="true"
         android:scaleType="center"
-        android:src="@drawable/ic_close"
+        android:src="@drawable/ic_star_outlined_blue"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:contentDescription="@string/drawer_close"/>
+        app:layout_constraintTop_toBottomOf="@id/drag_handle"
+        android:contentDescription="@string/favorite_toggle_description" />
+
 
     <View
         android:id="@+id/divider"
