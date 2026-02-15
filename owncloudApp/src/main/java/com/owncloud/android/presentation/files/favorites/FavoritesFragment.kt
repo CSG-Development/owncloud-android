@@ -99,7 +99,6 @@ class FavoritesFragment : Fragment(),
     private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
 
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            setDrawerStatus(enabled = false)
             actionMode = mode
 
             val inflater = requireActivity().menuInflater
@@ -149,7 +148,6 @@ class FavoritesFragment : Fragment(),
             onFileActionChosen(item?.itemId)
 
         override fun onDestroyActionMode(mode: ActionMode?) {
-            setDrawerStatus(enabled = true)
             actionMode = null
 
             statusBarColor?.let { requireActivity().window.statusBarColor = it }
@@ -249,10 +247,6 @@ class FavoritesFragment : Fragment(),
         binding.favoritesListEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
         binding.favoritesListEmpty.listEmptyDatasetTitle.setText(R.string.favorites_empty_title)
         binding.favoritesListEmpty.listEmptyDatasetSubTitle.setText(R.string.favorites_empty_subtitle)
-    }
-
-    private fun setDrawerStatus(enabled: Boolean) {
-        // No drawer in FavoritesActivity, no-op
     }
 
     private fun toggleSelection(position: Int) {
@@ -481,12 +475,7 @@ class FavoritesFragment : Fragment(),
     }
 
     override fun onThreeDotButtonClick(fileWithSyncInfo: OCFileWithSyncInfo) {
-        // Navigate to FileDisplayActivity to show file details
-        val intent = Intent(requireContext(), FileDisplayActivity::class.java).apply {
-            putExtra(FileActivity.EXTRA_FILE, fileWithSyncInfo.file)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        startActivity(intent)
+        // empty, do not show 3 dots menu
     }
 
     // SortOptionsListener implementation
