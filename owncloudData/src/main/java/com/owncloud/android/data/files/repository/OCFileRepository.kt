@@ -225,6 +225,7 @@ class OCFileRepository(
             FileListOption.SHARED_BY_LINK -> localFileDataSource.getSearchSharedByLinkFolderContent(folderId, search)
             FileListOption.UPLOADS_LIST -> emptyList()
             FileListOption.GLOBAL_SEARCH -> emptyList()
+            FileListOption.FAVORITES -> emptyList()
         }
 
     override fun getFolderContent(folderId: Long): List<OCFile> =
@@ -241,6 +242,13 @@ class OCFileRepository(
 
     override fun getFilesWithSyncInfoAvailableOfflineFromAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>> =
         localFileDataSource.getFilesWithSyncInfoAvailableOfflineFromAccountAsFlow(owner)
+
+    override fun getFavoriteFilesWithSyncInfoForAccountAsFlow(owner: String): Flow<List<OCFileWithSyncInfo>> =
+        localFileDataSource.getFavoriteFilesWithSyncInfoForAccountAsFlow(owner)
+
+    override fun setFileFavoriteStatus(fileId: Long, isFavorite: Boolean) {
+        localFileDataSource.setFileFavoriteStatus(fileId, isFavorite)
+    }
 
     override fun getFilesAvailableOfflineFromAccount(owner: String): List<OCFile> =
         localFileDataSource.getFilesAvailableOfflineFromAccount(owner)

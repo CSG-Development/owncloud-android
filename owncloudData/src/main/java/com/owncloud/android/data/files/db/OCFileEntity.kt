@@ -24,7 +24,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.util.TableInfo
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILE_ACCOUNT_OWNER
 import com.owncloud.android.data.ProviderMeta.ProviderTableMeta.FILE_CONTENT_LENGTH
@@ -104,6 +103,8 @@ data class OCFileEntity(
     val sharedWithSharee: Boolean? = false,
     var sharedByLink: Boolean = false,
     val spaceId: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val isFavorite: Boolean = false,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0

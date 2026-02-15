@@ -53,7 +53,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import coil.load
@@ -637,10 +636,22 @@ class MainFileListFragment : FileFragment(),
 
                 val fileOptionsBottomSheetSingleFileBehavior: BottomSheetBehavior<*> =
                     BottomSheetBehavior.from(fileOptionsBottomSheetSingleFile.parent as View)
-                val closeBottomSheetButton = fileOptionsBottomSheetSingleFile.findViewById<ImageView>(R.id.close_bottom_sheet)
-                closeBottomSheetButton.setOnClickListener {
-                    dialog.hide()
-                    dialog.dismiss()
+
+                val favoriteButton = fileOptionsBottomSheetSingleFile.findViewById<ImageView>(R.id.favorite_bottom_sheet)
+                var isFavorite = file.isFavorite
+                favoriteButton.setImageResource(
+                    if (isFavorite) R.drawable.ic_star_filled_blue else R.drawable.ic_star_outlined_blue
+                )
+                favoriteButton.setOnClickListener {
+                    isFavorite = !isFavorite
+                    favoriteButton.setImageResource(
+                        if (isFavorite) R.drawable.ic_star_filled_blue else R.drawable.ic_star_outlined_blue
+                    )
+                    file.id?.let { fileId ->
+                        fileOperationsViewModel.performOperation(
+                            FileOperation.SetFileFavoriteStatus(fileId = fileId, isFavorite = isFavorite)
+                        )
+                    }
                 }
 
                 val thumbnailBottomSheet = fileOptionsBottomSheetSingleFile.findViewById<ImageView>(R.id.thumbnail_bottom_sheet)

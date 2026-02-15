@@ -1125,6 +1125,7 @@ class FileDisplayActivity : FileActivity(),
                     FileListOption.SPACES_LIST -> getString(R.string.bottom_nav_spaces)
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
                     FileListOption.GLOBAL_SEARCH -> ""
+                    FileListOption.FAVORITES -> getString(R.string.drawer_menu_favorites)
                 }
             setTitle(title)
             val showBackArrow = fileListOption.isSharedByLink()
@@ -2005,6 +2006,10 @@ class FileDisplayActivity : FileActivity(),
                     setGlobalSearchBarVisible(true)
                 }
             }
+
+            FileListOption.FAVORITES -> {
+                // Favorites is handled by a separate activity, nothing to do here
+            }
         }
     }
 
@@ -2019,6 +2024,7 @@ class FileDisplayActivity : FileActivity(),
         FileListOption.ALL_FILES -> R.id.nav_all_files
         FileListOption.UPLOADS_LIST -> R.id.nav_uploads
         FileListOption.GLOBAL_SEARCH -> R.id.nav_global_search
+        FileListOption.FAVORITES -> 0
         null -> R.id.nav_all_files
     }
 
@@ -2244,6 +2250,7 @@ class FileDisplayActivity : FileActivity(),
         const val ALL_FILES_SAF_REGEX = "*/*"
 
         const val ACTION_DETAILS = "com.owncloud.android.ui.activity.action.DETAILS"
+        const val EXTRA_AUTO_OPEN = "com.owncloud.android.ui.activity.EXTRA_AUTO_OPEN"
 
         const val REQUEST_CODE__SELECT_CONTENT_FROM_APPS = REQUEST_CODE__LAST_SHARED + 1
         const val REQUEST_CODE__MOVE_FILES = REQUEST_CODE__LAST_SHARED + 2
