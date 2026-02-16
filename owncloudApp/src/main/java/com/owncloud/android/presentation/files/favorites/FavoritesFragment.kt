@@ -399,6 +399,22 @@ class FavoritesFragment : Fragment(),
                 true
             }
 
+            R.id.action_set_favorite -> {
+                checkedFiles.firstOrNull()?.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                }
+                disableSelectionMode()
+                true
+            }
+
+            R.id.action_unset_favorite -> {
+                checkedFiles.firstOrNull()?.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                }
+                disableSelectionMode()
+                true
+            }
+
             else -> false
         }
     }

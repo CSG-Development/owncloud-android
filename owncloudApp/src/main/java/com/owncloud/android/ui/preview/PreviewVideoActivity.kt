@@ -67,6 +67,7 @@ import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperation.SetFilesAsAvailableOffline
 import com.owncloud.android.presentation.files.operations.FileOperation.UnsetFilesAsAvailableOffline
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
@@ -431,6 +432,24 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
                 val fileList = ArrayList<OCFile>()
                 fileList.add(file)
                 transfersViewModel.cancelTransfersRecursively(fileList, account?.name.orEmpty())
+                true
+            }
+
+            R.id.action_set_favorite -> {
+                file.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    file = file.copy(isFavorite = true)
+                }
+                invalidateOptionsMenu()
+                true
+            }
+
+            R.id.action_unset_favorite -> {
+                file.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    file = file.copy(isFavorite = false)
+                }
+                invalidateOptionsMenu()
                 true
             }
 

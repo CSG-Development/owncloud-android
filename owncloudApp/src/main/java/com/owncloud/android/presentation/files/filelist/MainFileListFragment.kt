@@ -805,6 +805,18 @@ class MainFileListFragment : FileFragment(),
                     FileMenuOption.UNSET_AV_OFFLINE -> {
                         fileOperationsViewModel.performOperation(FileOperation.UnsetFilesAsAvailableOffline(listOf(file)))
                     }
+
+                    FileMenuOption.SET_FAVORITE -> {
+                        file.id?.let { fileId ->
+                            fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                        }
+                    }
+
+                    FileMenuOption.UNSET_FAVORITE -> {
+                        file.id?.let { fileId ->
+                            fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                        }
+                    }
                 }
                 dialog.hide()
                 dialog.dismiss()
@@ -1486,6 +1498,20 @@ class MainFileListFragment : FileFragment(),
 
             R.id.action_unset_available_offline -> {
                 fileOperationsViewModel.performOperation(FileOperation.UnsetFilesAsAvailableOffline(listOf(singleFile)))
+                true
+            }
+
+            R.id.action_set_favorite -> {
+                singleFile.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                }
+                true
+            }
+
+            R.id.action_unset_favorite -> {
+                singleFile.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                }
                 true
             }
 

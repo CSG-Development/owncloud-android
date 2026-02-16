@@ -261,6 +261,24 @@ class PreviewImageFragment : FileFragment() {
                 true
             }
 
+            R.id.action_set_favorite -> {
+                file.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    file = file.copy(isFavorite = true)
+                }
+                requireActivity().invalidateOptionsMenu()
+                true
+            }
+
+            R.id.action_unset_favorite -> {
+                file.id?.let { fileId ->
+                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    file = file.copy(isFavorite = false)
+                }
+                requireActivity().invalidateOptionsMenu()
+                true
+            }
+
             else -> {
                 super.onOptionsItemSelected(item)
             }
