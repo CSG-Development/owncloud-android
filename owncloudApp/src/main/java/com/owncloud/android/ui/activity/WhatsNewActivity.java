@@ -51,13 +51,9 @@ import com.owncloud.android.databinding.WhatsNewElementBinding;
 import com.owncloud.android.wizard.FeatureList;
 import com.owncloud.android.wizard.FeatureList.FeatureItem;
 import com.owncloud.android.wizard.ProgressIndicator;
-import timber.log.Timber;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Bartosz Przybylski
@@ -73,7 +69,6 @@ public class WhatsNewActivity extends FragmentActivity {
     private SharedPreferencesProvider preferencesProvider;
 
     private static final String ONBOARDING_DISPLAYED_KEY = "onboarding_displayed";
-    private static final String ONBOARDING_DISPLAYED_ITEMS_KEY = "onboarding_items_displayed";
 
     static public void runIfNeeded(Context context) {
         if (context instanceof WhatsNewActivity) {
@@ -115,11 +110,6 @@ public class WhatsNewActivity extends FragmentActivity {
                 if (!mProgress.hasNextStep()) {
                     handleOnboardingDisplayed();
                 }
-                FeatureItem displayedItem = adapter.mFeatures.get(position);
-                if (displayedItem != null) {
-                    preferencesProvider.addItemToStringSet(ONBOARDING_DISPLAYED_ITEMS_KEY, displayedItem.getId());
-                    Timber.d("Save onboarding item displayed: %s", displayedItem.getId());
-                }
             }
 
             @Override
@@ -130,8 +120,6 @@ public class WhatsNewActivity extends FragmentActivity {
                 }
             }
         });
-        mPager.setCurrentItem(findFirstNewItemPosition());
-
         mForwardFinishButton = bindingActivity.forward;
         mForwardFinishButton.setOnClickListener(view -> {
             goToNextPage();
@@ -154,20 +142,6 @@ public class WhatsNewActivity extends FragmentActivity {
 
     private FeaturesViewAdapter initAdapter() {
         return new FeaturesViewAdapter(this, Arrays.asList(FeatureList.get()));
-    }
-
-    private int findFirstNewItemPosition() {
-        Set<String> previouslyDisplayedItems = preferencesProvider.getStringSet(ONBOARDING_DISPLAYED_ITEMS_KEY, Collections.emptySet());
-        Iterator<FeatureItem> iterator = Arrays.asList(FeatureList.get()).iterator();
-        int position = 0;
-        while (iterator.hasNext()) {
-            FeatureItem item = iterator.next();
-            if (!previouslyDisplayedItems.contains(item.getId())) {
-                return position;
-            }
-            position++;
-        }
-        return position;
     }
 
     @Override
