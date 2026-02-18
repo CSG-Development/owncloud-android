@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp"
+        android:layout_gravity="center">
+
+        <ImageView
+            android:id="@+id/whatsNewImage"
+            android:layout_width="@dimen/whats_new_image_size"
+            android:layout_height="@dimen/whats_new_image_size"
+            android:layout_marginBottom="36dp"
+            app:layout_constraintBottom_toTopOf="@id/whatsNewTitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <ImageView
+            android:id="@+id/whatsNewExtraImage"
+            android:layout_width="150dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="@dimen/standard_margin"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="@id/whatsNewText"
+            app:layout_constraintTop_toBottomOf="@id/whatsNewText" />
+
+        <TextView
+            android:id="@+id/whatsNewText"
+            android:layout_width="@dimen/whats_new_text_width"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/standard_margin"
+            android:gravity="start"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@id/whatsNewExtraImage"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/whatsNewTitle"
+            tools:text="@string/welcome_feature_6_text" />
+
+        <TextView
+            android:id="@+id/whatsNewTitle"
+            android:layout_width="@dimen/whats_new_text_width"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@id/whatsNewText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/whatsNewImage"
+            tools:text="@string/welcome_feature_6_title" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
