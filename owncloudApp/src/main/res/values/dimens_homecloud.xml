@@ -11,6 +11,7 @@
     <dimen name="login_screen_fields_width">@dimen/match_parent</dimen>
 
     <dimen name="homecloud_toolbar_height">56dp</dimen>
+    <dimen name="homecloud_code_edit_size">40dp</dimen>
 
     <!-- Loading Button -->
     <dimen name="loading_button_indicator_size">24dp</dimen>
