@@ -37,6 +37,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GridItemBinding
 import com.owncloud.android.databinding.ItemFileListBinding
@@ -62,10 +63,103 @@ class FileListAdapter(
     private var account: Account? = AccountUtils.getCurrentOwnCloudAccount(context)
     private var fileListOption: FileListOption = FileListOption.ALL_FILES
 
+    /** Map of remotePath -> upload progress percentage (0..100) */
+    private val uploadProgressMap = mutableMapOf<String, Int>()
+
+    /** Virtual (synthetic) file items for active uploads not yet in the real file list. */
+    private var virtualUploadItems = listOf<OCFileWithSyncInfo>()
+
+    /** Payload marker for progress-only updates (avoids full rebind / blinking). */
+    data class UploadProgressPayload(val progress: Int)
+
+    /**
+     * Update virtual upload items and their progress.
+     * Virtual items are synthetic OCFileWithSyncInfo entries for files being uploaded
+     * that don't yet exist in the database/file list.
+     *
+     * Uses payload-based partial updates when only the progress value changed,
+     * so the view is NOT fully rebound (no blinking).
+     *
+     * @param activeUploads list of pairs: synthetic OCFileWithSyncInfo + progress percentage
+     */
+    fun updateActiveUploads(activeUploads: List<Pair<OCFileWithSyncInfo, Int>>) {
+        val newProgressMap = mutableMapOf<String, Int>()
+        activeUploads.forEach { (fileWithSync, progress) ->
+            newProgressMap[fileWithSync.file.remotePath] = progress
+        }
+
+        // Only keep virtual items whose remotePath is NOT already in the real file list
+        val realPaths = files.filterIsInstance<OCFileWithSyncInfo>()
+            .filter { it.file.id != VIRTUAL_FILE_ID }
+            .map { it.file.remotePath }
+            .toSet()
+
+        val newVirtualItems = activeUploads
+            .filter { (fileWithSync, _) -> fileWithSync.file.remotePath !in realPaths }
+            .map { (fileWithSync, _) -> fileWithSync }
+
+        val oldVirtualPaths = virtualUploadItems.map { it.file.remotePath }.toSet()
+        val newVirtualPaths = newVirtualItems.map { it.file.remotePath }.toSet()
+
+        val structureChanged = oldVirtualPaths != newVirtualPaths
+
+        if (structureChanged) {
+            // Items were added or removed — need structural update
+            files.removeAll { it is OCFileWithSyncInfo && it.file.id == VIRTUAL_FILE_ID }
+            virtualUploadItems = newVirtualItems
+            uploadProgressMap.clear()
+            uploadProgressMap.putAll(newProgressMap)
+
+            if (newVirtualItems.isNotEmpty()) {
+                val footerIndex = files.indexOfFirst { it is OCFooterFile }
+                if (footerIndex >= 0) {
+                    files.addAll(footerIndex, newVirtualItems)
+                } else {
+                    files.addAll(newVirtualItems)
+                }
+            }
+            notifyDataSetChanged()
+        } else {
+            // Structure is the same — only update progress with payloads (no blinking)
+            uploadProgressMap.clear()
+            uploadProgressMap.putAll(newProgressMap)
+
+            newProgressMap.forEach { (remotePath, progress) ->
+                val index = files.indexOfFirst {
+                    it is OCFileWithSyncInfo && it.file.remotePath == remotePath
+                }
+                if (index >= 0) {
+                    notifyItemChanged(index, UploadProgressPayload(progress))
+                }
+            }
+
+            // Clear progress for items that are no longer uploading
+            val removedPaths = uploadProgressMap.keys - newProgressMap.keys
+            removedPaths.forEach { remotePath ->
+                val index = files.indexOfFirst {
+                    it is OCFileWithSyncInfo && it.file.remotePath == remotePath
+                }
+                if (index >= 0) {
+                    notifyItemChanged(index)
+                }
+            }
+        }
+    }
+
     fun updateFileList(filesToAdd: List<OCFileWithSyncInfo>, fileListOption: FileListOption, onSortChanged: () -> Unit) {
 
         val listWithFooter = mutableListOf<Any>()
         listWithFooter.addAll(filesToAdd)
+
+        // Re-add virtual upload items that don't exist in the new real file list
+        val realPaths = filesToAdd.map { it.file.remotePath }.toSet()
+        val stillActiveVirtual = virtualUploadItems.filter { it.file.remotePath !in realPaths }
+        listWithFooter.addAll(stillActiveVirtual)
+
+        // Remove virtual items that now have a real counterpart
+        virtualUploadItems = stillActiveVirtual
+        // Clean progress for files that now exist as real files
+        realPaths.forEach { uploadProgressMap.remove(it) }
 
         if (listWithFooter.isNotEmpty()) {
             listWithFooter.add(OCFooterFile(manageListOfFilesAndGenerateText(filesToAdd)))
@@ -132,7 +226,7 @@ class FileListAdapter(
 
     override fun getItemId(position: Int): Long = position.toLong()
 
-    private fun isFooter(position: Int) = position == files.size.minus(1)
+    private fun isFooter(position: Int) = files[position] is OCFooterFile
 
     override fun getItemViewType(position: Int): Int =
 
@@ -178,6 +272,29 @@ class FileListAdapter(
         toggleSelectionInBulk(totalItems = files.size - 1)
     }
 
+    /**
+     * Payload-aware bind: when only the upload progress changed we update ONLY the
+     * progress indicator, skipping the expensive full rebind (eliminates blinking).
+     */
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty()) {
+            val progressPayload = payloads.filterIsInstance<UploadProgressPayload>().lastOrNull()
+            if (progressPayload != null) {
+                val progressIndicator = holder.itemView.findViewById<CircularProgressIndicator>(R.id.uploadProgressIndicator)
+                val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
+
+                threeDotMenu?.isVisible = false
+                progressIndicator?.apply {
+                    isVisible = true
+                    setProgressCompat(progressPayload.progress, true)
+                }
+                return
+            }
+        }
+        // No payload (or unrecognised) — fall through to full bind
+        super.onBindViewHolder(holder, position, payloads)
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
 
         val viewType = getItemViewType(position)
@@ -187,10 +304,13 @@ class FileListAdapter(
             val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
             val file = fileWithSyncInfo.file
             val name = file.fileName
+            val isVirtual = file.id == VIRTUAL_FILE_ID
             val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
                 tag = file.id
             }
-            val thumbnail: Bitmap? = file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
+            val thumbnail: Bitmap? = if (!isVirtual) {
+                file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
+            } else null
 
             holder.itemView.findViewById<LinearLayout>(R.id.ListItemLayout)?.apply {
                 contentDescription = "LinearLayout-$name"
@@ -200,31 +320,55 @@ class FileListAdapter(
             }
 
             holder.itemView.findViewById<LinearLayout>(R.id.share_icons_layout).isVisible =
-                file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe
-            holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible = file.sharedByLink
+                !isVirtual && (file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe)
+            holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible =
+                !isVirtual && file.sharedByLink
             holder.itemView.findViewById<ImageView>(R.id.shared_via_users_icon).isVisible =
-                file.sharedWithSharee == true || file.isSharedWithMe
+                !isVirtual && (file.sharedWithSharee == true || file.isSharedWithMe)
 
             setSpecificViewHolder(viewType, holder, fileWithSyncInfo, thumbnail)
 
             setIconPinAccordingToFilesLocalState(holder.itemView.findViewById(R.id.localFileIndicator), fileWithSyncInfo)
 
-            holder.itemView.setOnClickListener {
-                listener.onItemClick(
-                    ocFileWithSyncInfo = fileWithSyncInfo,
-                    position = position
-                )
+            // Show/hide upload progress indicator and three_dot_menu
+            val progressIndicator = holder.itemView.findViewById<CircularProgressIndicator>(R.id.uploadProgressIndicator)
+            val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
+            val uploadProgress = uploadProgressMap[file.remotePath]
+            if (uploadProgress != null && uploadProgress in 0..100) {
+                threeDotMenu?.isVisible = false
+                progressIndicator?.apply {
+                    isVisible = true
+                    setProgressCompat(uploadProgress, true)
+                }
+            } else {
+                progressIndicator?.isVisible = false
+                // three_dot_menu visibility is managed in setSpecificViewHolder for list items
             }
 
-            holder.itemView.setOnLongClickListener {
-                listener.onLongItemClick(
-                    position = position
-                )
+            if (!isVirtual) {
+                holder.itemView.setOnClickListener {
+                    listener.onItemClick(
+                        ocFileWithSyncInfo = fileWithSyncInfo,
+                        position = position
+                    )
+                }
+
+                holder.itemView.setOnLongClickListener {
+                    listener.onLongItemClick(
+                        position = position
+                    )
+                }
+            } else {
+                // Disable clicks on virtual (uploading) items
+                holder.itemView.setOnClickListener(null)
+                holder.itemView.setOnLongClickListener(null)
+                holder.itemView.isClickable = false
+                holder.itemView.isLongClickable = false
             }
             //holder.itemView.setBackgroundColor(Color.WHITE)
 
             val checkBoxV = holder.itemView.findViewById<ImageView>(R.id.custom_checkbox).apply {
-                isVisible = getCheckedItems().isNotEmpty()
+                isVisible = !isVirtual && getCheckedItems().isNotEmpty()
             }
 
             if (isSelected(position)) {
@@ -245,7 +389,7 @@ class FileListAdapter(
                 if (thumbnail != null) {
                     fileIcon.setImageBitmap(thumbnail)
                 }
-                if (file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
+                if (!isVirtual && file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
                     // generate new Thumbnail
                     val task = ThumbnailsCacheManager.ThumbnailGenerationTask(fileIcon, account)
                     val asyncDrawable = ThumbnailsCacheManager.AsyncThumbnailDrawable(context.resources, thumbnail, task)
@@ -461,5 +605,10 @@ class FileListAdapter(
 
     enum class ViewType {
         LIST_ITEM, GRID_IMAGE, GRID_ITEM, FOOTER
+    }
+
+    companion object {
+        /** Special ID used for virtual (synthetic) file items representing active uploads. */
+        const val VIRTUAL_FILE_ID = -1000L
     }
 }

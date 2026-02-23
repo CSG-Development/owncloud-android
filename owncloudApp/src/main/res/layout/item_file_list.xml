@@ -39,6 +39,8 @@
             app:layout_constraintStart_toEndOf="@+id/thumbnail"
             app:layout_constraintTop_toBottomOf="@+id/thumbnail" />
 
+
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -176,6 +178,19 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/uploadProgressIndicator"
+            android:layout_width="@dimen/file_indicator_pin_size"
+            android:layout_height="@dimen/file_indicator_pin_size"
+            android:translationX="-8dp"
+            android:translationY="-10dp"
+            android:visibility="gone"
+            app:indicatorSize="20dp"
+            app:trackThickness="2dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"  />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
