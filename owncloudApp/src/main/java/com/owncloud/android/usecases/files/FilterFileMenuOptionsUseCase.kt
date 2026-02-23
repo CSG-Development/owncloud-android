@@ -143,6 +143,14 @@ class FilterFileMenuOptionsUseCase(
         if (anyAvailableOfflineFile(files) && !isAnyFileVideoStreaming) {
             optionsToShow.add(FileMenuOption.UNSET_AV_OFFLINE)
         }
+        // Set as favorite
+        if (isSingleFile(files) && !files.first().isFavorite) {
+            optionsToShow.add(FileMenuOption.SET_FAVORITE)
+        }
+        // Unset as favorite
+        if (isSingleFile(files) && files.first().isFavorite) {
+            optionsToShow.add(FileMenuOption.UNSET_FAVORITE)
+        }
         // Details
         if (isSingleFile(files)) {
             optionsToShow.add(FileMenuOption.DETAILS)

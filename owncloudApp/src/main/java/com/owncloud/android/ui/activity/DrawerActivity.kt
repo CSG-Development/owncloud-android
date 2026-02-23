@@ -75,6 +75,7 @@ import com.owncloud.android.presentation.avatar.AvatarUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.files.favorites.FavoritesActivity
 import com.owncloud.android.presentation.settings.SettingsActivity
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.PreferenceUtils
@@ -232,6 +233,10 @@ abstract class DrawerActivity : ToolbarActivity() {
                 }
                 R.id.drawer_menu_shared_by_link_files -> {
                     navigateToOption(FileListOption.SHARED_BY_LINK)
+                }
+                R.id.drawer_menu_favorites -> {
+                    val favoritesIntent = Intent(applicationContext, FavoritesActivity::class.java)
+                    startActivity(favoritesIntent)
                 }
                 else -> { Timber.i("Unknown drawer menu item clicked: %s", menuItem.title) }
             }

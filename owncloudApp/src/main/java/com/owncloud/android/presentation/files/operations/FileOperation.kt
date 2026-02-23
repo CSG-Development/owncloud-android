@@ -54,4 +54,5 @@ sealed interface FileOperation {
     data class CreateFileWithAppProviderOperation(val accountName: String, val parentContainerId: String, val filename: String) : FileOperation
     data class SetFilesAsAvailableOffline(val filesToUpdate: List<OCFile>) : FileOperation
     data class UnsetFilesAsAvailableOffline(val filesToUpdate: List<OCFile>) : FileOperation
+    data class SetFileFavoriteStatus(val fileId: Long, val isFavorite: Boolean) : FileOperation
 }

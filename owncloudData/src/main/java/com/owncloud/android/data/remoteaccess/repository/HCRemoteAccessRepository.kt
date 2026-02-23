@@ -2,7 +2,6 @@ package com.owncloud.android.data.remoteaccess.repository
 
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
-import com.owncloud.android.data.remoteaccess.RemoteAccessTokenSaver
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessDeviceResponse
@@ -17,6 +16,7 @@ import com.owncloud.android.domain.exceptions.ServerTooManyRequestsException
 import com.owncloud.android.domain.exceptions.ServiceUnavailableException
 import com.owncloud.android.domain.exceptions.WrongCodeException
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
+import com.owncloud.android.lib.common.accounts.AccountDataStorage
 import com.owncloud.android.lib.common.http.HttpConstants
 import com.squareup.moshi.Moshi
 import retrofit2.HttpException
@@ -27,7 +27,7 @@ class HCRemoteAccessRepository(
     private val deviceVerificationClient: HCDeviceVerificationClient,
     private val currentDeviceStorage: CurrentDeviceStorage,
     private val moshi: Moshi,
-    private val remoteAccessTokenSaver: RemoteAccessTokenSaver,
+    private val accountDataStorage: AccountDataStorage,
 ) : RemoteAccessRepository {
 
     private val tokenErrorAdapter by lazy {
@@ -70,7 +70,7 @@ class HCRemoteAccessRepository(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
             )
-            remoteAccessTokenSaver.saveTokensToCurrentAccount()
+            accountDataStorage.saveTokensToCurrentAccount()
         } catch (e: HttpException) {
             handleTokenError(e)
         }

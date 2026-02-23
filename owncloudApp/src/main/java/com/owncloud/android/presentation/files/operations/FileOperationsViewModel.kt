@@ -47,6 +47,7 @@ import com.owncloud.android.domain.files.usecases.ManageDeepLinkUseCase
 import com.owncloud.android.domain.files.usecases.MoveFileUseCase
 import com.owncloud.android.domain.files.usecases.RemoveFileUseCase
 import com.owncloud.android.domain.files.usecases.RenameFileUseCase
+import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
@@ -75,6 +76,7 @@ class FileOperationsViewModel(
     private val createFileWithAppProviderUseCase: CreateFileWithAppProviderUseCase,
     private val setFilesAsAvailableOfflineUseCase: SetFilesAsAvailableOfflineUseCase,
     private val unsetFilesAsAvailableOfflineUseCase: UnsetFilesAsAvailableOfflineUseCase,
+    private val setFileFavoriteStatusUseCase: SetFileFavoriteStatusUseCase,
     private val manageDeepLinkUseCase: ManageDeepLinkUseCase,
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
@@ -157,6 +159,7 @@ class FileOperationsViewModel(
             is FileOperation.SynchronizeFolderOperation -> syncFolderOperation(fileOperation)
             is FileOperation.RefreshFolderOperation -> refreshFolderOperation(fileOperation)
             is FileOperation.CreateFileWithAppProviderOperation -> createFileWithAppProvider(fileOperation)
+            is FileOperation.SetFileFavoriteStatus -> setFileFavoriteStatus(fileOperation)
         }
     }
 
@@ -348,6 +351,17 @@ class FileOperationsViewModel(
     private fun unsetFileAsAvailableOffline(fileOperation: FileOperation.UnsetFilesAsAvailableOffline) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             unsetFilesAsAvailableOfflineUseCase(UnsetFilesAsAvailableOfflineUseCase.Params(fileOperation.filesToUpdate))
+        }
+    }
+
+    private fun setFileFavoriteStatus(fileOperation: FileOperation.SetFileFavoriteStatus) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            setFileFavoriteStatusUseCase(
+                SetFileFavoriteStatusUseCase.Params(
+                    fileId = fileOperation.fileId,
+                    isFavorite = fileOperation.isFavorite,
+                )
+            )
         }
     }
 

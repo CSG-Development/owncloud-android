@@ -129,6 +129,15 @@ interface FileDao {
         accountOwner: String
     ): Flow<List<OCFileAndFileSync>>
 
+    @Transaction
+    @Query(SELECT_FAVORITE_FILES_FROM_ACCOUNT)
+    fun getFavoriteFilesWithSyncInfoForAccountAsFlow(
+        accountOwner: String
+    ): Flow<List<OCFileAndFileSync>>
+
+    @Query(UPDATE_FILE_FAVORITE_STATUS)
+    fun updateFileFavoriteStatus(id: Long, isFavorite: Boolean)
+
     @Query(SELECT_FILES_AVAILABLE_OFFLINE_FROM_ACCOUNT)
     fun getFilesAvailableOfflineFromAccount(
         accountOwner: String
@@ -643,6 +652,18 @@ interface FileDao {
             AND length >= :minSize AND length <= :maxSize
             AND (:mimePrefix = '' OR mimeType LIKE :mimePrefix || '%')
             AND modificationTimestamp >= :minDate AND modificationTimestamp <= :maxDate
+        """
+
+        private const val SELECT_FAVORITE_FILES_FROM_ACCOUNT = """
+            SELECT *
+            FROM ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
+            WHERE owner = :accountOwner AND isFavorite = 1
+        """
+
+        private const val UPDATE_FILE_FAVORITE_STATUS = """
+            UPDATE ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
+            SET isFavorite = :isFavorite
+            WHERE id = :id
         """
 
         private const val SEARCH_FILES_CASE_SENSITIVE = """

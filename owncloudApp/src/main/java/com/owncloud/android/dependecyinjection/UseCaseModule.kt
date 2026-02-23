@@ -63,6 +63,7 @@ import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
 import com.owncloud.android.domain.files.usecases.CopyFileUseCase
 import com.owncloud.android.domain.files.usecases.CreateFolderAsyncUseCase
 import com.owncloud.android.domain.files.usecases.DisableThumbnailsForFileUseCase
+import com.owncloud.android.domain.files.usecases.GetFavoriteFilesForAccountAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByIdAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
@@ -84,6 +85,7 @@ import com.owncloud.android.domain.files.usecases.SaveConflictUseCase
 import com.owncloud.android.domain.files.usecases.SaveDownloadWorkerUUIDUseCase
 import com.owncloud.android.domain.files.usecases.SaveFileOrFolderUseCase
 import com.owncloud.android.domain.files.usecases.SearchFilesUseCase
+import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
@@ -215,6 +217,8 @@ val useCaseModule = module {
     factoryOf(::SynchronizeFolderUseCase)
     factoryOf(::UpdateFoldersRecursivelyUseCase)
     factoryOf(::SearchFilesUseCase)
+    factoryOf(::GetFavoriteFilesForAccountAsStreamUseCase)
+    factoryOf(::SetFileFavoriteStatusUseCase)
 
     // Saved Searches
     factoryOf(::SaveSavedSearchUseCase)
