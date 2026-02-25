@@ -771,9 +771,10 @@
   <string name="welcome_feature_skip_button">Skip</string>
   <string name="whats_new_label">What\'s new</string>
   <string name="with_you_subject_header">with you</string>
-  <string name="homecloud_app_name_1">Personal Cloud</string>
-  <string name="homecloud_app_name_2">Files</string>
-  <string name="drawer_menu_sign_out">Sign out</string>
-  <string name="setup_btn_next">Next</string>
-  <string name="welcome_feature_done_button">Done</string>
+  <string name="drawer_menu_favorites">Favourites</string>
+  <string name="favorites_empty_title">No favourites found</string>
+  <string name="favorites_empty_subtitle">If you make an item a favourite, it will turn up here.</string>
+  <string name="favorite_toggle_description">Toggle favourite</string>
+  <string name="set_favorite">Favourite item</string>
+  <string name="unset_favorite">Unfavourite item</string>
 </resources>
