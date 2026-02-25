@@ -17,3 +17,15 @@ output:
     indent: 2
     escape_doublequotes: true
     indent_plural_quantities: true
+
+  - backend: "android"
+    namespace_paths:
+      - [ "Android", "homecloud" ]      
+    output_dir: "owncloudApp/src/main/res/"
+    output_filename: "strings_homecloud.xml"
+    default_locale: "en"
+    ignore_empty_strings: true
+    indent: 4
+    escape_doublequotes: true
+    indent_plural_quantities: true
+    ignore_empty_files: true
