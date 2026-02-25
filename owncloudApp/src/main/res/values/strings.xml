@@ -754,33 +754,26 @@
   <string name="wait_a_moment">Wait a moment</string>
   <string name="wait_checking_credentials">Checking stored credentials</string>
   <string name="wait_for_tmp_copy_from_private_storage">Copying file from private storage</string>
-
-    <!-- GLOBAL -->
-    <string name="drawer_menu_favorites">Favourites</string>
-    <string name="favorites_empty_title">No favourites found</string>
-    <string name="favorites_empty_subtitle">If you make an item a favourite, it will turn up here.</string>
-    <string name="favorite_toggle_description">Toggle favourite</string>
-    <string name="set_favorite">Favourite item</string>
-    <string name="unset_favorite">Unfavourite item</string>
-
-    <string name="with_you_subject_header">with you</string>
-
-    <!-- Welcome to oC intro features -->
-    <string name="welcome_feature_1_text">Securely upload, manage, and share your files with Personal Cloud Files, your private gateway to personal
+  <string name="welcome_feature_1_text">Securely upload, manage, and share your files with Personal Cloud Files, your private gateway to personal
         storage. \n\nWhether you\'re organizing files or sharing documents with family and friends, Personal Cloud Files keeps your data safe with
         simple access.</string>
-    <string name="welcome_feature_skip_button">Skip</string>
-    <string name="welcome_feature_1_title">Welcome to Personal Cloud Files</string>
-    <string name="welcome_feature_2_title">Sync your files to Personal Cloud</string>
-    <string name="welcome_feature_2_text">Use the desktop app to upload files directly from your computer to Personal Cloud Files. \n\nEnsure your
+  <string name="welcome_feature_1_title">Welcome to Personal Cloud Files</string>
+  <string name="welcome_feature_2_text">Use the desktop app to upload files directly from your computer to Personal Cloud Files. \n\nEnsure your
         files are synced and backed up to Personal Cloud for easy access across all your devices.</string>
-    <string name="welcome_feature_3_title">File deduplication</string>
-    <string name="welcome_feature_3_text">Identify and manage duplicate files uploaded to your account.
+  <string name="welcome_feature_2_title">Sync your files to Personal Cloud</string>
+  <string name="welcome_feature_3_text">Identify and manage duplicate files uploaded to your account.
 \n\nSee exactly how many copies exist and access them all from the Duplicates page.</string>
-    <string name="welcome_feature_4_title">Quickly find what you need</string>
-    <string name="welcome_feature_4_text">Search files on Personal Cloud by name, date, type, size, and folder.</string>
-    <string name="welcome_feature_5_title">Secure sharing made simple</string>
-    <string name="welcome_feature_5_text">Share files and folders securely with family and friends. You can control access by setting expiration dates for shared links so that files remain private over time.</string>
-
-    <string name="whats_new_label">What\'s new</string>
+  <string name="welcome_feature_3_title">File deduplication</string>
+  <string name="welcome_feature_4_text">Search files on Personal Cloud by name, date, type, size, and folder.</string>
+  <string name="welcome_feature_4_title">Quickly find what you need</string>
+  <string name="welcome_feature_5_text">Share files and folders securely with family and friends. You can control access by setting expiration dates for shared links so that files remain private over time.</string>
+  <string name="welcome_feature_5_title">Secure sharing made simple</string>
+  <string name="welcome_feature_skip_button">Skip</string>
+  <string name="whats_new_label">What\'s new</string>
+  <string name="with_you_subject_header">with you</string>
+  <string name="homecloud_app_name_1">Personal Cloud</string>
+  <string name="homecloud_app_name_2">Files</string>
+  <string name="drawer_menu_sign_out">Sign out</string>
+  <string name="setup_btn_next">Next</string>
+  <string name="welcome_feature_done_button">Done</string>
 </resources>
