@@ -41,3 +41,5 @@ lint-*ml
 
 # Prevent exidental commits of build folders
 owncloudApp/release
+
+homecloud-l10n-5f2611435b25.json

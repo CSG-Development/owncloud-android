@@ -119,8 +119,9 @@ class VerificationCodeView @JvmOverloads constructor(
     }
 
     private fun createEditText(index: Int): PasteAwareEditText {
+        val size = resources.getDimensionPixelSize(R.dimen.homecloud_code_edit_size)
         val et = PasteAwareEditText(context).apply {
-            layoutParams = LayoutParams(40.dpToPx(), LayoutParams.MATCH_PARENT).apply {
+            layoutParams = LayoutParams(size, LayoutParams.MATCH_PARENT).apply {
                 marginEnd = if (index < codeLength - 1) 8 else 0
             }
 

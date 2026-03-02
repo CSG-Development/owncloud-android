@@ -1,5 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
   <string name="common_error_unknown">ຂໍ້ຜິດພາດທີ່ບໍ່ຮູ້ສາເຫດ</string>
   <string name="uploads_view_upload_status_unknown_fail">ຂໍ້ຜິດພາດທີ່ບໍ່ຮູ້ສາເຫດ</string>
 </resources>

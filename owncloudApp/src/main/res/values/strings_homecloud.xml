@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- AUTO-GENERATED WITH LOCALIZATION TOOL -->
     <string name="drawer_menu_sign_out">Sign out</string>
     <string name="setup_btn_next">Next</string>
     <string name="welcome_feature_done_button">Done</string>
@@ -60,8 +61,6 @@
     <string name="homecloud_email_not_registered_dialog_description">This email isn’t authorized to access this device. Please contact the owner.</string>
     <string name="homecloud_cancel">Cancel</string>
     <string name="homecloud_ok">OK</string>
-
-    <!-- Unable to connect state -->
     <string name="homecloud_unable_to_detect_title">Unable to detect</string>
     <string name="homecloud_unable_to_connect_title">Unable to connect</string>
     <string name="homecloud_unable_to_connect_description">We are unable to detect your device. Please ensure the following:</string>

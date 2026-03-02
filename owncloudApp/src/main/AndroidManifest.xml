@@ -76,6 +76,11 @@
             android:name=".presentation.settings.privacypolicy.PrivacyPolicyActivity"
             android:label="@string/actionbar_privacy_policy" />
         <activity android:name=".presentation.settings.SettingsActivity" />
+        <activity
+            android:name=".presentation.files.favorites.FavoritesActivity"
+            android:label="@string/drawer_menu_favorites"
+            android:theme="@style/Theme.homeCloud.Toolbar"
+            android:exported="false" />
         <activity android:name=".presentation.migration.StorageMigrationActivity" />
         <activity
             android:name=".ui.activity.SplashActivity"

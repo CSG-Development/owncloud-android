@@ -58,6 +58,7 @@ data class OCFile(
     var sharedWithSharee: Boolean? = false,
     var sharedByLink: Boolean = false,
     val spaceId: String? = null,
+    var isFavorite: Boolean = false,
 ) : Parcelable {
 
     val fileName: String
@@ -209,6 +210,7 @@ data class OCFile(
         etagInConflict = sourceFile.etagInConflict
         availableOfflineStatus = sourceFile.availableOfflineStatus
         lastUsage = sourceFile.lastUsage
+        isFavorite = sourceFile.isFavorite
     }
 
     /**

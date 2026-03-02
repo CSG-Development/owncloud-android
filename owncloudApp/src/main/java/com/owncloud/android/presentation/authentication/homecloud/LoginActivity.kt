@@ -399,7 +399,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.serversRefreshLoading.visibility = View.GONE
             binding.backButton.visibility = View.GONE
             binding.loadingLayout.visibility = View.VISIBLE
-            binding.actionGroup.visibility = View.GONE
+            binding.actionButton.visibility = View.GONE
             binding.loginStateGroup.visibility = View.GONE
         } else {
             binding.accountUsernameText.visibility = View.VISIBLE
@@ -407,7 +407,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
             binding.backButton.visibility = View.VISIBLE
             binding.loadingLayout.visibility = View.GONE
-            binding.actionGroup.visibility = View.VISIBLE
+            binding.actionButton.visibility = View.VISIBLE
             binding.loginStateGroup.visibility = View.VISIBLE
             binding.actionButton.setText(R.string.setup_btn_login)
             if (state.isActionButtonLoading) {

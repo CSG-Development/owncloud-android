@@ -40,7 +40,7 @@ import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
-import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase.*
+import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase.Params
 import com.owncloud.android.domain.files.usecases.GetFolderContentAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.GetSharedByLinkForAccountAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
@@ -261,6 +261,10 @@ class MainFileListViewModel(
                     FileListOption.GLOBAL_SEARCH -> {
                         parentDir = null
                     }
+
+                    FileListOption.FAVORITES -> {
+                        parentDir = null
+                    }
                 }
             } else if (parentId == ROOT_PARENT_ID) {
                 // Browsing to parent folder. Root
@@ -404,6 +408,7 @@ class MainFileListViewModel(
             FileListOption.SPACES_LIST -> flowOf()
             FileListOption.UPLOADS_LIST -> flowOf()
             FileListOption.GLOBAL_SEARCH -> flowOf()
+            FileListOption.FAVORITES -> flowOf()
         }.toFileListUiState(
             currentFolderDisplayed,
             fileListOption,
