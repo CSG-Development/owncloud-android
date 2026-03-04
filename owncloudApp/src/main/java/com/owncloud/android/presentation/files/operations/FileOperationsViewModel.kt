@@ -24,6 +24,7 @@
 package com.owncloud.android.presentation.files.operations
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
@@ -49,6 +50,7 @@ import com.owncloud.android.domain.files.usecases.RemoveFileUseCase
 import com.owncloud.android.domain.files.usecases.RenameFileUseCase
 import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsForAccountUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
 import com.owncloud.android.presentation.common.UIResult
@@ -81,6 +83,7 @@ class FileOperationsViewModel(
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
     private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
+    private val getTagsForAccountUseCase: GetTagsForAccountUseCase,
     private val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
@@ -325,6 +328,12 @@ class FileOperationsViewModel(
             ),
             errorHandler = networkErrorHandler,
         )
+
+
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val res = getTagsForAccountUseCase.invoke(GetTagsForAccountUseCase.Params(fileOperation.folderToRefresh.owner))
+            Timber.d(res.getDataOrNull()?.toString())
+        }
     }
 
     private fun createFileWithAppProvider(fileOperation: FileOperation.CreateFileWithAppProviderOperation) {

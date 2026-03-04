@@ -37,6 +37,7 @@ import com.owncloud.android.data.server.repository.OCServerInfoRepository
 import com.owncloud.android.data.sharing.sharees.repository.OCShareeRepository
 import com.owncloud.android.data.sharing.shares.repository.OCShareRepository
 import com.owncloud.android.data.spaces.repository.OCSpacesRepository
+import com.owncloud.android.data.tags.repository.OCTagRepository
 import com.owncloud.android.data.transfers.repository.OCTransferRepository
 import com.owncloud.android.data.user.repository.HCCurrentUserRepository
 import com.owncloud.android.data.user.repository.OCUserRepository
@@ -56,6 +57,7 @@ import com.owncloud.android.domain.server.ServerInfoRepository
 import com.owncloud.android.domain.sharing.sharees.ShareeRepository
 import com.owncloud.android.domain.sharing.shares.ShareRepository
 import com.owncloud.android.domain.spaces.SpacesRepository
+import com.owncloud.android.domain.tags.TagRepository
 import com.owncloud.android.domain.transfers.TransferRepository
 import com.owncloud.android.domain.user.CurrentUserRepository
 import com.owncloud.android.domain.user.UserRepository
@@ -75,6 +77,7 @@ val repositoryModule = module {
     factoryOf(::OCShareRepository) bind ShareRepository::class
     factoryOf(::OCShareeRepository) bind ShareeRepository::class
     factoryOf(::OCSpacesRepository) bind SpacesRepository::class
+    factoryOf(::OCTagRepository) bind TagRepository::class
     factoryOf(::OCSavedSearchesRepository) bind SavedSearchesRepository::class
     factoryOf(::OCTransferRepository) bind TransferRepository::class
     factoryOf(::OCUserRepository) bind UserRepository::class
