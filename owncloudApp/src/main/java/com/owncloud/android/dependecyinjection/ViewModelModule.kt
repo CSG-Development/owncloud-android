@@ -89,7 +89,6 @@ val viewModelModule = module {
     viewModelOf(::SettingsSecurityViewModel)
     viewModelOf(::SettingsVideoUploadsViewModel)
     viewModelOf(::SettingsViewModel)
-    viewModelOf(::FileOperationsViewModel)
     viewModelOf(::FavoritesViewModel)
     viewModelOf(::GlobalSearchViewModel)
 

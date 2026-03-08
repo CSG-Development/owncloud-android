@@ -42,6 +42,8 @@ import com.owncloud.android.lib.resources.spaces.services.OCSpacesService
 import com.owncloud.android.lib.resources.spaces.services.SpacesService
 import com.owncloud.android.lib.resources.status.services.CapabilityService
 import com.owncloud.android.lib.resources.status.services.implementation.OCCapabilityService
+import com.owncloud.android.lib.resources.tags.services.TagService
+import com.owncloud.android.lib.resources.tags.services.implementation.OCTagService
 import com.owncloud.android.lib.resources.users.services.UserService
 import com.owncloud.android.lib.resources.users.services.implementation.OCUserService
 import timber.log.Timber
@@ -154,6 +156,11 @@ class ClientManager(
     fun getSpacesService(accountName: String): SpacesService {
         val ownCloudClient = getClientForAccount(accountName)
         return OCSpacesService(client = ownCloudClient)
+    }
+
+    fun getTagService(accountName: String? = ""): TagService {
+        val ownCloudClient = getClientForAccount(accountName)
+        return OCTagService(client = ownCloudClient)
     }
 
     fun getAppRegistryService(accountName: String): AppRegistryService {
