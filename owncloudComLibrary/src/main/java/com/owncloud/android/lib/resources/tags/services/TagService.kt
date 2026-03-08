@@ -6,4 +6,5 @@ import com.owncloud.android.lib.resources.tags.RemoteTag
 
 interface TagService : Service {
     fun getSystemTags(): RemoteOperationResult<List<RemoteTag>>
+    fun getFileIdsByTag(tagId: String): RemoteOperationResult<List<String>>
 }

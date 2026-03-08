@@ -195,6 +195,10 @@ class OCFileRepository(
         }
     }
 
+    override fun getFileByRemoteId(remoteId: String): OCFile? {
+        return localFileDataSource.getFileByRemoteId(remoteId)
+    }
+
     override fun getPersonalRootFolderForAccount(owner: String): OCFile {
         val personalSpace = localSpacesDataSource.getPersonalSpaceForAccount(owner)
         if (personalSpace == null) {

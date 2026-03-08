@@ -31,7 +31,7 @@ public class ProviderMeta {
 
     public static final String DB_NAME = "filelist";
     public static final String NEW_DB_NAME = "owncloud_database";
-    public static final int DB_VERSION = 49;
+    public static final int DB_VERSION = 50;
 
     private ProviderMeta() {
     }
@@ -49,6 +49,8 @@ public class ProviderMeta {
 
         public static final String APP_REGISTRY_TABLE_NAME = "app_registry";
         public static final String SAVED_SEARCHES_TABLE_NAME = "saved_searches";
+        public static final String TAGS_TABLE_NAME = "tags";
+        public static final String FILE_TAGS_TABLE_NAME = "file_tags";
 
         // Columns of ocshares table
         public static final String OCSHARES_ACCOUNT_OWNER = "owner_share";

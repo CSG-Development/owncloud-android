@@ -15,6 +15,11 @@ class OCRemoteTagDataSource(
             clientManager.getTagService(accountName).getSystemTags()
         }.map { it.toModel() }
 
+    override fun getFileRemoteIdsByTag(accountName: String, tagId: String): List<String> =
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).getFileIdsByTag(tagId)
+        }
+
     companion object {
         fun RemoteTag.toModel(): OCTag =
             OCTag(
