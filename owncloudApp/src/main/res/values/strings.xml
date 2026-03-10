@@ -777,4 +777,10 @@
   <string name="favorite_toggle_description">Toggle favourite</string>
   <string name="set_favorite">Favourite item</string>
   <string name="unset_favorite">Unfavourite item</string>
+
+  <string name="drawer_menu_tags">Tags</string>
+  <string name="tags_empty_title">No tags created yet</string>
+  <string name="tags_add">Add tag</string>
+  <string name="tags_edit">Edit tag</string>
+  <string name="tags_delete">Delete tag</string>
 </resources>

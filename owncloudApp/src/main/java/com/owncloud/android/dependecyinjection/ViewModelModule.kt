@@ -37,6 +37,7 @@ import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.conflicts.ConflictsResolveViewModel
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel
 import com.owncloud.android.presentation.files.favorites.FavoritesViewModel
+import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchViewModel
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
@@ -91,6 +92,7 @@ val viewModelModule = module {
     viewModelOf(::SettingsViewModel)
     viewModelOf(::FavoritesViewModel)
     viewModelOf(::GlobalSearchViewModel)
+    viewModelOf(::TagsViewModel)
 
     viewModel { (accountName: String) -> CapabilityViewModel(accountName, get(), get(), get(), get()) }
     viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action, get(), get(), get()) }

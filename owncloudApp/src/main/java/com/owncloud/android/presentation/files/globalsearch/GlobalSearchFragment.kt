@@ -46,7 +46,6 @@ import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
-import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 import timber.log.Timber
@@ -60,7 +59,7 @@ class GlobalSearchFragment : Fragment(),
     private val binding get() = _binding ?: throw IllegalStateException("View binding is only valid between onCreateView and onDestroyView")
 
     private val globalSearchViewModel: GlobalSearchViewModel by viewModel()
-    private val fileOperationsViewModel by sharedViewModel<FileOperationsViewModel>()
+    private val fileOperationsViewModel by activityViewModel<FileOperationsViewModel>()
 
     private val capabilityViewModel: CapabilityViewModel by activityViewModel {
         parametersOf(
