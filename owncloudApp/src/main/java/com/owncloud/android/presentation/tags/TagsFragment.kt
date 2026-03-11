@@ -64,6 +64,11 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener {
         binding.recyclerViewTags.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerViewTags.adapter = tagsAdapter
         binding.recyclerViewTags.addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
+
+        binding.swipeRefreshTags.setOnRefreshListener {
+            val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name
+            accountName?.let { tagsViewModel.loadTags(it) }
+        }
     }
 
     private fun subscribeToViewModels() {
@@ -78,18 +83,19 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener {
     }
 
     private fun showLoading() {
-        binding.recyclerViewTags.isVisible = false
+        binding.swipeRefreshTags.isRefreshing = true
         binding.tagsListEmpty.root.isVisible = false
     }
 
     private fun showResults(tags: List<OCTag>) {
-        binding.recyclerViewTags.isVisible = true
+        binding.swipeRefreshTags.isRefreshing = false
+        binding.swipeRefreshTags.isVisible = true
         binding.tagsListEmpty.root.isVisible = false
         tagsAdapter.submitList(tags)
     }
 
     private fun showEmptyState() {
-        binding.recyclerViewTags.isVisible = false
+        binding.swipeRefreshTags.isRefreshing = false
         binding.tagsListEmpty.root.isVisible = true
         binding.tagsListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_tag_big)
         binding.tagsListEmpty.listEmptyDatasetTitle.textSize = 20f
