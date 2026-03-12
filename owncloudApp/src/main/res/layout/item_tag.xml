@@ -17,6 +17,7 @@
         android:maxLines="1"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="@dimen/two_line_primary_text_size"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btn_edit_tag"
         app:layout_constraintStart_toStartOf="parent"
