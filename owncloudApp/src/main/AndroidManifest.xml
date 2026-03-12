@@ -81,6 +81,11 @@
             android:label="@string/drawer_menu_favorites"
             android:theme="@style/Theme.homeCloud.Toolbar"
             android:exported="false" />
+        <activity
+            android:name=".presentation.tags.TagsActivity"
+            android:label="@string/drawer_menu_tags"
+            android:theme="@style/Theme.homeCloud.Toolbar"
+            android:exported="false" />
         <activity android:name=".presentation.migration.StorageMigrationActivity" />
         <activity
             android:name=".ui.activity.SplashActivity"

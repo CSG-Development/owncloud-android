@@ -111,13 +111,6 @@ import com.owncloud.android.domain.sharing.shares.usecases.EditPublicShareAsyncU
 import com.owncloud.android.domain.sharing.shares.usecases.GetShareAsLiveDataUseCase
 import com.owncloud.android.domain.sharing.shares.usecases.GetSharesAsLiveDataUseCase
 import com.owncloud.android.domain.sharing.shares.usecases.RefreshSharesFromServerAsyncUseCase
-import com.owncloud.android.domain.tags.usecases.AssignTagToFileUseCase
-import com.owncloud.android.domain.tags.usecases.GetFileIdsByTagUseCase
-import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
-import com.owncloud.android.domain.tags.usecases.GetTagsForFileUseCase
-import com.owncloud.android.domain.tags.usecases.RefreshFilesByTagUseCase
-import com.owncloud.android.domain.tags.usecases.RefreshTagsFromServerUseCase
-import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
 import com.owncloud.android.domain.spaces.usecases.GetPersonalAndProjectSpacesForAccountUseCase
 import com.owncloud.android.domain.spaces.usecases.GetPersonalAndProjectSpacesWithSpecialsForAccountAsStreamUseCase
 import com.owncloud.android.domain.spaces.usecases.GetPersonalSpaceForAccountUseCase
@@ -127,6 +120,16 @@ import com.owncloud.android.domain.spaces.usecases.GetSpaceByIdForAccountUseCase
 import com.owncloud.android.domain.spaces.usecases.GetSpaceWithSpecialsByIdForAccountUseCase
 import com.owncloud.android.domain.spaces.usecases.GetSpacesFromEveryAccountUseCaseAsStream
 import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncUseCase
+import com.owncloud.android.domain.tags.usecases.AssignTagToFileUseCase
+import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
+import com.owncloud.android.domain.tags.usecases.DeleteTagUseCase
+import com.owncloud.android.domain.tags.usecases.GetFileIdsByTagUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsForFileUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshFilesByTagUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshTagsFromServerUseCase
+import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
+import com.owncloud.android.domain.tags.usecases.UpdateTagUseCase
 import com.owncloud.android.domain.transfers.usecases.ClearSuccessfulTransfersUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersAsStreamUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersUseCase
@@ -265,6 +268,9 @@ val useCaseModule = module {
     factoryOf(::RefreshFilesByTagUseCase)
     factoryOf(::RefreshTagsFromServerUseCase)
     factoryOf(::RemoveTagFromFileUseCase)
+    factoryOf(::CreateTagUseCase)
+    factoryOf(::UpdateTagUseCase)
+    factoryOf(::DeleteTagUseCase)
 
     // Spaces
     factoryOf(::GetPersonalAndProjectSpacesForAccountUseCase)

@@ -20,6 +20,23 @@ class OCRemoteTagDataSource(
             clientManager.getTagService(accountName).getFileIdsByTag(tagId)
         }
 
+    override fun createTag(accountName: String, name: String, userVisible: Boolean, userAssignable: Boolean): String =
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).createTag(name, userVisible, userAssignable)
+        }
+
+    override fun updateTag(accountName: String, tagId: String, displayName: String?, userVisible: Boolean?, userAssignable: Boolean?) {
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).updateTag(tagId, displayName, userVisible, userAssignable)
+        }
+    }
+
+    override fun deleteTag(accountName: String, tagId: String) {
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).deleteTag(tagId)
+        }
+    }
+
     companion object {
         fun RemoteTag.toModel(): OCTag =
             OCTag(

@@ -48,6 +48,24 @@ class OCLocalTagDataSource(
         tagDao.replaceFileAssociationsForTag(tagEntity.id, fileLocalIds)
     }
 
+    override fun saveTag(accountOwner: String, tag: OCTag) {
+        tagDao.upsertTag(tag.toEntity(accountOwner))
+    }
+
+    override fun updateTag(accountOwner: String, tag: OCTag) {
+        tagDao.updateTagByServerTagId(
+            accountOwner = accountOwner,
+            serverTagId = tag.id ?: return,
+            displayName = tag.displayName,
+            userVisible = tag.userVisible,
+            userAssignable = tag.userAssignable,
+        )
+    }
+
+    override fun deleteTag(accountOwner: String, serverTagId: String) {
+        tagDao.deleteTagByServerTagId(accountOwner, serverTagId)
+    }
+
     override fun deleteTagsForAccount(accountOwner: String) {
         tagDao.deleteTagsForAccount(accountOwner)
     }

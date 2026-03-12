@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Upsert
 import com.owncloud.android.data.files.db.OCFileEntity
 
 @Dao
@@ -64,6 +63,21 @@ interface TagDao {
 
     @Query("DELETE FROM tags WHERE accountOwner = :accountOwner")
     fun deleteTagsForAccount(accountOwner: String)
+
+    @Query("DELETE FROM tags WHERE accountOwner = :accountOwner AND tagId = :serverTagId")
+    fun deleteTagByServerTagId(accountOwner: String, serverTagId: String)
+
+    @Query(
+        "UPDATE tags SET displayName = :displayName, userVisible = :userVisible, userAssignable = :userAssignable " +
+                "WHERE accountOwner = :accountOwner AND tagId = :serverTagId"
+    )
+    fun updateTagByServerTagId(
+        accountOwner: String,
+        serverTagId: String,
+        displayName: String?,
+        userVisible: Boolean,
+        userAssignable: Boolean,
+    )
 
     @Query("DELETE FROM file_tags WHERE fileId = :fileId")
     fun deleteAllTagsForFile(fileId: Long)
