@@ -783,4 +783,10 @@
   <string name="tags_add">Add tag</string>
   <string name="tags_edit">Edit tag</string>
   <string name="tags_delete">Delete tag</string>
+  <string name="tags_remove_title">Remove tag</string>
+  <string name="tags_remove_confirmation_prefix">Do you really want to remove the tag </string>
+  <string name="tags_remove_confirmation_suffix"> and unassign it from all files and folders?</string>
+  <string name="tags_remove_button">Remove</string>
+  <string name="tags_add_hint">Add new tag</string>
+  <string name="tags_edit_hint">Edit tag</string>
 </resources>
