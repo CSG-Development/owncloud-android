@@ -77,6 +77,7 @@ import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.favorites.FavoritesActivity
 import com.owncloud.android.presentation.settings.SettingsActivity
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -237,6 +238,10 @@ abstract class DrawerActivity : ToolbarActivity() {
                 R.id.drawer_menu_favorites -> {
                     val favoritesIntent = Intent(applicationContext, FavoritesActivity::class.java)
                     startActivity(favoritesIntent)
+                }
+                R.id.drawer_menu_tags -> {
+                    val tagsIntent = Intent(applicationContext, TagsActivity::class.java)
+                    startActivity(tagsIntent)
                 }
                 else -> { Timber.i("Unknown drawer menu item clicked: %s", menuItem.title) }
             }
