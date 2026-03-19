@@ -33,6 +33,8 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         TagsAdapter(listener = this)
     }
 
+    private var lastCreatedTagName: String? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = TagsFragmentBinding.inflate(inflater, container, false)
         return binding.root
@@ -95,7 +97,14 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         binding.swipeRefreshTags.isRefreshing = false
         binding.swipeRefreshTags.isVisible = true
         binding.tagsListEmpty.root.isVisible = false
-        tagsAdapter.submitList(tags)
+        val createdTagName = lastCreatedTagName
+        tagsAdapter.submitList(tags) {
+            if (createdTagName != null) {
+                lastCreatedTagName = null
+                val position = tags.indexOfFirst { it.displayName == createdTagName }
+                if (position >= 0) binding.recyclerViewTags.scrollToPosition(position)
+            }
+        }
     }
 
     private fun showEmptyState() {
@@ -106,6 +115,12 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         binding.tagsListEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
         binding.tagsListEmpty.listEmptyDatasetTitle.setText(R.string.tags_empty_title)
         binding.tagsListEmpty.listEmptyDatasetSubTitle.isVisible = false
+    }
+
+    override fun onTagClick(tag: OCTag) {
+        val tagId = tag.id ?: return
+        val tagsActivity = requireActivity() as? TagsActivity
+        tagsActivity?.showTagFiles(tagId, tag.displayName.orEmpty())
     }
 
     override fun onEditTag(tag: OCTag) {
@@ -119,6 +134,7 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         if (tagId != null) {
             tagsViewModel.updateTag(accountName, tagId, tagName)
         } else {
+            lastCreatedTagName = tagName
             tagsViewModel.createTag(accountName, tagName)
         }
     }
