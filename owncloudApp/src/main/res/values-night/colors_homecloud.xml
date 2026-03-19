@@ -78,6 +78,7 @@
     <color name="homecloud_text_error_lock">#F28F8C</color>
 
     <color name="homecloud_server_list_dropdown">#1D1E21</color>
+    <color name="homecloud_tags_list_remove_icon">#F2918A</color>
 
     <!-- Reconnecting snackbar -->
     <color name="homecloud_reconnecting_snackbar_background">#B8B8B8</color>

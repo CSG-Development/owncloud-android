@@ -1,10 +1,7 @@
 package com.owncloud.android.presentation.tags
 
 import android.app.Dialog
-import android.graphics.Typeface
 import android.os.Bundle
-import android.text.SpannableStringBuilder
-import android.text.style.StyleSpan
 import android.view.WindowManager
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
@@ -40,13 +37,9 @@ class TagDialogFragment : DialogFragment() {
 
         val titleRes = if (isEdit) R.string.tags_edit else R.string.tags_add
 
-        val title = SpannableStringBuilder(getString(titleRes)).apply {
-            setSpan(StyleSpan(Typeface.BOLD), 0, length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-
         val builder = MaterialAlertDialogBuilder(requireActivity())
             .setView(view)
-            .setTitle(title)
+            .setTitle(getString(titleRes))
             .setPositiveButton(android.R.string.ok, null)
             .setNegativeButton(android.R.string.cancel, null)
 

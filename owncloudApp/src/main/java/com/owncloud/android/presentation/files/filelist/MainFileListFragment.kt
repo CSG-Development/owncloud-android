@@ -364,11 +364,12 @@ class MainFileListFragment : FileFragment(),
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        (menu.findItem(R.id.action_search).actionView as SearchView).run {
-            setOnQueryTextListener(this@MainFileListFragment)
-            queryHint = resources.getString(R.string.actionbar_search)
+        val actionView = menu.findItem(R.id.action_search)?.actionView as SearchView?
+        actionView?.let {
+            it.setOnQueryTextListener(this@MainFileListFragment)
+            it.queryHint = resources.getString(R.string.actionbar_search)
         }
-        (menu.findItem(R.id.action_select_all)).setOnMenuItemClickListener {
+        (menu.findItem(R.id.action_select_all))?.setOnMenuItemClickListener {
             fileListAdapter.selectAll()
             updateActionModeAfterTogglingSelected()
             true
