@@ -23,6 +23,7 @@ class TagDialogFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val isEdit = tagId != null
         val currentName = arguments?.getString(ARG_CURRENT_NAME).orEmpty()
+        val existingTagNames = arguments?.getStringArrayList(ARG_EXISTING_NAMES) ?: arrayListOf()
 
         val inflater = requireActivity().layoutInflater
         val view = inflater.inflate(R.layout.edit_box_dialog, null)
@@ -47,7 +48,8 @@ class TagDialogFragment : DialogFragment() {
 
         alertDialog.setOnShowListener {
             val okButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            okButton.isEnabled = currentName.isNotBlank()
+            val initialError = validate(currentName, existingTagNames)
+            okButton.isEnabled = currentName.isNotBlank() && initialError == null
 
             okButton.setOnClickListener {
                 val name = inputText.text.toString().trim()
@@ -57,29 +59,51 @@ class TagDialogFragment : DialogFragment() {
         }
 
         inputText.doOnTextChanged { text, _, _, _ ->
+            val name = text?.toString().orEmpty().trim()
             val okButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            okButton.isEnabled = !text.isNullOrBlank()
+            if (name.isBlank()) {
+                inputLayout.error = null
+                okButton.isEnabled = false
+            } else {
+                val error = validate(name, existingTagNames)
+                inputLayout.error = error
+                okButton.isEnabled = error == null
+            }
         }
 
         alertDialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         return alertDialog
     }
 
+    private fun validate(name: String, existingTagNames: List<String>): String? = when {
+        specialCharRegex.containsMatchIn(name) -> getString(R.string.tags_error_special_characters)
+        name.length > MAX_TAG_LENGTH -> getString(R.string.tags_error_max_length)
+        existingTagNames.any { it.equals(name, ignoreCase = true) } -> getString(R.string.tags_error_already_exists)
+        else -> null
+    }
+
     companion object {
         const val TAG_DIALOG_FRAGMENT = "TAG_DIALOG_FRAGMENT"
         private const val ARG_CURRENT_NAME = "ARG_CURRENT_NAME"
+        private const val ARG_EXISTING_NAMES = "ARG_EXISTING_NAMES"
+        private const val MAX_TAG_LENGTH = 30
+        private val specialCharRegex = Regex("[^\\p{L}\\p{N} _\\-]")
 
-        fun newAddInstance(listener: TagDialogListener): TagDialogFragment =
+        fun newAddInstance(listener: TagDialogListener, existingTagNames: List<String> = emptyList()): TagDialogFragment =
             TagDialogFragment().apply {
                 this.listener = listener
+                arguments = Bundle().apply {
+                    putStringArrayList(ARG_EXISTING_NAMES, ArrayList(existingTagNames))
+                }
             }
 
-        fun newEditInstance(tagId: String, currentName: String, listener: TagDialogListener): TagDialogFragment =
+        fun newEditInstance(tagId: String, currentName: String, listener: TagDialogListener, existingTagNames: List<String> = emptyList()): TagDialogFragment =
             TagDialogFragment().apply {
                 this.listener = listener
                 this.tagId = tagId
                 arguments = Bundle().apply {
                     putString(ARG_CURRENT_NAME, currentName)
+                    putStringArrayList(ARG_EXISTING_NAMES, ArrayList(existingTagNames))
                 }
             }
     }

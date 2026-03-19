@@ -58,7 +58,7 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_add_tag -> {
-                TagDialogFragment.newAddInstance(this)
+                TagDialogFragment.newAddInstance(this, existingTagNames())
                     .show(parentFragmentManager, TagDialogFragment.TAG_DIALOG_FRAGMENT)
                 true
             }
@@ -125,9 +125,13 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
 
     override fun onEditTag(tag: OCTag) {
         val tagId = tag.id ?: return
-        TagDialogFragment.newEditInstance(tagId, tag.displayName.orEmpty(), this)
+        val otherNames = existingTagNames().filter { !it.equals(tag.displayName.orEmpty(), ignoreCase = true) }
+        TagDialogFragment.newEditInstance(tagId, tag.displayName.orEmpty(), this, otherNames)
             .show(parentFragmentManager, TagDialogFragment.TAG_DIALOG_FRAGMENT)
     }
+
+    private fun existingTagNames(): List<String> =
+        tagsAdapter.currentList.mapNotNull { it.displayName }
 
     override fun onTagNameSet(tagName: String, tagId: String?) {
         val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name ?: return
