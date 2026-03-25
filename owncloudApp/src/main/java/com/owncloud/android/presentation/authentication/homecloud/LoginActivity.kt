@@ -368,6 +368,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                         }
                     }
                 } else {
+                    binding.errorMessage.visibility = View.GONE
                     // Show main scroll view, hide unable to connect
                     binding.scrollView.visibility = View.VISIBLE
                     binding.unableToConnectLayout.unableToConnectContainer.visibility = View.GONE
