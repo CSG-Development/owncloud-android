@@ -18,7 +18,6 @@
             android:id="@+id/layout_login"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="80dp"
             android:paddingHorizontal="24dp">
 
             <ImageView
@@ -30,7 +29,7 @@
                 android:src="@drawable/ic_login_logo"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintVertical_bias="0.4"
+                app:layout_constraintVertical_bias="0.3"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -51,13 +50,14 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/hostUrlInputLayout"
-                android:layout_width="330dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="@string/homecloud_login_server_address_hint"
                 style="@style/homeCloud.TextInputLayout.OutlinedBox"
                 app:layout_constraintTop_toBottomOf="@id/account_username_text"
                 app:layout_constraintStart_toStartOf="@id/account_password_container"
+                app:layout_constraintEnd_toStartOf="@id/servers_refresh_button"
                 app:endIconMode="dropdown_menu"
                 app:startIconTintMode="screen"
                 app:startIconTint="@color/transparent"
@@ -97,6 +97,7 @@
                 app:tint="?attr/colorOnSecondaryContainer"
                 app:layout_constraintVertical_bias="0.4"
                 app:layout_constraintStart_toEndOf="@id/hostUrlInputLayout"
+                app:layout_constraintEnd_toEndOf="@id/account_password_container"
                 app:layout_constraintTop_toTopOf="@id/hostUrlInputLayout"
                 app:layout_constraintBottom_toBottomOf="@id/hostUrlInputLayout" />
 
@@ -110,12 +111,14 @@
                 app:indicatorSize="24dp"
                 app:layout_constraintVertical_bias="0.5"
                 app:layout_constraintStart_toEndOf="@id/hostUrlInputLayout"
+                app:layout_constraintEnd_toEndOf="@id/account_password_container"
                 app:layout_constraintTop_toTopOf="@id/hostUrlInputLayout"
                 app:layout_constraintBottom_toBottomOf="@id/hostUrlInputLayout"/>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/account_username_container"
-                android:layout_width="360dp"
+                android:layout_width="0dp"
+                app:layout_constraintWidth_max="360dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 app:errorEnabled="true"
@@ -162,10 +165,18 @@
                 app:barrierDirection="bottom"
                 app:constraint_referenced_ids="reset_password_link,account_username_container" />
 
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/input_bottom_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="account_username_container,error_message" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/account_password_container"
-                android:layout_width="360dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                app:layout_constraintWidth_max="360dp"
                 android:layout_marginTop="16dp"
                 app:endIconDrawable="@drawable/ic_password_toggle"
                 app:endIconMode="password_toggle"
@@ -244,6 +255,19 @@
                 android:textAlignment="center"
                 android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+            <com.owncloud.android.ui.custom.LoadingButton
+                android:id="@+id/actionButton"
+                android:layout_width="0dp"
+                app:layout_constraintWidth_max="360dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="32dp"
+                android:contentDescription="@string/setup_btn_login"
+                app:buttonText="@string/setup_btn_login"
+                app:layout_constraintTop_toBottomOf="@id/error_message"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
@@ -278,13 +302,5 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <com.owncloud.android.ui.custom.LoadingButton
-        android:id="@+id/actionButton"
-        android:layout_width="360dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:layout_gravity="bottom|center"
-        android:contentDescription="@string/setup_btn_login"
-        app:buttonText="@string/setup_btn_login"/>
 
 </FrameLayout>

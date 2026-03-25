@@ -96,7 +96,7 @@ class LoginViewModel(
         _state.update { currentState ->
             when (currentState) {
                 is LoginScreenState.EmailState -> currentState.copy(username = username, errorEmailInvalidMessage = null)
-                is LoginScreenState.LoginState -> currentState.copy(username = username)
+                is LoginScreenState.LoginState -> currentState.copy(username = username, authError = null)
             }
         }
     }
@@ -104,8 +104,8 @@ class LoginViewModel(
     fun onPasswordChanged(password: String) {
         _state.update { currentState ->
             when (currentState) {
-                is LoginScreenState.LoginState -> currentState.copy(password = password)
-                is LoginScreenState.EmailState -> currentState
+                is LoginScreenState.EmailState -> currentState.copy(errorEmailInvalidMessage = null)
+                is LoginScreenState.LoginState -> currentState.copy(password = password, authError = null)
             }
         }
     }
@@ -162,7 +162,7 @@ class LoginViewModel(
 
                         else -> {
                             _state.update {
-                                LoginScreenState.EmailState(username = currentState.username)
+                                LoginScreenState.EmailState(username = currentState.username, errorEmailInvalidMessage = null)
                             }
                         }
                     }
