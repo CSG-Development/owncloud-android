@@ -313,6 +313,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         setSelectedDevice(state.selectedDevice)
         when (state) {
             is LoginScreenState.EmailState -> {
+                binding.errorMessage.visibility = View.GONE
                 // Show main scroll view, hide unable to connect
                 binding.scrollView.visibility = View.VISIBLE
                 binding.unableToConnectLayout.unableToConnectContainer.visibility = View.GONE

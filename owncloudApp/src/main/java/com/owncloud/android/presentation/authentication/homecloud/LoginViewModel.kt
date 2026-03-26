@@ -154,15 +154,16 @@ class LoginViewModel(
             when (val currentState = _state.value) {
                 is LoginScreenState.LoginState -> {
                     when {
-                        currentState.authError != null -> {
+                        currentState.authError == null || currentState.authError is LoginScreenState.AuthError.LoginError -> {
+
                             _state.update {
-                                currentState.copy(authError = null)
+                                LoginScreenState.EmailState(username = currentState.username, errorEmailInvalidMessage = null)
                             }
                         }
 
                         else -> {
                             _state.update {
-                                LoginScreenState.EmailState(username = currentState.username, errorEmailInvalidMessage = null)
+                                currentState.copy(authError = null)
                             }
                         }
                     }
