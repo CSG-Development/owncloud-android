@@ -2,23 +2,22 @@ package com.owncloud.android.domain.tags.usecases
 
 import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.tags.TagRepository
+import com.owncloud.android.domain.tags.model.OCTag
 
-class RemoveTagFromFileUseCase(
+class RefreshTagsForFileUseCase(
     private val tagRepository: TagRepository,
-) : BaseUseCaseWithResult<Unit, RemoveTagFromFileUseCase.Params>() {
+) : BaseUseCaseWithResult<List<OCTag>, RefreshTagsForFileUseCase.Params>() {
 
-    override fun run(params: Params) =
-        tagRepository.removeTagFromFile(
+    override fun run(params: Params): List<OCTag> =
+        tagRepository.refreshTagsForFile(
             accountName = params.accountName,
-            fileLocalId = params.fileLocalId,
             fileRemoteId = params.fileRemoteId,
-            tagId = params.tagId,
+            fileLocalId = params.fileLocalId,
         )
 
     data class Params(
         val accountName: String,
-        val fileLocalId: Long,
         val fileRemoteId: Long,
-        val tagId: String,
+        val fileLocalId: Long,
     )
 }

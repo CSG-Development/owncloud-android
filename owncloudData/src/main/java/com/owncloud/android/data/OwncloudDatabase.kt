@@ -54,12 +54,12 @@ import com.owncloud.android.data.searches.db.SavedSearchDao
 import com.owncloud.android.data.searches.db.SavedSearchEntity
 import com.owncloud.android.data.sharing.shares.db.OCShareDao
 import com.owncloud.android.data.sharing.shares.db.OCShareEntity
-import com.owncloud.android.data.tags.db.OCFileTagEntity
-import com.owncloud.android.data.tags.db.OCTagEntity
-import com.owncloud.android.data.tags.db.TagDao
 import com.owncloud.android.data.spaces.db.SpaceSpecialEntity
 import com.owncloud.android.data.spaces.db.SpacesDao
 import com.owncloud.android.data.spaces.db.SpacesEntity
+import com.owncloud.android.data.tags.db.OCFileTagEntity
+import com.owncloud.android.data.tags.db.OCTagEntity
+import com.owncloud.android.data.tags.db.TagDao
 import com.owncloud.android.data.transfers.db.OCTransferEntity
 import com.owncloud.android.data.transfers.db.TransferDao
 import com.owncloud.android.data.user.db.UserDao
@@ -93,6 +93,7 @@ import com.owncloud.android.data.user.db.UserQuotaEntity
         AutoMigration(from = 47, to = 48),
         AutoMigration(from = 48, to = 49),
         AutoMigration(from = 49, to = 50),
+        AutoMigration(from = 50, to = 51),
     ],
     version = ProviderMeta.DB_VERSION,
     exportSchema = true

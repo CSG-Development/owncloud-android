@@ -39,6 +39,7 @@
         <attr name="dropdownBackground" format="reference" />
         <attr name="dropdownElevation" format="dimension" />
         <attr name="dropdownMaxHeight" format="dimension" />
+        <attr name="inputEnabled" format="boolean" />
     </declare-styleable>
 
 </resources>

@@ -8,7 +8,12 @@ class AssignTagToFileUseCase(
 ) : BaseUseCaseWithResult<Unit, AssignTagToFileUseCase.Params>() {
 
     override fun run(params: Params) =
-        tagRepository.assignTagToFile(params.fileId, params.tagId)
+        tagRepository.assignTagToFile(params.accountName, params.fileLocalId, params.fileRemoteId, params.tagId)
 
-    data class Params(val fileId: Long, val tagId: Long)
+    data class Params(
+        val accountName: String,
+        val fileLocalId: Long,
+        val fileRemoteId: Long,
+        val tagId: String,
+    )
 }

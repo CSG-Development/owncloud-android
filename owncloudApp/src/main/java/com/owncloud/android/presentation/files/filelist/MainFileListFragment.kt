@@ -779,6 +779,10 @@ class MainFileListFragment : FileFragment(),
                         fileActions?.showDetails(file)
                     }
 
+                    FileMenuOption.MANAGE_TAGS -> {
+                        fileActions?.manageTags(file)
+                    }
+
                     FileMenuOption.SEND -> {
                         if (!file.isAvailableLocally) { // Download the file
                             Timber.d("${file.remotePath} : File must be downloaded")
@@ -1516,6 +1520,11 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_manage_tags -> {
+                fileActions?.manageTags(singleFile)
+                true
+            }
+
             else -> {
                 false
             }
@@ -1697,6 +1706,7 @@ class MainFileListFragment : FileFragment(),
         fun onShareFileClicked(file: OCFile)
         fun initDownloadForSending(file: OCFile)
         fun showDetails(file: OCFile)
+        fun manageTags(file: OCFile)
         fun syncFile(file: OCFile)
         fun openFile(file: OCFile)
         fun sendDownloadedFile(file: OCFile)

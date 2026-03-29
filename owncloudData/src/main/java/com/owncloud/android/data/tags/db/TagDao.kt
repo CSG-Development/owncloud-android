@@ -52,6 +52,13 @@ interface TagDao {
         assignTagsToFiles(fileTags)
     }
 
+    @Transaction
+    fun replaceTagsForFile(fileLocalId: Long, tagLocalIds: List<Long>) {
+        deleteAllTagsForFile(fileLocalId)
+        val fileTags = tagLocalIds.map { OCFileTagEntity(fileId = fileLocalId, tagId = it) }
+        assignTagsToFiles(fileTags)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun upsertTag(tag: OCTagEntity): Long
 

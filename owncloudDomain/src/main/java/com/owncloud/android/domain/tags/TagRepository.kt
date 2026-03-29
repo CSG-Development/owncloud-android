@@ -6,10 +6,11 @@ interface TagRepository {
     fun getTagsForAccount(accountName: String): List<OCTag>
     fun getTagsForFile(fileId: Long): List<OCTag>
     fun getFileIdsByTag(tagId: Long): List<Long>
-    fun assignTagToFile(fileId: Long, tagId: Long)
-    fun removeTagFromFile(fileId: Long, tagId: Long)
+    fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String)
+    fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String)
     fun refreshTagsForAccount(accountName: String): List<OCTag>
     fun refreshFilesByTag(accountName: String, serverTagId: String): List<String>
+    fun refreshTagsForFile(accountName: String, fileRemoteId: Long, fileLocalId: Long): List<OCTag>
     fun createTag(accountName: String, name: String, userVisible: Boolean, userAssignable: Boolean)
     fun updateTag(accountName: String, tagId: String, displayName: String?, userVisible: Boolean?, userAssignable: Boolean?)
     fun deleteTag(accountName: String, tagId: String)

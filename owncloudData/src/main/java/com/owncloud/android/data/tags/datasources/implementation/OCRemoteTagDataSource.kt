@@ -37,6 +37,23 @@ class OCRemoteTagDataSource(
         }
     }
 
+    override fun assignTagToFile(accountName: String, fileRemoteId: Long, tagId: String) {
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).assignTagToFile(fileRemoteId, tagId)
+        }
+    }
+
+    override fun unassignTagFromFile(accountName: String, fileRemoteId: Long, tagId: String) {
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).unassignTagFromFile(fileRemoteId, tagId)
+        }
+    }
+
+    override fun getRemoteTagsForFile(accountName: String, fileRemoteId: Long): List<OCTag> =
+        executeRemoteOperation {
+            clientManager.getTagService(accountName).getTagsForFile(fileRemoteId)
+        }.map { it.toModel() }
+
     companion object {
         fun RemoteTag.toModel(): OCTag =
             OCTag(
