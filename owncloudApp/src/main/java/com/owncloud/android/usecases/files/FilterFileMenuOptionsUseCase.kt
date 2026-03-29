@@ -151,6 +151,10 @@ class FilterFileMenuOptionsUseCase(
         if (isSingleFile(files) && files.first().isFavorite) {
             optionsToShow.add(FileMenuOption.UNSET_FAVORITE)
         }
+        // Manage tags
+        if (isSingleFile(files)) {
+            optionsToShow.add(FileMenuOption.MANAGE_TAGS)
+        }
         // Details
         if (isSingleFile(files)) {
             optionsToShow.add(FileMenuOption.DETAILS)

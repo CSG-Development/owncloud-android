@@ -21,9 +21,15 @@ import com.owncloud.android.extensions.toStringResId
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
+import com.owncloud.android.presentation.files.operations.FileOperation.SetFileFavoriteStatus
+import com.owncloud.android.presentation.files.operations.FileOperation.SetFilesAsAvailableOffline
+import com.owncloud.android.presentation.files.operations.FileOperation.SynchronizeFileOperation
+import com.owncloud.android.presentation.files.operations.FileOperation.SynchronizeFolderOperation
+import com.owncloud.android.presentation.files.operations.FileOperation.UnsetFilesAsAvailableOffline
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.tags.ManageTagsFragment
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
 import com.owncloud.android.utils.DisplayUtils
@@ -142,19 +148,20 @@ object FileOptionsBottomSheetHelper {
     ) {
         val activity = fragment.requireActivity()
         when (menuOption) {
-            FileMenuOption.SELECT_ALL, FileMenuOption.SELECT_INVERSE -> { /* Not applicable in single-file context */ }
+            FileMenuOption.SELECT_ALL, FileMenuOption.SELECT_INVERSE -> { /* Not applicable in single-file context */
+            }
 
             FileMenuOption.DOWNLOAD, FileMenuOption.SYNC -> {
                 if (file.isFolder) {
                     fileOperationsViewModel.performOperation(
-                        FileOperation.SynchronizeFolderOperation(
+                        SynchronizeFolderOperation(
                             folderToSync = file,
                             accountName = file.owner,
                             isActionSetFolderAvailableOfflineOrSynchronize = true,
                         )
                     )
                 } else {
-                    fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, file.owner))
+                    fileOperationsViewModel.performOperation(SynchronizeFileOperation(file, file.owner))
                 }
             }
 
@@ -198,32 +205,38 @@ object FileOptionsBottomSheetHelper {
             }
 
             FileMenuOption.SET_AV_OFFLINE -> {
-                fileOperationsViewModel.performOperation(FileOperation.SetFilesAsAvailableOffline(listOf(file)))
+                fileOperationsViewModel.performOperation(SetFilesAsAvailableOffline(listOf(file)))
                 if (file.isFolder) {
                     fileOperationsViewModel.performOperation(
-                        FileOperation.SynchronizeFolderOperation(
+                        SynchronizeFolderOperation(
                             folderToSync = file,
                             accountName = file.owner,
                             isActionSetFolderAvailableOfflineOrSynchronize = true,
                         )
                     )
                 } else {
-                    fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, file.owner))
+                    fileOperationsViewModel.performOperation(SynchronizeFileOperation(file, file.owner))
                 }
             }
 
             FileMenuOption.UNSET_AV_OFFLINE ->
-                fileOperationsViewModel.performOperation(FileOperation.UnsetFilesAsAvailableOffline(listOf(file)))
+                fileOperationsViewModel.performOperation(UnsetFilesAsAvailableOffline(listOf(file)))
 
             FileMenuOption.SET_FAVORITE ->
                 file.id?.let { fileId ->
-                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    fileOperationsViewModel.performOperation(SetFileFavoriteStatus(fileId, isFavorite = true))
                 }
 
             FileMenuOption.UNSET_FAVORITE ->
                 file.id?.let { fileId ->
-                    fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    fileOperationsViewModel.performOperation(SetFileFavoriteStatus(fileId, isFavorite = false))
                 }
+
+            FileMenuOption.MANAGE_TAGS -> {
+                if (activity is FileDisplayActivity) {
+                    activity.setSecondFragment(ManageTagsFragment.newInstance(file))
+                }
+            }
         }
     }
 }

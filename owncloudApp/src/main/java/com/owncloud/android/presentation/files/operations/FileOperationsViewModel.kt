@@ -49,8 +49,8 @@ import com.owncloud.android.domain.files.usecases.RemoveFileUseCase
 import com.owncloud.android.domain.files.usecases.RenameFileUseCase
 import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
-import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshFilesByTagUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
 import com.owncloud.android.presentation.common.UIResult
@@ -331,15 +331,15 @@ class FileOperationsViewModel(
         )
 
 
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            val res = refreshTagsForAccountUseCase.invoke(RefreshTagsForAccountUseCase.Params(fileOperation.folderToRefresh.owner)).getDataOrNull()
-            Timber.d(res?.toString())
-            res?.forEach { tag ->
-                val res2 = refreshFilesByTagUseCase.invoke(RefreshFilesByTagUseCase.Params(fileOperation.folderToRefresh.owner, tag.id
-                    .orEmpty())).getDataOrNull()
-                Timber.d(res2?.toString())
-            }
-        }
+//        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+//            val res = refreshTagsForAccountUseCase.invoke(RefreshTagsForAccountUseCase.Params(fileOperation.folderToRefresh.owner)).getDataOrNull()
+//            Timber.d(res?.toString())
+//            res?.forEach { tag ->
+//                val res2 = refreshFilesByTagUseCase.invoke(RefreshFilesByTagUseCase.Params(fileOperation.folderToRefresh.owner, tag.id
+//                    .orEmpty())).getDataOrNull()
+//                Timber.d(res2?.toString())
+//            }
+//        }
     }
 
     private fun createFileWithAppProvider(fileOperation: FileOperation.CreateFileWithAppProviderOperation) {

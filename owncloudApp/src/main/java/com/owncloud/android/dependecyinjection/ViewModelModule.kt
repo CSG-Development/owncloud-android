@@ -59,6 +59,7 @@ import com.owncloud.android.presentation.settings.more.SettingsMoreViewModel
 import com.owncloud.android.presentation.settings.security.SettingsSecurityViewModel
 import com.owncloud.android.presentation.sharing.ShareViewModel
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
+import com.owncloud.android.presentation.tags.ManageTagsViewModel
 import com.owncloud.android.presentation.tags.TagFilesViewModel
 import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.transfers.TransfersViewModel
@@ -95,6 +96,7 @@ val viewModelModule = module {
     viewModelOf(::GlobalSearchViewModel)
     viewModelOf(::TagsViewModel)
     viewModelOf(::TagFilesViewModel)
+    viewModelOf(::ManageTagsViewModel)
 
     viewModel { (accountName: String) -> CapabilityViewModel(accountName, get(), get(), get(), get()) }
     viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action, get(), get(), get()) }

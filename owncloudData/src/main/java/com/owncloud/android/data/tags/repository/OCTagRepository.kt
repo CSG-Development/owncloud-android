@@ -19,11 +19,15 @@ class OCTagRepository(
     override fun getFileIdsByTag(tagId: Long): List<Long> =
         localTagDataSource.getFileIdsByTag(tagId)
 
-    override fun assignTagToFile(fileId: Long, tagId: Long) =
-        localTagDataSource.assignTagToFile(fileId, tagId)
+    override fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
+        remoteTagDataSource.assignTagToFile(accountName, fileRemoteId, tagId)
+        localTagDataSource.assignTagToFile(fileLocalId, tagId.toLong())
+    }
 
-    override fun removeTagFromFile(fileId: Long, tagId: Long) =
-        localTagDataSource.removeTagFromFile(fileId, tagId)
+    override fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
+        remoteTagDataSource.unassignTagFromFile(accountName, fileRemoteId, tagId)
+        localTagDataSource.removeTagFromFile(fileLocalId, tagId.toLong())
+    }
 
     override fun refreshTagsForAccount(accountName: String): List<OCTag> {
         try {
@@ -39,6 +43,12 @@ class OCTagRepository(
         val remoteFileIds = remoteTagDataSource.getFileRemoteIdsByTag(accountName, serverTagId)
         localTagDataSource.replaceFileAssociationsForTag(accountName, serverTagId, remoteFileIds)
         return remoteFileIds
+    }
+
+    override fun refreshTagsForFile(accountName: String, fileRemoteId: Long, fileLocalId: Long): List<OCTag> {
+        val tags = remoteTagDataSource.getRemoteTagsForFile(accountName, fileRemoteId)
+        localTagDataSource.replaceTagsForFile(fileLocalId, accountName, tags)
+        return tags
     }
 
     override fun createTag(accountName: String, name: String, userVisible: Boolean, userAssignable: Boolean) {

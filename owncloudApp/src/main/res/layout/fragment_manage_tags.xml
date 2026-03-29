@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:filterTouchesWhenObscured="true">
+
+    <ImageView
+        android:id="@+id/image_preview"
+        android:layout_width="@dimen/file_avatar_size"
+        android:layout_height="@dimen/file_avatar_size"
+        android:layout_marginTop="@dimen/standard_margin"
+        android:contentDescription="@string/manage_tags_file_preview_description"
+        android:scaleType="centerCrop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/ic_image" />
+
+<!--    <com.google.android.material.textfield.TextInputLayout-->
+<!--        android:id="@+id/tag_search_input_layout"-->
+<!--        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginHorizontal="@dimen/standard_margin"-->
+<!--        android:layout_marginTop="@dimen/standard_margin"-->
+<!--        android:hint="@string/manage_tags_search_hint"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@id/image_preview">-->
+
+        <com.owncloud.android.ui.custom.CustomAutoCompleteTextView
+            android:id="@+id/tag_search_edit_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/standard_margin"
+            android:layout_marginTop="@dimen/standard_margin"
+            android:hint="@string/manage_tags_search_hint"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/image_preview"
+            app:inputEnabled="true"
+            app:dropdownMaxHeight="240dp" />
+
+<!--    </com.google.android.material.textfield.TextInputLayout>-->
+
+    <ScrollView
+        android:id="@+id/selected_tags_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="@dimen/standard_margin"
+        android:layout_marginTop="@dimen/standard_half_margin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tag_search_edit_text"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/selected_tags_chip_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/standard_half_padding"
+            app:singleLine="false" />
+
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

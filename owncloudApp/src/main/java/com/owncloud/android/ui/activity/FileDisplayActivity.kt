@@ -116,6 +116,7 @@ import com.owncloud.android.presentation.spaces.SpacesListFragment
 import com.owncloud.android.presentation.spaces.SpacesListFragment.Companion.BUNDLE_KEY_CLICK_SPACE
 import com.owncloud.android.presentation.spaces.SpacesListFragment.Companion.REQUEST_KEY_CLICK_SPACE
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
+import com.owncloud.android.presentation.tags.ManageTagsFragment
 import com.owncloud.android.presentation.transfers.TransferListFragment
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.providers.WorkManagerProvider
@@ -626,7 +627,7 @@ open class FileDisplayActivity : FileActivity(),
      *
      * @param fragment New second Fragment to set.
      */
-    private fun setSecondFragment(fragment: Fragment) {
+    fun setSecondFragment(fragment: Fragment) {
         setGlobalSearchBarVisible(false, clearSearch = false)
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.right_fragment_container, fragment, TAG_SECOND_FRAGMENT)
@@ -870,6 +871,11 @@ open class FileDisplayActivity : FileActivity(),
             mainFileListFragment?.setFabMainContentDescription()
         } else {
             // Every single menu is collapsed. We can navigate up.
+            val rawSecondFragment = supportFragmentManager.findFragmentByTag(TAG_SECOND_FRAGMENT)
+            if (rawSecondFragment is ManageTagsFragment) {
+                cleanSecondFragment()
+                return
+            }
             if (secondFragment != null) {
                 // If secondFragment was shown, we need to navigate to the parent of the displayed file
                 // Need a cleanup
@@ -1083,6 +1089,11 @@ open class FileDisplayActivity : FileActivity(),
         navigateToDetails(account = account, ocFile = file, syncFileAtOpen = false)
         updateToolbar(file)
         setFile(file)
+    }
+
+    override fun manageTags(file: OCFile) {
+        setSecondFragment(ManageTagsFragment.newInstance(file))
+        updateStandardToolbar(title = getString(R.string.manage_tags_option), homeButtonDisplayed = true, showBackArrow = true)
     }
 
     override fun syncFile(file: OCFile) {

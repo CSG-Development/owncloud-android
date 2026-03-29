@@ -41,6 +41,7 @@ import at.bitfire.dav4jvm.property.OCPrivatelink
 import at.bitfire.dav4jvm.property.OCSize
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.http.HttpConstants
+import com.owncloud.android.lib.common.http.methods.webdav.properties.OCFileId
 import com.owncloud.android.lib.common.http.methods.webdav.properties.OCShareTypes
 import com.owncloud.android.lib.common.utils.isOneOf
 import com.owncloud.android.lib.resources.shares.ShareType
@@ -74,6 +75,7 @@ data class RemoteFile(
     var owner: String,
     var sharedByLink: Boolean = false,
     var sharedWithSharee: Boolean = false,
+    var fileId: Long? = null,
 ) : Parcelable {
 
     // To do: Quotas not used. Use or remove them.
@@ -134,6 +136,9 @@ data class RemoteFile(
                     }
                     is OCPrivatelink -> {
                         remoteFile.privateLink = property.link
+                    }
+                    is OCFileId -> {
+                        remoteFile.fileId = property.fileId.toLongOrNull()
                     }
                     is OCShareTypes -> {
                         val list = property.shareTypes
