@@ -33,6 +33,8 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         TagsAdapter(listener = this)
     }
 
+    private var lastCreatedTagName: String? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = TagsFragmentBinding.inflate(inflater, container, false)
         return binding.root
@@ -56,7 +58,7 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_add_tag -> {
-                TagDialogFragment.newAddInstance(this)
+                TagDialogFragment.newAddInstance(this, existingTagNames())
                     .show(parentFragmentManager, TagDialogFragment.TAG_DIALOG_FRAGMENT)
                 true
             }
@@ -95,7 +97,14 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         binding.swipeRefreshTags.isRefreshing = false
         binding.swipeRefreshTags.isVisible = true
         binding.tagsListEmpty.root.isVisible = false
-        tagsAdapter.submitList(tags)
+        val createdTagName = lastCreatedTagName
+        tagsAdapter.submitList(tags) {
+            if (createdTagName != null) {
+                lastCreatedTagName = null
+                val position = tags.indexOfFirst { it.displayName == createdTagName }
+                if (position >= 0) binding.recyclerViewTags.scrollToPosition(position)
+            }
+        }
     }
 
     private fun showEmptyState() {
@@ -108,17 +117,28 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         binding.tagsListEmpty.listEmptyDatasetSubTitle.isVisible = false
     }
 
+    override fun onTagClick(tag: OCTag) {
+        val tagId = tag.id ?: return
+        val tagsActivity = requireActivity() as? TagsActivity
+        tagsActivity?.showTagFiles(tagId, tag.displayName.orEmpty())
+    }
+
     override fun onEditTag(tag: OCTag) {
         val tagId = tag.id ?: return
-        TagDialogFragment.newEditInstance(tagId, tag.displayName.orEmpty(), this)
+        val otherNames = existingTagNames().filter { !it.equals(tag.displayName.orEmpty(), ignoreCase = true) }
+        TagDialogFragment.newEditInstance(tagId, tag.displayName.orEmpty(), this, otherNames)
             .show(parentFragmentManager, TagDialogFragment.TAG_DIALOG_FRAGMENT)
     }
+
+    private fun existingTagNames(): List<String> =
+        tagsAdapter.currentList.mapNotNull { it.displayName }
 
     override fun onTagNameSet(tagName: String, tagId: String?) {
         val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name ?: return
         if (tagId != null) {
             tagsViewModel.updateTag(accountName, tagId, tagName)
         } else {
+            lastCreatedTagName = tagName
             tagsViewModel.createTag(accountName, tagName)
         }
     }

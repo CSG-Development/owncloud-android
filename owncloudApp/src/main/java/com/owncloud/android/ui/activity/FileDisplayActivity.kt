@@ -147,7 +147,7 @@ import kotlin.coroutines.CoroutineContext
 /**
  * Displays, what files the user has available in his ownCloud. This is the main view.
  */
-class FileDisplayActivity : FileActivity(),
+open class FileDisplayActivity : FileActivity(),
     CoroutineScope,
     FileFragment.ContainerActivity,
     SecurityEnforced,
@@ -544,7 +544,7 @@ class FileDisplayActivity : FileActivity(),
     }
 
     private fun initFragmentsWithFile() {
-        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH) {
+        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH && !fileListOption.isTagFiles()) {
             /// First fragment
             mainFileListFragment?.navigateToFolder(currentDir)
                 ?: Timber.e("Still have a chance to lose the initialization of list fragment >(")
@@ -652,7 +652,7 @@ class FileDisplayActivity : FileActivity(),
         leftFragmentContainer?.isVisible = !existsSecondFragment
         rightFragmentContainer?.isVisible = existsSecondFragment
 
-        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink())
+        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles())
     }
 
     private fun cleanSecondFragment() {
@@ -706,10 +706,9 @@ class FileDisplayActivity : FileActivity(),
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> {
-                onBackPressed()
-            }
+        if (item.itemId == android.R.id.home) {
+            onBackPressed()
+            return true
         }
 
         return super.onOptionsItemSelected(item)
@@ -882,6 +881,8 @@ class FileDisplayActivity : FileActivity(),
                         showBackArrow = false,
                     )
                     setGlobalSearchBarVisible(isVisible = true, clearSearch = false)
+                } else if (fileListOption.isTagFiles()) {
+                    cleanSecondFragment()
                 } else {
                     val folderIdToDisplay =
                         if (fileListOption == FileListOption.AV_OFFLINE) storageManager.getRootPersonalFolder()!!.id!!
@@ -1126,6 +1127,7 @@ class FileDisplayActivity : FileActivity(),
                     FileListOption.UPLOADS_LIST -> getString(R.string.uploads_view_title)
                     FileListOption.GLOBAL_SEARCH -> ""
                     FileListOption.FAVORITES -> getString(R.string.drawer_menu_favorites)
+                    FileListOption.TAG_FILES -> getAppName()
                 }
             setTitle(title)
             val showBackArrow = fileListOption.isSharedByLink()
@@ -2010,6 +2012,10 @@ class FileDisplayActivity : FileActivity(),
             FileListOption.FAVORITES -> {
                 // Favorites is handled by a separate activity, nothing to do here
             }
+
+            FileListOption.TAG_FILES -> {
+
+            }
         }
     }
 
@@ -2025,6 +2031,7 @@ class FileDisplayActivity : FileActivity(),
         FileListOption.UPLOADS_LIST -> R.id.nav_uploads
         FileListOption.GLOBAL_SEARCH -> R.id.nav_global_search
         FileListOption.FAVORITES -> 0
+        FileListOption.TAG_FILES -> 0
         null -> R.id.nav_all_files
     }
 

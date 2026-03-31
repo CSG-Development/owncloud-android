@@ -82,6 +82,7 @@
 
     <color name="homecloud_server_selected_background">@color/homecloud_highlight_background</color>
     <color name="homecloud_server_list_dropdown">@color/white</color>
+    <color name="homecloud_tags_list_remove_icon">#A02A21</color>
 
     <!-- Original ownCloud colors override -->
     <color name="textColor">@color/homecloud_primary</color>

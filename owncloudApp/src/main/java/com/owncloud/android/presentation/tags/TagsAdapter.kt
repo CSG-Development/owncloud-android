@@ -13,6 +13,7 @@ class TagsAdapter(
 ) : ListAdapter<OCTag, TagsAdapter.TagViewHolder>(TagDiffCallback()) {
 
     interface TagsAdapterListener {
+        fun onTagClick(tag: OCTag)
         fun onEditTag(tag: OCTag)
         fun onDeleteTag(tag: OCTag)
     }
@@ -32,6 +33,7 @@ class TagsAdapter(
 
         fun bind(tag: OCTag) {
             binding.tagName.text = tag.displayName.orEmpty()
+            binding.root.setOnClickListener { listener.onTagClick(tag) }
             binding.btnEditTag.setOnClickListener { listener.onEditTag(tag) }
             binding.btnDeleteTag.setOnClickListener { listener.onDeleteTag(tag) }
         }

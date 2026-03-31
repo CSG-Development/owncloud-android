@@ -788,5 +788,9 @@
   <string name="tags_remove_confirmation_suffix"> and unassign it from all files and folders?</string>
   <string name="tags_remove_button">Remove</string>
   <string name="tags_add_hint">Add new tag</string>
+  <string name="tag_files_empty_title">No files with this tag</string>
   <string name="tags_edit_hint">Edit tag</string>
+  <string name="tags_error_special_characters">No special characters allowed</string>
+  <string name="tags_error_max_length">Tag label must be under 30 characters</string>
+  <string name="tags_error_already_exists">This tag already exists</string>
 </resources>

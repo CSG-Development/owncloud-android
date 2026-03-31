@@ -230,6 +230,7 @@ class OCFileRepository(
             FileListOption.UPLOADS_LIST -> emptyList()
             FileListOption.GLOBAL_SEARCH -> emptyList()
             FileListOption.FAVORITES -> emptyList()
+            FileListOption.TAG_FILES -> emptyList()
         }
 
     override fun getFolderContent(folderId: Long): List<OCFile> =
