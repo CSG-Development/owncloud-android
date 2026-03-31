@@ -42,4 +42,10 @@
         <attr name="inputEnabled" format="boolean" />
     </declare-styleable>
 
+    <declare-styleable name="FilterableAutoCompleteTextView">
+        <attr name="filterableDropdownBackground" format="reference" />
+        <attr name="filterableDropdownElevation" format="dimension" />
+        <attr name="filterableDropdownMaxHeight" format="dimension" />
+    </declare-styleable>
+
 </resources>

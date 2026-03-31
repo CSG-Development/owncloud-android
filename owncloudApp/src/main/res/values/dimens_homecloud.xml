@@ -25,4 +25,7 @@
     <dimen name="custom_autocomplete_horizontal_padding">16dp</dimen>
     <dimen name="custom_autocomplete_vertical_padding">12dp</dimen>
 
+    <!-- Filterable AutoComplete -->
+    <dimen name="filterable_autocomplete_max_height">240dp</dimen>
+
 </resources>

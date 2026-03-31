@@ -19,39 +19,41 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:src="@drawable/ic_image" />
 
-<!--    <com.google.android.material.textfield.TextInputLayout-->
-<!--        android:id="@+id/tag_search_input_layout"-->
-<!--        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginHorizontal="@dimen/standard_margin"-->
-<!--        android:layout_marginTop="@dimen/standard_margin"-->
-<!--        android:hint="@string/manage_tags_search_hint"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toBottomOf="@id/image_preview">-->
+    <TextView
+        android:id="@+id/file_name_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        tools:text="file name"
+        android:layout_marginHorizontal="@dimen/standard_margin"
+        android:layout_marginTop="@dimen/standard_half_margin"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/image_preview" />
 
-        <com.owncloud.android.ui.custom.CustomAutoCompleteTextView
-            android:id="@+id/tag_search_edit_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/standard_margin"
-            android:layout_marginTop="@dimen/standard_margin"
-            android:hint="@string/manage_tags_search_hint"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/image_preview"
-            app:inputEnabled="true"
-            app:dropdownMaxHeight="240dp" />
-
-<!--    </com.google.android.material.textfield.TextInputLayout>-->
+    <com.owncloud.android.ui.custom.FilterableAutoCompleteTextView
+        android:id="@+id/tag_search_edit_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/standard_margin"
+        android:layout_marginTop="24dp"
+        android:hint="@string/manage_tags_search_hint"
+        android:padding="12dp"
+        android:background="@drawable/selector_filterable_autocomplete"
+        android:drawablePadding="4dp"
+        app:drawableStartCompat="@drawable/ic_tag_tintable"
+        app:drawableTint="@color/homecloud_color_on_secondary_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/file_name_title"
+        app:filterableDropdownMaxHeight="240dp" />
 
     <ScrollView
         android:id="@+id/selected_tags_scroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginHorizontal="@dimen/standard_margin"
-        android:layout_marginTop="@dimen/standard_half_margin"
+        android:layout_marginTop="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tag_search_edit_text"
@@ -61,7 +63,8 @@
             android:id="@+id/selected_tags_chip_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="@dimen/standard_half_padding"
+            app:chipSpacingHorizontal="@dimen/standard_half_margin"
+            app:chipSpacingVertical="@dimen/standard_half_margin"
             app:singleLine="false" />
 
     </ScrollView>
