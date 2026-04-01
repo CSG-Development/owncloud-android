@@ -48,24 +48,50 @@
         app:layout_constraintTop_toBottomOf="@id/file_name_title"
         app:filterableDropdownMaxHeight="240dp" />
 
-    <ScrollView
-        android:id="@+id/selected_tags_scroll"
+    <FrameLayout
+        android:id="@+id/manage_tags_list_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginHorizontal="@dimen/standard_margin"
         android:layout_marginTop="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tag_search_edit_text"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/tag_search_edit_text">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/selected_tags_chip_group"
+        <ScrollView
+            android:id="@+id/selected_tags_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/selected_tags_chip_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:chipSpacingHorizontal="@dimen/standard_half_margin"
+                app:chipSpacingVertical="@dimen/standard_half_margin"
+                app:singleLine="false" />
+        </ScrollView>
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/manage_tags_loading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="visible"
+            app:indicatorSize="48dp"
+            app:trackThickness="4dp" />
+
+        <include
+            android:id="@+id/manage_tags_empty"
+            layout="@layout/item_empty_dataset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:chipSpacingHorizontal="@dimen/standard_half_margin"
-            app:chipSpacingVertical="@dimen/standard_half_margin"
-            app:singleLine="false" />
-
-    </ScrollView>
+            android:layout_gravity="center"
+            android:visibility="gone"
+            tools:visibility="gone" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

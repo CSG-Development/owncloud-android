@@ -81,6 +81,7 @@
     <color name="homecloud_tags_list_remove_icon">#F2918A</color>
     <color name="homecloud_tags_search_border_inactive">#616161</color>
     <color name="homecloud_tag_background">@color/homecloud_blue_lighten_2_24</color>
+    <color name="homecloud_tag_content">#B2FFFFFF</color>
 
     <!-- Reconnecting snackbar -->
     <color name="homecloud_reconnecting_snackbar_background">#B8B8B8</color>

@@ -1,6 +1,7 @@
 package com.owncloud.android.presentation.tags
 
 import android.graphics.Bitmap
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -157,11 +158,47 @@ class ManageTagsFragment : FileFragment() {
     private fun setupSelectedTags() {
         collectLatestLifecycleFlow(manageTagsViewModel.uiState) { state ->
             when (state) {
-                is ManageTagsUiState.Loading -> Unit
-                is ManageTagsUiState.Success -> renderTags(state.tags)
-                is ManageTagsUiState.Error -> Unit
+                is ManageTagsUiState.Loading -> showManageTagsLoading()
+                is ManageTagsUiState.Success -> {
+                    if (state.tags.isEmpty()) {
+                        showManageTagsEmpty()
+                    } else {
+                        showManageTagsContent(state.tags)
+                    }
+                }
+                is ManageTagsUiState.Error -> showManageTagsEmpty()
             }
         }
+    }
+
+    private fun showManageTagsLoading() {
+        binding.manageTagsLoading.isVisible = true
+        binding.selectedTagsScroll.isVisible = false
+        binding.manageTagsEmpty.root.isVisible = false
+    }
+
+    private fun showManageTagsEmpty() {
+        binding.manageTagsLoading.isVisible = false
+        binding.selectedTagsScroll.isVisible = false
+        binding.manageTagsEmpty.root.isVisible = true
+        binding.selectedTagsChipGroup.removeAllViews()
+        isExpanded = false
+        overflowChips = emptyList()
+        toggleChip = null
+
+        binding.manageTagsEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_tag_big)
+        binding.manageTagsEmpty.listEmptyDatasetTitle.textSize = 20f
+        binding.manageTagsEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
+        binding.manageTagsEmpty.listEmptyDatasetTitle.setText(R.string.manage_tags_empty_title)
+        binding.manageTagsEmpty.listEmptyDatasetSubTitle.isVisible = false
+        updateTagDropdown()
+    }
+
+    private fun showManageTagsContent(tags: List<OCTag>) {
+        binding.manageTagsLoading.isVisible = false
+        binding.manageTagsEmpty.root.isVisible = false
+        binding.selectedTagsScroll.isVisible = true
+        renderTags(tags)
     }
 
     private fun renderTags(tags: List<OCTag>) {
@@ -173,7 +210,9 @@ class ManageTagsFragment : FileFragment() {
         tags.forEach { tag ->
             val chip = Chip(requireContext()).apply {
                 text = tag.displayName
+                setTextColor(resources.getColor(R.color.homecloud_tag_content, null))
                 setEnsureMinTouchTargetSize(false)
+                setCloseIconTintResource(R.color.homecloud_tag_content)
                 setChipBackgroundColorResource(R.color.homecloud_tag_background)
                 isCloseIconVisible = true
                 shapeAppearanceModel = shapeAppearanceModel
