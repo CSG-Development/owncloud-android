@@ -234,6 +234,11 @@ object FileOptionsBottomSheetHelper {
 
             FileMenuOption.MANAGE_TAGS -> {
                 if (activity is FileDisplayActivity) {
+                    activity.updateStandardToolbar(
+                        title = activity.getString(R.string.manage_tags_option),
+                        homeButtonDisplayed = true,
+                        showBackArrow = true,
+                    )
                     activity.setSecondFragment(ManageTagsFragment.newInstance(file))
                 }
             }

@@ -28,6 +28,7 @@ import com.owncloud.android.ui.custom.FilterableAutoCompleteTextView
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.MimetypeIconUtil
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import timber.log.Timber
 
 class ManageTagsFragment : FileFragment() {
 
@@ -37,10 +38,6 @@ class ManageTagsFragment : FileFragment() {
 
     private val manageTagsViewModel: ManageTagsViewModel by viewModel()
 
-    private lateinit var file: OCFile
-    private var fileLocalId: Long = -1L
-    private var fileRemoteId: Long = -1L
-    private var accountName: String = ""
     private var isExpanded = false
     private var overflowChips: List<Chip> = emptyList()
     private var toggleChip: Chip? = null
@@ -52,10 +49,7 @@ class ManageTagsFragment : FileFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        file = requireArguments().getParcelable(ARG_FILE)!!
-        fileLocalId = file.id ?: 0L
-        fileRemoteId = file.fileId ?: 0L
-        accountName = file.owner
+        file = requireArguments().getParcelable(ARG_FILE) ?: throw IllegalArgumentException("File is required in arguments!")
 
         requireActivity().title = getString(R.string.manage_tags_option)
         setHasOptionsMenu(true)
@@ -64,7 +58,7 @@ class ManageTagsFragment : FileFragment() {
         setupImagePreview()
         setupTagSearch()
         setupSelectedTags()
-        manageTagsViewModel.loadTagsForFile(accountName, fileRemoteId, fileLocalId)
+        manageTagsViewModel.loadTagsForFile(file.owner, file.fileId ?: 0L, file.id ?: 0L)
     }
 
     override fun updateViewForSyncInProgress() {}
@@ -101,7 +95,7 @@ class ManageTagsFragment : FileFragment() {
             if (thumbnail != null && !file.needsToUpdateThumbnail) {
                 imageView.setImageBitmap(thumbnail)
             } else {
-                val account = AccountUtils.getAccounts(requireContext()).firstOrNull { it.name == accountName }
+                val account = AccountUtils.getAccounts(requireContext()).firstOrNull { it.name == file.owner }
                 if (account != null && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, imageView)) {
                     val task = ThumbnailsCacheManager.ThumbnailGenerationTask(imageView, account)
                     if (thumbnail == null) thumbnail = ThumbnailsCacheManager.mDefaultImg
@@ -120,7 +114,7 @@ class ManageTagsFragment : FileFragment() {
     }
 
     private fun setupTagSearch() {
-        manageTagsViewModel.loadAllTagsForAccount(accountName)
+        manageTagsViewModel.loadAllTagsForAccount(file.owner)
 
         collectLatestLifecycleFlow(manageTagsViewModel.allTagsUiState) { _ ->
             updateTagDropdown()
@@ -136,23 +130,14 @@ class ManageTagsFragment : FileFragment() {
             updateTagDropdown()
         }
 
-//        binding.tagSearchEditText.setOnItemSelectedListener { item, _ ->
-//            when (item.id) {
-//                ITEM_ID_NO_TAGS -> Unit
-//                ITEM_ID_ADD_TAG -> {
-//                    val tagName = binding.tagSearchEditText.text?.toString()?.trim() ?: return@setOnItemSelectedListener
-//                    if (tagName.isNotEmpty()) {
-//                        manageTagsViewModel.createTagAndAssignToFile(accountName, fileLocalId, fileRemoteId, tagName)
-//                        binding.tagSearchEditText.setText("")
-//                    }
-//                }
-//                else -> {
-//                    if (item.id.isEmpty()) return@setOnItemSelectedListener
-//                    manageTagsViewModel.assignTagToFile(accountName, fileLocalId, fileRemoteId, item.id)
-//                    binding.tagSearchEditText.setText("")
-//                }
-//            }
-//        }
+        binding.tagSearchEditText.setOnItemSelectedListener { item ->
+            Timber.d("Selected item: $item")
+            manageTagsViewModel.assignTagToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item.id)
+        }
+        binding.tagSearchEditText.setOnAddItemClickListener { item ->
+            Timber.d("Added item: $item")
+            manageTagsViewModel.createTagAndAssignToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item)
+        }
     }
 
     private fun setupSelectedTags() {
@@ -166,6 +151,7 @@ class ManageTagsFragment : FileFragment() {
                         showManageTagsContent(state.tags)
                     }
                 }
+
                 is ManageTagsUiState.Error -> showManageTagsEmpty()
             }
         }
@@ -208,22 +194,15 @@ class ManageTagsFragment : FileFragment() {
         toggleChip = null
 
         tags.forEach { tag ->
-            val chip = Chip(requireContext()).apply {
-                text = tag.displayName
-                setTextColor(resources.getColor(R.color.homecloud_tag_content, null))
-                setEnsureMinTouchTargetSize(false)
-                setCloseIconTintResource(R.color.homecloud_tag_content)
-                setChipBackgroundColorResource(R.color.homecloud_tag_background)
-                isCloseIconVisible = true
-                shapeAppearanceModel = shapeAppearanceModel
-                    .toBuilder()
-                    .setAllCorners(CornerFamily.ROUNDED, 32f * resources.displayMetrics.density)
-                    .build()
-                setOnCloseIconClickListener {
-                    val tagId = tag.id ?: return@setOnCloseIconClickListener
-                    manageTagsViewModel.removeTagFromFile(accountName, fileLocalId, fileRemoteId, tagId)
+            val chip = createChip(
+                text = tag.displayName.orEmpty(),
+                closeIconVisible = true,
+                closeButtonClick = {
+                    tag.id?.let { tagId ->
+                        manageTagsViewModel.removeTagFromFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, tagId)
+                    }
                 }
-            }
+            )
             binding.selectedTagsChipGroup.addView(chip)
         }
 
@@ -255,13 +234,41 @@ class ManageTagsFragment : FileFragment() {
 
         overflowChips.forEach { it.isVisible = false }
 
-        val more = Chip(requireContext()).apply {
-            text = getString(R.string.manage_tags_more, overflowChips.size)
-            isCloseIconVisible = false
-            setOnClickListener { toggleExpand() }
-        }
+        val more = createChip(
+            text = getString(R.string.manage_tags_more, overflowChips.size),
+            closeIconVisible = false,
+            chipClick = { toggleExpand() }
+        )
         chipGroup.addView(more)
         toggleChip = more
+    }
+
+    private fun createChip(
+        text: String,
+        closeIconVisible: Boolean,
+        chipClick: () -> Unit = {},
+        closeButtonClick: () -> Unit = {},
+    ): Chip {
+        return Chip(requireContext()).apply {
+            this.text = text
+            this.isCloseIconVisible = closeIconVisible
+            if (closeIconVisible) {
+                setCloseIconTintResource(R.color.homecloud_tag_content)
+            }
+            setTextColor(resources.getColor(R.color.homecloud_tag_content, null))
+            setEnsureMinTouchTargetSize(false)
+            setChipBackgroundColorResource(R.color.homecloud_tag_background)
+            shapeAppearanceModel = shapeAppearanceModel
+                .toBuilder()
+                .setAllCorners(CornerFamily.ROUNDED, 32f * resources.displayMetrics.density)
+                .build()
+            this.setOnCloseIconClickListener {
+                closeButtonClick()
+            }
+            this.setOnClickListener {
+                chipClick()
+            }
+        }
     }
 
     private fun toggleExpand() {
@@ -275,7 +282,7 @@ class ManageTagsFragment : FileFragment() {
     }
 
     private fun updateTagDropdown() {
-        val query = binding.tagSearchEditText.text?.toString()?.trim() ?: ""
+        val query = binding.tagSearchEditText.text?.toString()?.trim().orEmpty()
         val appliedTagIds = (manageTagsViewModel.uiState.value as? ManageTagsUiState.Success)
             ?.tags?.mapNotNull { it.id }?.toSet() ?: emptySet()
 
@@ -290,15 +297,15 @@ class ManageTagsFragment : FileFragment() {
         val items: List<FilterableAutoCompleteTextView.DropdownItem<OCTag?>> = when {
             available.isNotEmpty() -> available.map { tag ->
                 FilterableAutoCompleteTextView.DropdownItem(
-                    id = tag.id ?: "",
-                    text = tag.displayName ?: "",
+                    id = tag.id.orEmpty(),
+                    text = tag.displayName.orEmpty(),
                     data = tag
                 )
             }
 
             query.isNotEmpty() -> listOf(
                 FilterableAutoCompleteTextView.DropdownItem(
-                    id = ITEM_ID_ADD_TAG,
+                    id = FilterableAutoCompleteTextView.ITEM_ID_ADD,
                     text = getString(R.string.manage_tags_add_tag, query),
                     data = null
                 )
@@ -306,7 +313,7 @@ class ManageTagsFragment : FileFragment() {
 
             else -> listOf(
                 FilterableAutoCompleteTextView.DropdownItem(
-                    id = ITEM_ID_NO_TAGS,
+                    id = FilterableAutoCompleteTextView.ITEM_ID_EMPTY_STATE,
                     text = getString(R.string.manage_tags_no_tags_available),
                     data = null
                 )
@@ -327,8 +334,6 @@ class ManageTagsFragment : FileFragment() {
     companion object {
         private const val ARG_FILE = "arg_file"
         private const val MAX_VISIBLE_ROWS = 4
-        private const val ITEM_ID_ADD_TAG = "action_add_tag"
-        private const val ITEM_ID_NO_TAGS = "action_no_tags"
 
         fun newInstance(file: OCFile): ManageTagsFragment =
             ManageTagsFragment().apply {

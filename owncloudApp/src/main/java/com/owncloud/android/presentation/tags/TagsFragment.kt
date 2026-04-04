@@ -147,10 +147,6 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name ?: return
         val tagId = tag.id ?: return
 
-        val title = SpannableStringBuilder(getString(R.string.tags_remove_title)).apply {
-            setSpan(StyleSpan(Typeface.BOLD), 0, length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-
         val tagName = " \"${tag.displayName.orEmpty()}\" "
         val message = SpannableStringBuilder().apply {
             append(getString(R.string.tags_remove_confirmation_prefix))
@@ -161,7 +157,7 @@ class TagsFragment : Fragment(), TagsAdapter.TagsAdapterListener, TagDialogFragm
         }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(title)
+            .setTitle(getString(R.string.tags_remove_title))
             .setMessage(message)
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(R.string.tags_remove_button) { _, _ ->

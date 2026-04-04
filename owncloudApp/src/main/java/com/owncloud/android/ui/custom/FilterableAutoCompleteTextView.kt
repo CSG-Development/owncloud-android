@@ -52,7 +52,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
                     ITEM_ID_EMPTY_STATE -> return@DropdownAdapter
                     ITEM_ID_ADD -> {
                         suppressDropdown = true
-                        val query = text?.toString()?.trim() ?: ""
+                        val query = text?.toString()?.trim().orEmpty()
                         onAddItemClickListener?.invoke(query)
                         dismissDropdown()
                         suppressDropdown = false
@@ -186,7 +186,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
     }
 
     private fun updateFilteredItems() {
-        val query = text?.toString()?.trim() ?: ""
+        val query = text?.toString()?.trim().orEmpty()
         displayItems = when {
             allItems.isEmpty() -> {
                 if (emptyStateText.isNotEmpty()) {

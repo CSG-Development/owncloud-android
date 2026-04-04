@@ -86,5 +86,5 @@ fun FileMenuOption.toDrawableResId() =
         FileMenuOption.UNSET_AV_OFFLINE -> R.drawable.ic_action_unset_available_offline
         FileMenuOption.SET_FAVORITE -> R.drawable.ic_star_outlined_blue
         FileMenuOption.UNSET_FAVORITE -> R.drawable.ic_star_filled_blue
-        FileMenuOption.MANAGE_TAGS -> R.drawable.ic_tag
+        FileMenuOption.MANAGE_TAGS -> R.drawable.ic_tag_tintable
     }

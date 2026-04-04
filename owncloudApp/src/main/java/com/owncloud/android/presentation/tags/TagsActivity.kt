@@ -39,9 +39,10 @@ class TagsActivity : FileDisplayActivity() {
 
     fun showTagFiles(serverTagId: String, tagName: String) {
         updateStandardToolbar(
-            title = tagName,
+            title = "“${tagName}”",
             homeButtonDisplayed = true,
             showBackArrow = true,
+            customIconDrawable = R.drawable.ic_close_accent
         )
 
         supportFragmentManager.beginTransaction()
@@ -78,7 +79,7 @@ class TagsActivity : FileDisplayActivity() {
     private fun restoreToolbarForCurrentFragment() {
         val tagFilesFragment = supportFragmentManager.findFragmentByTag(TAG_TAG_FILES) as? TagFilesFragment
         if (tagFilesFragment != null) {
-            updateStandardToolbar(title = tagFilesFragment.tagName, homeButtonDisplayed = true, showBackArrow = true)
+            updateStandardToolbar(title = tagFilesFragment.tagName, homeButtonDisplayed = true, showBackArrow = true, customIconDrawable = R.drawable.ic_close_accent)
         } else {
             updateStandardToolbar(title = getString(R.string.drawer_menu_tags), homeButtonDisplayed = true, showBackArrow = true)
         }
