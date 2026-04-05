@@ -55,7 +55,7 @@ class GetRemoteFilesByTagOperation(
         status.isOneOf(HttpConstants.HTTP_OK, HttpConstants.HTTP_MULTI_STATUS)
 
     companion object {
-        private const val TIMEOUT = 10_000L
+        private const val TIMEOUT = 10L
 
         private fun buildFilterFilesXml(tagId: String): String =
             """<?xml version="1.0" encoding="utf-8" ?>

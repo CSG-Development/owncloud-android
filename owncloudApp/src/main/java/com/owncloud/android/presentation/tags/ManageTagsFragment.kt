@@ -331,9 +331,6 @@ class ManageTagsFragment : FileFragment() {
         }
 
         binding.tagSearchEditText.setDropdownItems(items)
-//        if (binding.tagSearchEditText.hasFocus()) {
-//            binding.tagSearchEditText.showDropDown()
-//        }
     }
 
     override fun onDestroyView() {

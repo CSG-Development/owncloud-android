@@ -45,6 +45,6 @@ class UnassignTagFromFileRemoteOperation(
 
     companion object {
         private const val SYSTEM_TAGS_RELATIONS_PATH = "/remote.php/dav/systemtags-relations/files"
-        private const val TIMEOUT = 10_000L
+        private const val TIMEOUT = 10L
     }
 }

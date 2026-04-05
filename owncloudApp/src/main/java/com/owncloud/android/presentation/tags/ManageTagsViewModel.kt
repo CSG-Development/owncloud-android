@@ -6,6 +6,7 @@ import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.domain.tags.usecases.AssignTagToFileUseCase
 import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
+import com.owncloud.android.domain.tags.usecases.GetLocalTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 class ManageTagsViewModel(
     private val removeTagFromFileUseCase: RemoveTagFromFileUseCase,
     private val refreshTagsForFileUseCase: RefreshTagsForFileUseCase,
+    private val getLocalTagsForFileUseCase: GetLocalTagsForFileUseCase,
     private val refreshTagsForAccountUseCase: RefreshTagsForAccountUseCase,
     private val assignTagToFileUseCase: AssignTagToFileUseCase,
     private val createTagUseCase: CreateTagUseCase,
@@ -38,11 +40,24 @@ class ManageTagsViewModel(
     fun loadTagsForFile(accountName: String, fileRemoteId: Long, fileLocalId: Long) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             _uiState.update { ManageTagsUiState.Loading }
-            val result = refreshTagsForFileUseCase(RefreshTagsForFileUseCase.Params(accountName, fileRemoteId, fileLocalId))
-            _uiState.update {
-                when (result) {
-                    is UseCaseResult.Success -> ManageTagsUiState.Success(result.data)
-                    is UseCaseResult.Error -> ManageTagsUiState.Error(result.throwable)
+            val result = refreshTagsForFileUseCase(
+                RefreshTagsForFileUseCase.Params(accountName, fileRemoteId, fileLocalId)
+            )
+            when (result) {
+                is UseCaseResult.Success -> {
+                    _uiState.update { ManageTagsUiState.Success(result.data) }
+                }
+                is UseCaseResult.Error -> {
+                    _errorEvent.emit(result.throwable)
+                    val localResult = getLocalTagsForFileUseCase(
+                        GetLocalTagsForFileUseCase.Params(fileLocalId)
+                    )
+                    _uiState.update {
+                        when (localResult) {
+                            is UseCaseResult.Success -> ManageTagsUiState.Success(localResult.data)
+                            is UseCaseResult.Error -> ManageTagsUiState.Error(result.throwable)
+                        }
+                    }
                 }
             }
         }

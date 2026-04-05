@@ -4,8 +4,7 @@ import com.owncloud.android.domain.tags.model.OCTag
 
 interface TagRepository {
     fun getTagsForAccount(accountName: String): List<OCTag>
-    fun getTagsForFile(fileId: Long): List<OCTag>
-    fun getFileIdsByTag(tagId: Long): List<Long>
+    fun getLocalTagsForFile(fileLocalId: Long): List<OCTag>
     fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String)
     fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String)
     fun refreshTagsForAccount(accountName: String): List<OCTag>

@@ -13,11 +13,8 @@ class OCTagRepository(
     override fun getTagsForAccount(accountName: String): List<OCTag> =
         remoteTagDataSource.getSystemTags(accountName)
 
-    override fun getTagsForFile(fileId: Long): List<OCTag> =
-        localTagDataSource.getTagsForFile(fileId)
-
-    override fun getFileIdsByTag(tagId: Long): List<Long> =
-        localTagDataSource.getFileIdsByTag(tagId)
+    override fun getLocalTagsForFile(fileLocalId: Long): List<OCTag> =
+        localTagDataSource.getTagsForFile(fileLocalId)
 
     override fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         remoteTagDataSource.assignTagToFile(accountName, fileRemoteId, tagId)

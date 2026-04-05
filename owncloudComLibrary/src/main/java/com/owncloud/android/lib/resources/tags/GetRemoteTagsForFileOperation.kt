@@ -80,7 +80,7 @@ class GetRemoteTagsForFileOperation(
 
     companion object {
         private const val SYSTEM_TAGS_RELATIONS_PATH = "/remote.php/dav/systemtags-relations/files"
-        private const val TIMEOUT = 10_000L
+        private const val TIMEOUT = 10L
 
         private val TAG_PROP_SET: Array<Property.Name> = arrayOf(
             OCTagDisplayName.NAME,

@@ -123,8 +123,7 @@ import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncU
 import com.owncloud.android.domain.tags.usecases.AssignTagToFileUseCase
 import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
 import com.owncloud.android.domain.tags.usecases.DeleteTagUseCase
-import com.owncloud.android.domain.tags.usecases.GetFileIdsByTagUseCase
-import com.owncloud.android.domain.tags.usecases.GetTagsForFileUseCase
+import com.owncloud.android.domain.tags.usecases.GetLocalTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshFilesByTagUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForFileUseCase
@@ -263,11 +262,10 @@ val useCaseModule = module {
 
     // Tags
     factoryOf(::RefreshTagsForAccountUseCase)
-    factoryOf(::GetTagsForFileUseCase)
-    factoryOf(::GetFileIdsByTagUseCase)
     factoryOf(::AssignTagToFileUseCase)
     factoryOf(::RefreshFilesByTagUseCase)
     factoryOf(::RefreshTagsForFileUseCase)
+    factoryOf(::GetLocalTagsForFileUseCase)
     factoryOf(::RefreshTagsFromServerUseCase)
     factoryOf(::RemoveTagFromFileUseCase)
     factoryOf(::CreateTagUseCase)
