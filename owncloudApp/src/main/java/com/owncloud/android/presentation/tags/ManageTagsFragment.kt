@@ -29,7 +29,6 @@ import com.owncloud.android.ui.custom.FilterableAutoCompleteTextView
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.MimetypeIconUtil
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import timber.log.Timber
 
 class ManageTagsFragment : FileFragment() {
 
@@ -135,11 +134,9 @@ class ManageTagsFragment : FileFragment() {
         }
 
         binding.tagSearchEditText.setOnItemSelectedListener { item ->
-            Timber.d("Selected item: $item")
             manageTagsViewModel.assignTagToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item.id)
         }
         binding.tagSearchEditText.setOnAddItemClickListener { item ->
-            Timber.d("Added item: $item")
             manageTagsViewModel.createTagAndAssignToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item)
         }
     }
@@ -198,8 +195,9 @@ class ManageTagsFragment : FileFragment() {
     }
 
     private fun renderTags(tags: List<OCTag>) {
+        val wasExpanded = isExpanded
+
         binding.selectedTagsChipGroup.removeAllViews()
-        isExpanded = false
         overflowChips = emptyList()
         toggleChip = null
 
@@ -222,10 +220,16 @@ class ManageTagsFragment : FileFragment() {
                     override fun onGlobalLayout() {
                         if (!binding.selectedTagsChipGroup.viewTreeObserver.isAlive) return
                         binding.selectedTagsChipGroup.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        isExpanded = false
                         setupExpandCollapse()
+                        if (wasExpanded && overflowChips.isNotEmpty()) {
+                            toggleExpand()
+                        }
                     }
                 }
             )
+        } else {
+            isExpanded = false
         }
         updateTagDropdown()
     }

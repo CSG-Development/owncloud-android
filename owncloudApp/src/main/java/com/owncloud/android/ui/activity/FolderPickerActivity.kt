@@ -241,10 +241,6 @@ open class FolderPickerActivity : FileActivity(),
         // Nothing to do. Details can't be opened here.
     }
 
-    override fun manageTags(file: OCFile) {
-
-    }
-
     private fun pickerModeIsNotCopyAndCameraFolder() = pickerMode != PickerMode.COPY && pickerMode != PickerMode.CAMERA_FOLDER
 
     private fun initAndShowListOfFilesFragment(spaceId: String? = null) {

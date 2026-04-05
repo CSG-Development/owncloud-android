@@ -115,6 +115,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
@@ -780,7 +781,7 @@ class MainFileListFragment : FileFragment(),
                     }
 
                     FileMenuOption.MANAGE_TAGS -> {
-                        fileActions?.manageTags(file)
+                        startActivity(TagsActivity.startForManageTags(requireActivity(), file))
                     }
 
                     FileMenuOption.SEND -> {
@@ -1521,7 +1522,7 @@ class MainFileListFragment : FileFragment(),
             }
 
             R.id.action_manage_tags -> {
-                fileActions?.manageTags(singleFile)
+                startActivity(TagsActivity.startForManageTags(requireActivity(), singleFile))
                 true
             }
 
@@ -1706,7 +1707,6 @@ class MainFileListFragment : FileFragment(),
         fun onShareFileClicked(file: OCFile)
         fun initDownloadForSending(file: OCFile)
         fun showDetails(file: OCFile)
-        fun manageTags(file: OCFile)
         fun syncFile(file: OCFile)
         fun openFile(file: OCFile)
         fun sendDownloadedFile(file: OCFile)

@@ -51,6 +51,7 @@ import com.owncloud.android.presentation.files.operations.FileOperationsViewMode
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.previews.PreviewTextViewModel
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.dialog.LoadingDialog
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
@@ -149,6 +150,11 @@ class PreviewTextFragment : FileFragment() {
 
             R.id.action_remove_file -> {
                 RemoveFilesDialogFragment.newInstance(file).show(requireFragmentManager(), TAG_REMOVE_FILES_DIALOG_FRAGMENT)
+                true
+            }
+
+            R.id.action_manage_tags -> {
+                startActivity(TagsActivity.startForManageTags(requireContext(), file))
                 true
             }
 

@@ -76,6 +76,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.ui.preview.PreviewAudioFragment
@@ -186,6 +187,7 @@ class FileDetailsFragment : FileFragment() {
                         SynchronizeFileUseCase.SyncType.AlreadySynchronized -> {
                             showMessageInSnackbar(getString(R.string.sync_file_nothing_to_do_msg))
                         }
+
                         is SynchronizeFileUseCase.SyncType.ConflictDetected -> {
                             val showConflictActivityIntent = Intent(requireActivity(), ConflictsResolveActivity::class.java)
                             showConflictActivityIntent.putExtra(ConflictsResolveActivity.EXTRA_FILE, file)
@@ -226,7 +228,6 @@ class FileDetailsFragment : FileFragment() {
         fileDetailsViewModel.checkOnGoingTransfersWhenOpening()
         requireActivity().title = getString(R.string.details_label)
     }
-
 
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
@@ -326,6 +327,11 @@ class FileDetailsFragment : FileFragment() {
 
             R.id.action_unset_available_offline -> {
                 fileOperationsViewModel.performOperation(UnsetFilesAsAvailableOffline(listOf(safeFile.file)))
+                true
+            }
+
+            R.id.action_manage_tags -> {
+                startActivity(TagsActivity.startForManageTags(requireActivity(), file))
                 true
             }
 
