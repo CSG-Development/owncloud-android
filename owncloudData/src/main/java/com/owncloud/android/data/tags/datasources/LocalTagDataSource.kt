@@ -6,6 +6,7 @@ interface LocalTagDataSource {
     fun getTagsForAccount(accountOwner: String): List<OCTag>
     fun getTagsForFile(fileId: Long): List<OCTag>
     fun getFileIdsByTag(tagId: Long): List<Long>
+    fun getLocalTagId(accountOwner: String, serverTagId: String): Long?
     fun assignTagToFile(fileId: Long, tagId: Long)
     fun removeTagFromFile(fileId: Long, tagId: Long)
     fun replaceTagsForAccount(accountOwner: String, tags: List<OCTag>)

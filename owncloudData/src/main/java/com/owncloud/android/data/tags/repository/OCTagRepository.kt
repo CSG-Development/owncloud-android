@@ -21,12 +21,14 @@ class OCTagRepository(
 
     override fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         remoteTagDataSource.assignTagToFile(accountName, fileRemoteId, tagId)
-        localTagDataSource.assignTagToFile(fileLocalId, tagId.toLong())
+        val localTagId = localTagDataSource.getLocalTagId(accountName, tagId) ?: return
+        localTagDataSource.assignTagToFile(fileLocalId, localTagId)
     }
 
     override fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         remoteTagDataSource.unassignTagFromFile(accountName, fileRemoteId, tagId)
-        localTagDataSource.removeTagFromFile(fileLocalId, tagId.toLong())
+        val localTagId = localTagDataSource.getLocalTagId(accountName, tagId) ?: return
+        localTagDataSource.removeTagFromFile(fileLocalId, localTagId)
     }
 
     override fun refreshTagsForAccount(accountName: String): List<OCTag> {

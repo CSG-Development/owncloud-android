@@ -801,4 +801,5 @@
   <string name="manage_tags_add_tag">Add "%s"</string>
   <string name="manage_tags_no_tags_available">No tags available. Type to add one.</string>
   <string name="manage_tags_empty_title">No tags assigned to this file</string>
+  <string name="manage_tags_operation_error">Tag operation failed</string>
 </resources>

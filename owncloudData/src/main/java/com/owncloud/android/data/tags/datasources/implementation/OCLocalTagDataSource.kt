@@ -18,7 +18,10 @@ class OCLocalTagDataSource(
         tagDao.getTagsForFile(fileId).map { it.toModel() }
 
     override fun getFileIdsByTag(tagId: Long): List<Long> =
-        tagDao.getFilesByTag(tagId).mapNotNull { it.id }
+        tagDao.getFilesByTag(tagId).map { it.id }
+
+    override fun getLocalTagId(accountOwner: String, serverTagId: String): Long? =
+        tagDao.getTagByServerTagId(accountOwner, serverTagId)?.id
 
     override fun assignTagToFile(fileId: Long, tagId: Long) {
         tagDao.assignTagToFile(OCFileTagEntity(fileId = fileId, tagId = tagId))

@@ -22,6 +22,7 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
+import com.owncloud.android.extensions.showErrorInSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.tags.ManageTagsViewModel.ManageTagsUiState
 import com.owncloud.android.ui.custom.FilterableAutoCompleteTextView
@@ -58,6 +59,7 @@ class ManageTagsFragment : FileFragment() {
         setupImagePreview()
         setupTagSearch()
         setupSelectedTags()
+        observeErrors()
         manageTagsViewModel.loadTagsForFile(file.owner, file.fileId ?: 0L, file.id ?: 0L)
     }
 
@@ -123,11 +125,13 @@ class ManageTagsFragment : FileFragment() {
         binding.tagSearchEditText.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 updateTagDropdown()
+                binding.tagSearchEditText.showDropDown()
             }
         }
 
         binding.tagSearchEditText.addTextChangedListener {
             updateTagDropdown()
+            binding.tagSearchEditText.showDropDown()
         }
 
         binding.tagSearchEditText.setOnItemSelectedListener { item ->
@@ -137,6 +141,12 @@ class ManageTagsFragment : FileFragment() {
         binding.tagSearchEditText.setOnAddItemClickListener { item ->
             Timber.d("Added item: $item")
             manageTagsViewModel.createTagAndAssignToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item)
+        }
+    }
+
+    private fun observeErrors() {
+        collectLatestLifecycleFlow(manageTagsViewModel.errorEvent) { throwable ->
+            showErrorInSnackbar(R.string.manage_tags_operation_error, throwable)
         }
     }
 
@@ -321,9 +331,9 @@ class ManageTagsFragment : FileFragment() {
         }
 
         binding.tagSearchEditText.setDropdownItems(items)
-        if (binding.tagSearchEditText.hasFocus()) {
-            binding.tagSearchEditText.showDropDown()
-        }
+//        if (binding.tagSearchEditText.hasFocus()) {
+//            binding.tagSearchEditText.showDropDown()
+//        }
     }
 
     override fun onDestroyView() {

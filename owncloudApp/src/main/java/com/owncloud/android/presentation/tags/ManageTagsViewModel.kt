@@ -10,7 +10,9 @@ import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -30,6 +32,9 @@ class ManageTagsViewModel(
     private val _allTagsUiState = MutableStateFlow<AllTagsUiState>(AllTagsUiState.Loading)
     val allTagsUiState: StateFlow<AllTagsUiState> = _allTagsUiState
 
+    private val _errorEvent = MutableSharedFlow<Throwable>()
+    val errorEvent: SharedFlow<Throwable> = _errorEvent
+
     fun loadTagsForFile(accountName: String, fileRemoteId: Long, fileLocalId: Long) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             _uiState.update { ManageTagsUiState.Loading }
@@ -45,7 +50,7 @@ class ManageTagsViewModel(
 
     fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            removeTagFromFileUseCase(
+            val result = removeTagFromFileUseCase(
                 RemoveTagFromFileUseCase.Params(
                     accountName = accountName,
                     fileLocalId = fileLocalId,
@@ -53,7 +58,16 @@ class ManageTagsViewModel(
                     tagId = tagId,
                 )
             )
-            loadTagsForFile(accountName, fileRemoteId, fileLocalId)
+            when (result) {
+                is UseCaseResult.Success -> {
+                    _uiState.update { current ->
+                        if (current is ManageTagsUiState.Success) {
+                            ManageTagsUiState.Success(current.tags.filter { it.id != tagId })
+                        } else current
+                    }
+                }
+                is UseCaseResult.Error -> _errorEvent.emit(result.throwable)
+            }
         }
     }
 
@@ -71,26 +85,67 @@ class ManageTagsViewModel(
 
     fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            assignTagToFileUseCase(AssignTagToFileUseCase.Params(accountName = accountName, fileLocalId = fileLocalId, fileRemoteId = fileRemoteId, tagId = tagId))
-            loadTagsForFile(accountName, fileRemoteId, fileLocalId)
-            loadAllTagsForAccount(accountName)
+            val result = assignTagToFileUseCase(
+                AssignTagToFileUseCase.Params(
+                    accountName = accountName,
+                    fileLocalId = fileLocalId,
+                    fileRemoteId = fileRemoteId,
+                    tagId = tagId
+                )
+            )
+            when (result) {
+                is UseCaseResult.Success -> {
+                    val assignedTag = (_allTagsUiState.value as? AllTagsUiState.Success)
+                        ?.tags?.firstOrNull { it.id == tagId }
+                    if (assignedTag != null) {
+                        _uiState.update { current ->
+                            val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
+                            ManageTagsUiState.Success(currentTags + assignedTag)
+                        }
+                    }
+                }
+                is UseCaseResult.Error -> _errorEvent.emit(result.throwable)
+            }
         }
     }
 
     fun createTagAndAssignToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagName: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             val createResult = createTagUseCase(CreateTagUseCase.Params(accountName = accountName, name = tagName))
-            if (createResult is UseCaseResult.Error) return@launch
-            val refreshResult = refreshTagsForAccountUseCase(RefreshTagsForAccountUseCase.Params(accountName))
-            if (refreshResult is UseCaseResult.Success) {
-                val newTag = refreshResult.data.firstOrNull { it.displayName == tagName }
-                val tagId = newTag?.id
-                if (tagId != null) {
-                    assignTagToFileUseCase(AssignTagToFileUseCase.Params(accountName = accountName, fileLocalId = fileLocalId, fileRemoteId = fileRemoteId, tagId = tagId))
-                }
-                _allTagsUiState.update { AllTagsUiState.Success(refreshResult.data.filter { it.userAssignable }) }
+            if (createResult is UseCaseResult.Error) {
+                _errorEvent.emit(createResult.throwable)
+                return@launch
             }
-            loadTagsForFile(accountName, fileRemoteId, fileLocalId)
+
+            val refreshResult = refreshTagsForAccountUseCase(RefreshTagsForAccountUseCase.Params(accountName))
+            if (refreshResult is UseCaseResult.Error) {
+                _errorEvent.emit(refreshResult.throwable)
+                return@launch
+            }
+
+            val allTags = (refreshResult as UseCaseResult.Success).data
+            _allTagsUiState.update { AllTagsUiState.Success(allTags.filter { it.userAssignable }) }
+
+            val newTag = allTags.firstOrNull { it.displayName == tagName }
+            val tagId = newTag?.id ?: return@launch
+
+            val assignResult = assignTagToFileUseCase(
+                AssignTagToFileUseCase.Params(
+                    accountName = accountName,
+                    fileLocalId = fileLocalId,
+                    fileRemoteId = fileRemoteId,
+                    tagId = tagId
+                )
+            )
+            when (assignResult) {
+                is UseCaseResult.Success -> {
+                    _uiState.update { current ->
+                        val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
+                        ManageTagsUiState.Success(currentTags + newTag)
+                    }
+                }
+                is UseCaseResult.Error -> _errorEvent.emit(assignResult.throwable)
+            }
         }
     }
 
