@@ -44,6 +44,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.AppCompatImageView
@@ -189,7 +190,9 @@ abstract class DrawerActivity : ToolbarActivity() {
         drawerToggle?.toolbarNavigationClickListener = View.OnClickListener { onBackPressed() }
     }
 
-    override fun updateStandardToolbar(title: CharSequence, homeButtonDisplayed: Boolean, showBackArrow: Boolean) {
+    override fun updateStandardToolbar(title: CharSequence, homeButtonDisplayed: Boolean, showBackArrow: Boolean,
+        @DrawableRes customIconDrawable: Int?
+    ) {
         drawerToggle?.isDrawerIndicatorEnabled = !showBackArrow
         setDrawerLockMode(
             if (showBackArrow) {
@@ -198,7 +201,7 @@ abstract class DrawerActivity : ToolbarActivity() {
                 DrawerLayout.LOCK_MODE_UNLOCKED
             }
         )
-        super.updateStandardToolbar(title, homeButtonDisplayed, showBackArrow)
+        super.updateStandardToolbar(title, homeButtonDisplayed, showBackArrow, customIconDrawable)
     }
 
     protected open fun onDrawerToggled() {}

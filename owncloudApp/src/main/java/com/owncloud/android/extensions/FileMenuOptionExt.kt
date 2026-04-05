@@ -42,6 +42,7 @@ fun FileMenuOption.toResId() =
         FileMenuOption.UNSET_AV_OFFLINE -> R.id.action_unset_available_offline
         FileMenuOption.SET_FAVORITE -> R.id.action_set_favorite
         FileMenuOption.UNSET_FAVORITE -> R.id.action_unset_favorite
+        FileMenuOption.MANAGE_TAGS -> R.id.action_manage_tags
     }
 
 fun FileMenuOption.toStringResId() =
@@ -63,6 +64,7 @@ fun FileMenuOption.toStringResId() =
         FileMenuOption.UNSET_AV_OFFLINE -> R.string.unset_available_offline
         FileMenuOption.SET_FAVORITE -> R.string.set_favorite
         FileMenuOption.UNSET_FAVORITE -> R.string.unset_favorite
+        FileMenuOption.MANAGE_TAGS -> R.string.manage_tags_option
     }
 
 fun FileMenuOption.toDrawableResId() =
@@ -84,4 +86,5 @@ fun FileMenuOption.toDrawableResId() =
         FileMenuOption.UNSET_AV_OFFLINE -> R.drawable.ic_action_unset_available_offline
         FileMenuOption.SET_FAVORITE -> R.drawable.ic_star_outlined_blue
         FileMenuOption.UNSET_FAVORITE -> R.drawable.ic_star_filled_blue
+        FileMenuOption.MANAGE_TAGS -> R.drawable.ic_tag_tintable
     }

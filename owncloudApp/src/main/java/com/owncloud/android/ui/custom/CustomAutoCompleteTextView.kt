@@ -77,6 +77,7 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
     }
 
     init {
+        var inputEnabledAttr = false
         val typed = context.obtainStyledAttributes(attrs, R.styleable.CustomAutoCompleteTextView)
         try {
             dropdownBackground = typed.getDrawable(R.styleable.CustomAutoCompleteTextView_dropdownBackground)
@@ -86,11 +87,12 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
                 R.styleable.CustomAutoCompleteTextView_dropdownMaxHeight,
                 resources.getDimensionPixelSize(R.dimen.custom_autocomplete_max_height)
             )
+            inputEnabledAttr = typed.getBoolean(R.styleable.CustomAutoCompleteTextView_inputEnabled, false)
         } finally {
             typed.recycle()
         }
         threshold = Int.MAX_VALUE
-        setInputEnabled(false)
+        setInputEnabled(inputEnabledAttr)
         setOnClickListener {
             showDropDown()
         }
@@ -110,10 +112,10 @@ class CustomAutoCompleteTextView @JvmOverloads constructor(
      * When disabled, the field acts as a dropdown-only selector (no keyboard input).
      * Click to show dropdown still works.
      */
-    private fun setInputEnabled(enabled: Boolean) {
+    fun setInputEnabled(enabled: Boolean) {
         isInputEnabled = enabled
         if (enabled) {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            inputType = InputType.TYPE_CLASS_TEXT
             isFocusable = true
             isFocusableInTouchMode = true
         } else {

@@ -8,7 +8,17 @@ class RemoveTagFromFileUseCase(
 ) : BaseUseCaseWithResult<Unit, RemoveTagFromFileUseCase.Params>() {
 
     override fun run(params: Params) =
-        tagRepository.removeTagFromFile(params.fileId, params.tagId)
+        tagRepository.removeTagFromFile(
+            accountName = params.accountName,
+            fileLocalId = params.fileLocalId,
+            fileRemoteId = params.fileRemoteId,
+            tagId = params.tagId,
+        )
 
-    data class Params(val fileId: Long, val tagId: Long)
+    data class Params(
+        val accountName: String,
+        val fileLocalId: Long,
+        val fileRemoteId: Long,
+        val tagId: String,
+    )
 }

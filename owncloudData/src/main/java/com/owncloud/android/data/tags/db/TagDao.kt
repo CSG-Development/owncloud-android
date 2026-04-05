@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import com.owncloud.android.data.files.db.OCFileEntity
 
 @Dao
 interface TagDao {
@@ -22,13 +21,6 @@ interface TagDao {
                 "WHERE ft.fileId = :fileId"
     )
     fun getTagsForFile(fileId: Long): List<OCTagEntity>
-
-    @Query(
-        "SELECT f.* FROM files f " +
-                "INNER JOIN file_tags ft ON f.id = ft.fileId " +
-                "WHERE ft.tagId = :tagId"
-    )
-    fun getFilesByTag(tagId: Long): List<OCFileEntity>
 
     @Query("SELECT id FROM files WHERE remoteId IN (:remoteIds)")
     fun getFileLocalIdsByRemoteIds(remoteIds: List<String>): List<Long>
@@ -52,11 +44,36 @@ interface TagDao {
         assignTagsToFiles(fileTags)
     }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun upsertTag(tag: OCTagEntity): Long
+    @Transaction
+    fun replaceTagsForFile(fileLocalId: Long, tagLocalIds: List<Long>) {
+        deleteAllTagsForFile(fileLocalId)
+        val fileTags = tagLocalIds.map { OCFileTagEntity(fileId = fileLocalId, tagId = it) }
+        assignTagsToFiles(fileTags)
+    }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun upsertTags(tags: List<OCTagEntity>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertTagIgnore(tag: OCTagEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertTagsIgnore(tags: List<OCTagEntity>)
+
+    @Transaction
+    fun upsertTag(tag: OCTagEntity): Long {
+        val insertResult = insertTagIgnore(tag)
+        if (insertResult == -1L) {
+            updateTagByServerTagId(tag.accountOwner, tag.tagId, tag.displayName, tag.userVisible, tag.userAssignable)
+            return getTagByServerTagId(tag.accountOwner, tag.tagId)?.id ?: -1L
+        }
+        return insertResult
+    }
+
+    @Transaction
+    fun upsertTags(tags: List<OCTagEntity>) {
+        insertTagsIgnore(tags)
+        tags.forEach { tag ->
+            updateTagByServerTagId(tag.accountOwner, tag.tagId, tag.displayName, tag.userVisible, tag.userAssignable)
+        }
+    }
 
     @Query("DELETE FROM tags WHERE accountOwner = :accountOwner AND tagId NOT IN (:remoteTagIds)")
     fun deleteStaleTagsForAccount(accountOwner: String, remoteTagIds: List<String>)

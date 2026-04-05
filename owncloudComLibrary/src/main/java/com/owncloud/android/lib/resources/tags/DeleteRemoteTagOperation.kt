@@ -44,6 +44,6 @@ class DeleteRemoteTagOperation(
 
     companion object {
         private const val SYSTEM_TAGS_PATH = "/remote.php/dav/systemtags"
-        private const val TIMEOUT = 10_000L
+        private const val TIMEOUT = 10L
     }
 }

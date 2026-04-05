@@ -4,12 +4,14 @@ import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.tags.TagRepository
 import com.owncloud.android.domain.tags.model.OCTag
 
-class GetTagsForFileUseCase(
+class GetLocalTagsForFileUseCase(
     private val tagRepository: TagRepository,
-) : BaseUseCaseWithResult<List<OCTag>, GetTagsForFileUseCase.Params>() {
+) : BaseUseCaseWithResult<List<OCTag>, GetLocalTagsForFileUseCase.Params>() {
 
     override fun run(params: Params): List<OCTag> =
-        tagRepository.getTagsForFile(params.fileId)
+        tagRepository.getLocalTagsForFile(params.fileLocalId)
 
-    data class Params(val fileId: Long)
+    data class Params(
+        val fileLocalId: Long,
+    )
 }

@@ -57,6 +57,7 @@ import com.owncloud.android.presentation.files.operations.FileOperationsViewMode
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.previews.PreviewAudioViewModel
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.android.ext.android.inject
@@ -283,6 +284,11 @@ class PreviewAudioFragment : FileFragment() {
             R.id.action_remove_file -> {
                 val dialog = RemoveFilesDialogFragment.newInstance(file)
                 dialog.show(parentFragmentManager, TAG_REMOVE_FILES_DIALOG_FRAGMENT)
+                true
+            }
+
+            R.id.action_manage_tags -> {
+                startActivity(TagsActivity.startForManageTags(requireContext(), file))
                 true
             }
 

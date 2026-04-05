@@ -13,17 +13,20 @@ class OCTagRepository(
     override fun getTagsForAccount(accountName: String): List<OCTag> =
         remoteTagDataSource.getSystemTags(accountName)
 
-    override fun getTagsForFile(fileId: Long): List<OCTag> =
-        localTagDataSource.getTagsForFile(fileId)
+    override fun getLocalTagsForFile(fileLocalId: Long): List<OCTag> =
+        localTagDataSource.getTagsForFile(fileLocalId)
 
-    override fun getFileIdsByTag(tagId: Long): List<Long> =
-        localTagDataSource.getFileIdsByTag(tagId)
+    override fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
+        remoteTagDataSource.assignTagToFile(accountName, fileRemoteId, tagId)
+        val localTagId = localTagDataSource.getLocalTagId(accountName, tagId) ?: return
+        localTagDataSource.assignTagToFile(fileLocalId, localTagId)
+    }
 
-    override fun assignTagToFile(fileId: Long, tagId: Long) =
-        localTagDataSource.assignTagToFile(fileId, tagId)
-
-    override fun removeTagFromFile(fileId: Long, tagId: Long) =
-        localTagDataSource.removeTagFromFile(fileId, tagId)
+    override fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
+        remoteTagDataSource.unassignTagFromFile(accountName, fileRemoteId, tagId)
+        val localTagId = localTagDataSource.getLocalTagId(accountName, tagId) ?: return
+        localTagDataSource.removeTagFromFile(fileLocalId, localTagId)
+    }
 
     override fun refreshTagsForAccount(accountName: String): List<OCTag> {
         try {
@@ -39,6 +42,12 @@ class OCTagRepository(
         val remoteFileIds = remoteTagDataSource.getFileRemoteIdsByTag(accountName, serverTagId)
         localTagDataSource.replaceFileAssociationsForTag(accountName, serverTagId, remoteFileIds)
         return remoteFileIds
+    }
+
+    override fun refreshTagsForFile(accountName: String, fileRemoteId: Long, fileLocalId: Long): List<OCTag> {
+        val tags = remoteTagDataSource.getRemoteTagsForFile(accountName, fileRemoteId)
+        localTagDataSource.replaceTagsForFile(fileLocalId, accountName, tags)
+        return tags
     }
 
     override fun createTag(accountName: String, name: String, userVisible: Boolean, userAssignable: Boolean) {

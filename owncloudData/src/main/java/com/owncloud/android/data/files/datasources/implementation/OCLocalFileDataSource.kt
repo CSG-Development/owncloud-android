@@ -286,6 +286,7 @@ class OCLocalFileDataSource(
                 treeEtag = treeEtag,
                 spaceId = spaceId,
                 isFavorite = isFavorite,
+                fileId = fileId,
             )
 
         @VisibleForTesting
@@ -316,6 +317,7 @@ class OCLocalFileDataSource(
                 name = fileName,
                 spaceId = spaceId,
                 isFavorite = isFavorite,
+                fileId = fileId,
             ).apply { this@toEntity.id?.let { modelId -> this.id = modelId } }
     }
 }

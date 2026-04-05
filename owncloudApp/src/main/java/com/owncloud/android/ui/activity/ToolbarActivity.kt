@@ -28,6 +28,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
 import android.widget.ImageView
+import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
@@ -62,14 +63,19 @@ abstract class ToolbarActivity : BaseActivity() {
         title: CharSequence = getAppName(),
         homeButtonDisplayed: Boolean = true,
         showBackArrow: Boolean = false,
+        @DrawableRes customIconDrawable: Int? = null,
     ) {
         if (getStandardToolbar().isVisible) {
             supportActionBar?.title = title
             supportActionBar?.setDisplayHomeAsUpEnabled(homeButtonDisplayed)
             supportActionBar?.setHomeButtonEnabled(homeButtonDisplayed)
-            supportActionBar?.setHomeAsUpIndicator(
-                if (showBackArrow) androidx.appcompat.R.drawable.abc_ic_ab_back_material else R.drawable.ic_drawer_icon
-            )
+            if (customIconDrawable != null) {
+                supportActionBar?.setHomeAsUpIndicator(customIconDrawable)
+            } else {
+                supportActionBar?.setHomeAsUpIndicator(
+                    if (showBackArrow) androidx.appcompat.R.drawable.abc_ic_ab_back_material else R.drawable.ic_drawer_icon
+                )
+            }
         } else {
             setupStandardToolbar(title = title, homeButtonEnabled = homeButtonDisplayed, displayShowTitleEnabled = true)
         }
