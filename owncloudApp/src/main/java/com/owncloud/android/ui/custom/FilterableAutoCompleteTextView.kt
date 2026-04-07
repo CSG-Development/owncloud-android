@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupWindow
@@ -28,6 +29,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
 
     private var allItems: List<DropdownItem<*>> = emptyList()
     private var displayItems: List<DropdownItem<*>> = emptyList()
+    private var startDrawable: Drawable? = null
     private var onItemSelectedListener: OnItemSelectedListener? = null
     private var onAddItemClickListener: ((query: String) -> Unit)? = null
     var onDropdownDismissListener: OnDropdownDismissListener? = null
@@ -126,12 +128,42 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                updateClearButton()
                 updateFilteredItems()
                 if (hasFocus() && !suppressDropdown) {
                     showDropDown()
                 }
             }
         })
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        startDrawable = compoundDrawablesRelative[0]
+    }
+
+    private fun updateClearButton() {
+        val clearDrawable = if (text?.isNotEmpty() == true) {
+            ContextCompat.getDrawable(context, R.drawable.ic_close_accent)
+        } else {
+            null
+        }
+        setCompoundDrawablesRelativeWithIntrinsicBounds(startDrawable, null, clearDrawable, null)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_UP) {
+            val clearDrawable = compoundDrawablesRelative[2]
+            if (clearDrawable != null) {
+                val touchX = event.x.toInt()
+                val clearStart = width - paddingEnd - clearDrawable.intrinsicWidth
+                if (touchX >= clearStart) {
+                    text?.clear()
+                    return true
+                }
+            }
+        }
+        return super.onTouchEvent(event)
     }
 
     override fun onKeyPreIme(keyCode: Int, event: KeyEvent?): Boolean {
