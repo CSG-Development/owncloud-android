@@ -32,10 +32,10 @@ class OCTagRepository(
         try {
             val remoteTags = remoteTagDataSource.getSystemTags(accountName)
             localTagDataSource.replaceTagsForAccount(accountName, remoteTags)
-            return remoteTags
         } catch (_: Throwable) {
-            return localTagDataSource.getTagsForAccount(accountName)
+            // Fall through to local read below
         }
+        return localTagDataSource.getTagsForAccount(accountName)
     }
 
     override fun refreshFilesByTag(accountName: String, serverTagId: String): List<String> {

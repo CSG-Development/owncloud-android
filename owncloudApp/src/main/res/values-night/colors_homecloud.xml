@@ -57,6 +57,7 @@
     <color name="homecloud_fab_label_text">@color/homecloud_primary_inverted</color>
 
     <color name="homecloud_search_view_background">#3D3E41</color>
+    <color name="homecloud_filter_bottom_sheet_background">#3D3E41</color>
 
     <color name="homecloud_menu_background">#424242</color>
 

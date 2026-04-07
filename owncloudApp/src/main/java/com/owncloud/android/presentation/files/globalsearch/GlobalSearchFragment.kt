@@ -198,10 +198,15 @@ class GlobalSearchFragment : Fragment(),
         val filterTypeButton = binding.searchFilters.filterTypeButton
         val filterDateButton = binding.searchFilters.filterDateButton
         val filterSizeButton = binding.searchFilters.filterSizeButton
+        val filterTagsButton = binding.searchFilters.filterTagsButton
 
         filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
         filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
         filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
+        filterTagsButton.setOnClickListener { showTagFilterBottomSheet() }
+
+        val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name ?: return
+        globalSearchViewModel.loadTagsForAccount(accountName)
     }
 
     private fun showTypeFilterBottomSheet() {
@@ -283,6 +288,35 @@ class GlobalSearchFragment : Fragment(),
         bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
     }
 
+    private fun showTagFilterBottomSheet() {
+        val tags = globalSearchViewModel.tagsState.value
+        if (tags.isEmpty()) return
+
+        val items = tags.map { tag ->
+            FilterItem(
+                id = tag.localId.toString(),
+                label = tag.displayName.orEmpty(),
+                iconResId = null,
+            )
+        }
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.homecloud_global_search_filter_tags),
+            items = items,
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTagLocalIds.map { it.toString() }.toSet(),
+            isMultiSelect = true,
+            showSearch = true,
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                globalSearchViewModel.updateTagFilters(selectedIds.mapNotNull { it.toLongOrNull() }.toSet())
+            }
+        }
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
+    }
+
     private fun updateFilterButtonsUI(filtersState: SearchFiltersState) {
         val filterTypeButton = binding.searchFilters.filterTypeButton
         val filterDateButton = binding.searchFilters.filterDateButton
@@ -318,6 +352,19 @@ class GlobalSearchFragment : Fragment(),
                 getString(filtersState.sizeFilter.labelResId)
             }
             isSelected = filtersState.sizeFilter != SizeFilter.ANY
+        }
+
+        binding.searchFilters.filterTagsButton.apply {
+            val selectedCount = filtersState.selectedTagLocalIds.size
+            text = when (selectedCount) {
+                0 -> getString(R.string.homecloud_global_search_filter_tags)
+                1 -> {
+                    val tag = globalSearchViewModel.tagsState.value.find { it.localId == filtersState.selectedTagLocalIds.first() }
+                    tag?.displayName?.takeIf { it.isNotEmpty() } ?: getString(R.string.homecloud_global_search_filter_tags)
+                }
+                else -> getString(R.string.homecloud_global_search_filter_tags_counter, selectedCount)
+            }
+            isSelected = selectedCount > 0
         }
     }
 

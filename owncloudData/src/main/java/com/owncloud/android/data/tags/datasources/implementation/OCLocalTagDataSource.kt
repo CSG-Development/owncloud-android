@@ -88,6 +88,7 @@ class OCLocalTagDataSource(
         fun OCTagEntity.toModel(): OCTag =
             OCTag(
                 id = tagId,
+                localId = id,
                 displayName = displayName,
                 userVisible = userVisible,
                 userAssignable = userAssignable,

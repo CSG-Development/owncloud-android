@@ -170,6 +170,7 @@ data class SearchFiltersState(
     val selectedTypes: Set<TypeFilter> = emptySet(),
     val dateFilter: DateFilter = DateFilter.ANY,
     val sizeFilter: SizeFilter = SizeFilter.ANY,
+    val selectedTagLocalIds: Set<Long> = emptySet(),
 ) {
 
     fun getMimePatterns(): List<String> {
