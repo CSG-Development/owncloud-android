@@ -3,14 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingHorizontal="@dimen/standard_padding"
-    android:paddingBottom="@dimen/standard_padding">
-
-    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
-        android:id="@+id/drag_handle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent" />
+    android:paddingBottom="@dimen/standard_padding"
+    android:paddingHorizontal="@dimen/standard_half_padding">
 
     <TextView
         android:id="@+id/filter_title"
@@ -32,18 +26,41 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/filter_title" />
 
+    <com.owncloud.android.ui.custom.FilterableAutoCompleteTextView
+        android:id="@+id/search_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/standard_half_margin"
+        android:background="@drawable/selector_filterable_autocomplete"
+        android:drawablePadding="4dp"
+        android:hint="Search tags"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:drawableStartCompat="@drawable/ic_tag_tintable"
+        app:drawableTint="@color/homecloud_color_on_secondary_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/filter_items_recycler_view"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/standard_half_margin"
         android:layout_marginTop="@dimen/standard_half_margin"
         android:maxHeight="400dp"
         android:nestedScrollingEnabled="true"
         app:layout_constrainedHeight="true"
+        app:layout_constraintBottom_toTopOf="@id/apply_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/divider"
-        app:layout_constraintBottom_toTopOf="@id/apply_button"/>
+        app:layout_constraintTop_toBottomOf="@id/search_view" />
+
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:id="@+id/drag_handle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/apply_button"

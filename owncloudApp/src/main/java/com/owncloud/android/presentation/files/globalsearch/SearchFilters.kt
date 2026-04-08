@@ -1,6 +1,7 @@
 package com.owncloud.android.presentation.files.globalsearch
 
 import com.owncloud.android.R
+import com.owncloud.android.domain.tags.model.OCTag
 import java.util.Calendar
 
 const val TYPE_FILE = "file"
@@ -170,6 +171,7 @@ data class SearchFiltersState(
     val selectedTypes: Set<TypeFilter> = emptySet(),
     val dateFilter: DateFilter = DateFilter.ANY,
     val sizeFilter: SizeFilter = SizeFilter.ANY,
+    val selectedTags: List<OCTag> = emptyList(),
 ) {
 
     fun getMimePatterns(): List<String> {

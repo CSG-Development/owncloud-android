@@ -39,6 +39,8 @@ import com.owncloud.android.workers.AvailableOfflinePeriodicWorker
 import com.owncloud.android.workers.AvailableOfflinePeriodicWorker.Companion.AVAILABLE_OFFLINE_PERIODIC_WORKER
 import com.owncloud.android.workers.OldLogsCollectorWorker
 import com.owncloud.android.workers.RemoveLocallyFilesWithLastUsageOlderThanGivenTimeWorker
+import com.owncloud.android.workers.TagsSyncPeriodicWorker
+import com.owncloud.android.workers.TagsSyncPeriodicWorker.Companion.TAGS_SYNC_PERIODIC_WORKER
 import com.owncloud.android.workers.UploadFileFromContentUriWorker
 import com.owncloud.android.workers.UploadFileFromFileSystemWorker
 
@@ -87,6 +89,23 @@ class WorkManagerProvider(
 
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(AVAILABLE_OFFLINE_PERIODIC_WORKER, ExistingPeriodicWorkPolicy.KEEP, availableOfflinePeriodicWorker)
+    }
+
+    fun enqueueTagsSyncPeriodicWorker() {
+        val constraintsRequired = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val tagsSyncPeriodicWorker = PeriodicWorkRequestBuilder<TagsSyncPeriodicWorker>(
+            repeatInterval = TagsSyncPeriodicWorker.repeatInterval,
+            repeatIntervalTimeUnit = TagsSyncPeriodicWorker.repeatIntervalTimeUnit
+        )
+            .addTag(TAGS_SYNC_PERIODIC_WORKER)
+            .setConstraints(constraintsRequired)
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(TAGS_SYNC_PERIODIC_WORKER, ExistingPeriodicWorkPolicy.KEEP, tagsSyncPeriodicWorker)
     }
 
     fun enqueueAccountDiscovery(accountName: String) {

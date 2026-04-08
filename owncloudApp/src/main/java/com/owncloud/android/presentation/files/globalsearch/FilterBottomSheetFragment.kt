@@ -1,12 +1,15 @@
 package com.owncloud.android.presentation.files.globalsearch
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.owncloud.android.R
 import com.owncloud.android.databinding.FilterBottomSheetFragmentBinding
 import com.owncloud.android.utils.PreferenceUtils
 
@@ -19,12 +22,13 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
     private val items: List<FilterItem> by lazy { arguments?.getParcelableArrayList(ARG_ITEMS) ?: emptyList() }
     private val selectedIds: Set<String> by lazy { arguments?.getStringArrayList(ARG_SELECTED_IDS)?.toSet() ?: emptySet() }
     private val isMultiSelect: Boolean by lazy { arguments?.getBoolean(ARG_IS_MULTI_SELECT, false) ?: false }
+    private val searchHint: String? by lazy { arguments?.getString(ARG_SEARCH_HINT, null) }
 
     var filterSelectionListener: FilterSelectionListener? = null
 
     private val adapter by lazy {
         FilterItemAdapter(
-            items = items,
+            allItems = items,
             selectedIds = selectedIds.toMutableSet(),
             isMultiSelect = isMultiSelect,
             onItemClick = { item, isSelected ->
@@ -53,6 +57,18 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
             adapter = this@FilterBottomSheetFragment.adapter
         }
 
+        if (searchHint != null) {
+            binding.searchView.visibility = View.VISIBLE
+            binding.searchView.hint = searchHint
+            binding.searchView.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    adapter.filter(s?.toString().orEmpty())
+                }
+            })
+        }
+
         if (isMultiSelect) {
             binding.applyButton.visibility = View.VISIBLE
             binding.applyButton.setOnClickListener {
@@ -62,6 +78,10 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
         } else {
             binding.applyButton.visibility = View.GONE
         }
+    }
+
+    override fun getTheme(): Int {
+        return R.style.ThemeOverlay_App_FilterBottomSheet
     }
 
     override fun onStart() {
@@ -92,18 +112,21 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
         private const val ARG_ITEMS = "ARG_ITEMS"
         private const val ARG_SELECTED_IDS = "ARG_SELECTED_IDS"
         private const val ARG_IS_MULTI_SELECT = "ARG_IS_MULTI_SELECT"
+        private const val ARG_SEARCH_HINT = "ARG_SEARCH_HINT"
 
         fun newInstance(
             title: String,
             items: List<FilterItem>,
             selectedIds: Set<String> = emptySet(),
-            isMultiSelect: Boolean = false
+            isMultiSelect: Boolean = false,
+            searchHint: String? = null,
         ): FilterBottomSheetFragment {
             val args = Bundle().apply {
                 putString(ARG_TITLE, title)
                 putParcelableArrayList(ARG_ITEMS, ArrayList(items))
                 putStringArrayList(ARG_SELECTED_IDS, ArrayList(selectedIds))
                 putBoolean(ARG_IS_MULTI_SELECT, isMultiSelect)
+                putString(ARG_SEARCH_HINT, searchHint)
             }
             return FilterBottomSheetFragment().apply { arguments = args }
         }

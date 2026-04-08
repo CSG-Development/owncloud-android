@@ -174,6 +174,29 @@ interface FileDao {
         maxDate: Long,
     ): List<OCFileEntity>
 
+    @Query(SEARCH_FILES_CASE_SENSITIVE_BY_TAG_LOCAL_IDS)
+    fun searchFilesCaseSensitiveByTagLocalIds(
+        searchPattern: String,
+        minSize: Long,
+        maxSize: Long,
+        mimePrefix: String,
+        minDate: Long,
+        maxDate: Long,
+        tagLocalIds: List<Long>,
+    ): List<OCFileEntity>
+
+    @Query(SEARCH_FILES_CASE_INSENSITIVE_BY_TAG_LOCAL_IDS)
+    fun searchFilesCaseInsensitiveByTagLocalIds(
+        searchPattern: String,
+        minSize: Long,
+        maxSize: Long,
+        mimePrefix: String,
+        minDate: Long,
+        maxDate: Long,
+        tagLocalIds: List<Long>,
+    ): List<OCFileEntity>
+
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertOrIgnore(ocFileEntity: OCFileEntity): Long
 
@@ -674,5 +697,28 @@ interface FileDao {
             AND (:mimePrefix = '' OR mimeType LIKE :mimePrefix || '%')
             AND modificationTimestamp >= :minDate AND modificationTimestamp <= :maxDate
         """
+
+        private const val SEARCH_FILES_CASE_SENSITIVE_BY_TAG_LOCAL_IDS = """
+            SELECT DISTINCT f.*
+            FROM ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME} f
+            INNER JOIN ${ProviderMeta.ProviderTableMeta.FILE_TAGS_TABLE_NAME} ft ON f.id = ft.fileId
+            WHERE ft.tagId IN (:tagLocalIds)
+            AND (:searchPattern = '' OR f.name LIKE '%' || :searchPattern || '%')
+            AND f.length >= :minSize AND f.length <= :maxSize
+            AND (:mimePrefix = '' OR f.mimeType LIKE :mimePrefix || '%')
+            AND f.modificationTimestamp >= :minDate AND f.modificationTimestamp <= :maxDate
+        """
+
+        private const val SEARCH_FILES_CASE_INSENSITIVE_BY_TAG_LOCAL_IDS = """
+            SELECT DISTINCT f.*
+            FROM ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME} f
+            INNER JOIN ${ProviderMeta.ProviderTableMeta.FILE_TAGS_TABLE_NAME} ft ON f.id = ft.fileId
+            WHERE ft.tagId IN (:tagLocalIds)
+            AND (:searchPattern = '' OR LOWER(f.name) LIKE '%' || LOWER(:searchPattern) || '%')
+            AND f.length >= :minSize AND f.length <= :maxSize
+            AND (:mimePrefix = '' OR f.mimeType LIKE :mimePrefix || '%')
+            AND f.modificationTimestamp >= :minDate AND f.modificationTimestamp <= :maxDate
+        """
+
     }
 }

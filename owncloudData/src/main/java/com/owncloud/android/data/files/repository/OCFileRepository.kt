@@ -632,8 +632,9 @@ class OCFileRepository(
         mimePrefix: String,
         minDate: Long,
         maxDate: Long,
+        tagLocalIds: List<Long>,
     ): List<OCFile> {
-        return localFileDataSource.searchFiles(searchPattern, ignoreCase, minSize, maxSize, mimePrefix, minDate, maxDate)
+        return localFileDataSource.searchFiles(searchPattern, ignoreCase, minSize, maxSize, mimePrefix, minDate, maxDate, tagLocalIds)
     }
 
     private fun getFinalRemotePath(
