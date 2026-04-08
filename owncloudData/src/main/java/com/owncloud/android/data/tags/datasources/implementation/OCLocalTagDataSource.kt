@@ -14,6 +14,9 @@ class OCLocalTagDataSource(
     override fun getTagsForAccount(accountOwner: String): List<OCTag> =
         tagDao.getTagsForAccount(accountOwner).map { it.toModel() }
 
+    override fun getTagsByLocalIds(localIds: List<Long>): List<OCTag> =
+        tagDao.getTagsByLocalIds(localIds).map { it.toModel() }
+
     override fun getTagsForFile(fileId: Long): List<OCTag> =
         tagDao.getTagsForFile(fileId).map { it.toModel() }
 

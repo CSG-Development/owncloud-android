@@ -12,7 +12,8 @@ import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.usecases.SearchFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
 import com.owncloud.android.domain.tags.model.OCTag
-import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsByLocalIdsUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsForAccountUseCase
 import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
@@ -27,13 +28,15 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.owncloud.android.domain.files.usecases.SortType.Companion as SortTypeDomain
 
 class GlobalSearchViewModel(
     private val searchFilesUseCase: SearchFilesUseCase,
     private val sortFilesWithSyncInfoUseCase: SortFilesWithSyncInfoUseCase,
     private val filterFileMenuOptionsUseCase: FilterFileMenuOptionsUseCase,
-    private val refreshTagsForAccountUseCase: RefreshTagsForAccountUseCase,
+    private val getTagsForAccountUseCase: GetTagsForAccountUseCase,
+    private val getTagsByLocalIdsUseCase: GetTagsByLocalIdsUseCase,
     private val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val sharedPreferencesProvider: SharedPreferencesProvider,
@@ -50,8 +53,11 @@ class GlobalSearchViewModel(
     private val _filtersState = MutableStateFlow(SearchFiltersState())
     val filtersState: StateFlow<SearchFiltersState> = _filtersState
 
-    private val _tagsState = MutableStateFlow<List<OCTag>>(emptyList())
-    val tagsState: StateFlow<List<OCTag>> = _tagsState
+    private val _tagsLoading = MutableStateFlow(false)
+    val tagsLoading: StateFlow<Boolean> = _tagsLoading
+
+    private val _openTagsBottomSheetEvent = MutableSharedFlow<List<OCTag>>()
+    val openTagsBottomSheetEvent: SharedFlow<List<OCTag>> = _openTagsBottomSheetEvent
 
     init {
         val sortTypeSelected = SortType.entries[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
@@ -94,24 +100,37 @@ class GlobalSearchViewModel(
 
     fun loadTagsForAccount(accountName: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            val result = refreshTagsForAccountUseCase(RefreshTagsForAccountUseCase.Params(accountName = accountName))
+            _tagsLoading.update { true }
+            val result = getTagsForAccountUseCase(GetTagsForAccountUseCase.Params(accountName = accountName))
             if (result is UseCaseResult.Success) {
-                _tagsState.update { result.data.filter { it.userVisible } }
+                val tags = result.data.filter { it.userVisible }
+                _openTagsBottomSheetEvent.emit(tags)
             }
+            _tagsLoading.update { false }
         }
     }
 
     fun updateTagFilters(selectedTagLocalIds: Set<Long>) {
-        _filtersState.update { it.copy(selectedTagLocalIds = selectedTagLocalIds) }
-        val currentSearchQuery = _searchUiState.value.query
-        performSearch(currentSearchQuery, true)
+        viewModelScope.launch {
+            val tags = withContext(coroutinesDispatcherProvider.io) {
+                getTagsByLocalIdsUseCase(
+                    GetTagsByLocalIdsUseCase.Params(
+                        selectedTagLocalIds
+                            .toList()
+                    )
+                )
+            }
+            _filtersState.update { it.copy(selectedTags = tags.getDataOrNull() ?: emptyList()) }
+            val currentSearchQuery = _searchUiState.value.query
+            performSearch(currentSearchQuery, true)
+        }
     }
 
     private fun hasFiltersSelected(): Boolean =
         _filtersState.value.selectedTypes.isNotEmpty() ||
                 _filtersState.value.dateFilter != DateFilter.ANY ||
                 _filtersState.value.sizeFilter != SizeFilter.ANY ||
-                _filtersState.value.selectedTagLocalIds.isNotEmpty()
+                _filtersState.value.selectedTags.isNotEmpty()
 
     fun getFiltersState(): SearchFiltersState = _filtersState.value
 
@@ -151,7 +170,7 @@ class GlobalSearchViewModel(
                         maxDate = Long.MAX_VALUE,
                         minSize = filters.sizeFilter.getMinSize(),
                         maxSize = filters.sizeFilter.getMaxSize(),
-                        tagLocalIds = filters.selectedTagLocalIds.toList(),
+                        tagLocalIds = filters.selectedTags.map { it.localId },
                     )
                 )
 

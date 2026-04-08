@@ -4,6 +4,7 @@ import com.owncloud.android.domain.tags.model.OCTag
 
 interface LocalTagDataSource {
     fun getTagsForAccount(accountOwner: String): List<OCTag>
+    fun getTagsByLocalIds(localIds: List<Long>): List<OCTag>
     fun getTagsForFile(fileId: Long): List<OCTag>
     fun getLocalTagId(accountOwner: String, serverTagId: String): Long?
     fun assignTagToFile(fileId: Long, tagId: Long)

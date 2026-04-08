@@ -447,6 +447,7 @@ open class FileDisplayActivity : FileActivity(),
                 syncProfileOperation.syncUserProfile()
                 val workManagerProvider = WorkManagerProvider(context = baseContext)
                 workManagerProvider.enqueueAvailableOfflinePeriodicWorker()
+                workManagerProvider.enqueueTagsSyncPeriodicWorker()
             } else {
                 file?.isFolder?.let { isFolder ->
                     updateFragmentsVisibility(!isFolder)

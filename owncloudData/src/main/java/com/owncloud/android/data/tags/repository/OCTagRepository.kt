@@ -10,8 +10,11 @@ class OCTagRepository(
     private val localTagDataSource: LocalTagDataSource,
 ) : TagRepository {
 
-    override fun getTagsForAccount(accountName: String): List<OCTag> =
-        remoteTagDataSource.getSystemTags(accountName)
+    override fun getLocalTagsForAccount(accountName: String): List<OCTag> =
+        localTagDataSource.getTagsForAccount(accountName)
+
+    override fun getTagsByLocalIds(localIds: List<Long>): List<OCTag> =
+        localTagDataSource.getTagsByLocalIds(localIds)
 
     override fun getLocalTagsForFile(fileLocalId: Long): List<OCTag> =
         localTagDataSource.getTagsForFile(fileLocalId)

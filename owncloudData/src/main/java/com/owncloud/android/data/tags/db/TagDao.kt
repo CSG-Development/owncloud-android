@@ -12,6 +12,9 @@ interface TagDao {
     @Query("SELECT * FROM tags WHERE accountOwner = :accountOwner")
     fun getTagsForAccount(accountOwner: String): List<OCTagEntity>
 
+    @Query("SELECT * FROM tags WHERE id IN (:localIds)")
+    fun getTagsByLocalIds(localIds: List<Long>): List<OCTagEntity>
+
     @Query("SELECT * FROM tags WHERE accountOwner = :accountOwner AND tagId = :serverTagId")
     fun getTagByServerTagId(accountOwner: String, serverTagId: String): OCTagEntity?
 
