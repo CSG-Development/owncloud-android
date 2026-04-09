@@ -2,7 +2,9 @@ package com.owncloud.android.presentation.tags
 
 import android.graphics.Bitmap
 import android.graphics.Typeface
+import android.graphics.drawable.AnimatedVectorDrawable
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -70,7 +72,6 @@ class ManageTagsFragment : FileFragment() {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         menu.clear()
-        inflater.inflate(R.menu.manage_tags_menu, menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -139,6 +140,12 @@ class ManageTagsFragment : FileFragment() {
         binding.tagSearchEditText.setOnAddItemClickListener { item ->
             manageTagsViewModel.createTagAndAssignToFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, item)
         }
+
+        val alphanumericFilter = InputFilter { source, start, end, _, _, _ ->
+            val filtered = source?.substring(start, end)?.filter { it.isLetterOrDigit() }
+            if (filtered == source?.substring(start, end)) null else filtered
+        }
+        binding.tagSearchEditText.filters = binding.tagSearchEditText.filters + alphanumericFilter
     }
 
     private fun observeErrors() {
@@ -152,10 +159,10 @@ class ManageTagsFragment : FileFragment() {
             when (state) {
                 is ManageTagsUiState.Loading -> showManageTagsLoading()
                 is ManageTagsUiState.Success -> {
-                    if (state.tags.isEmpty()) {
+                    if (state.tags.isEmpty() && state.pendingTagIds.isEmpty()) {
                         showManageTagsEmpty()
                     } else {
-                        showManageTagsContent(state.tags)
+                        showManageTagsContent(state.tags, state.pendingTagIds)
                     }
                 }
 
@@ -187,14 +194,14 @@ class ManageTagsFragment : FileFragment() {
         updateTagDropdown()
     }
 
-    private fun showManageTagsContent(tags: List<OCTag>) {
+    private fun showManageTagsContent(tags: List<OCTag>, pendingTagIds: Set<String>) {
         binding.manageTagsLoading.isVisible = false
         binding.manageTagsEmpty.root.isVisible = false
         binding.selectedTagsScroll.isVisible = true
-        renderTags(tags)
+        renderTags(tags, pendingTagIds)
     }
 
-    private fun renderTags(tags: List<OCTag>) {
+    private fun renderTags(tags: List<OCTag>, pendingTagIds: Set<String>) {
         val wasExpanded = isExpanded
 
         binding.selectedTagsChipGroup.removeAllViews()
@@ -202,9 +209,11 @@ class ManageTagsFragment : FileFragment() {
         toggleChip = null
 
         tags.forEach { tag ->
+            val isPending = tag.id != null && tag.id in pendingTagIds
             val chip = createChip(
                 text = tag.displayName.orEmpty(),
                 closeIconVisible = true,
+                isLoading = isPending,
                 closeButtonClick = {
                     tag.id?.let { tagId ->
                         manageTagsViewModel.removeTagFromFile(file.owner, file.id ?: 0L, file.fileId ?: 0L, tagId)
@@ -260,6 +269,7 @@ class ManageTagsFragment : FileFragment() {
     private fun createChip(
         text: String,
         closeIconVisible: Boolean,
+        isLoading: Boolean = false,
         chipClick: () -> Unit = {},
         closeButtonClick: () -> Unit = {},
     ): Chip {
@@ -267,8 +277,16 @@ class ManageTagsFragment : FileFragment() {
             this.text = text
             this.isCloseIconVisible = closeIconVisible
             if (closeIconVisible) {
-                setCloseIconTintResource(R.color.homecloud_tag_content)
+                if (isLoading) {
+                    val spinnerDrawable = resources.getDrawable(R.drawable.animated_chip_spinner, context.theme)
+                    this.closeIcon = spinnerDrawable
+                    (spinnerDrawable as? AnimatedVectorDrawable)?.start()
+                } else {
+                    this.closeIcon = resources.getDrawable(R.drawable.ic_close_accent)
+                    setCloseIconTintResource(R.color.homecloud_tag_content)
+                }
             }
+            isEnabled = !isLoading
             setTextColor(resources.getColor(R.color.homecloud_tag_content, null))
             setEnsureMinTouchTargetSize(false)
             setChipBackgroundColorResource(R.color.homecloud_tag_background)
@@ -277,7 +295,7 @@ class ManageTagsFragment : FileFragment() {
                 .setAllCorners(CornerFamily.ROUNDED, 32f * resources.displayMetrics.density)
                 .build()
             this.setOnCloseIconClickListener {
-                closeButtonClick()
+                if (!isLoading) closeButtonClick()
             }
             this.setOnClickListener {
                 chipClick()

@@ -65,6 +65,11 @@ class ManageTagsViewModel(
 
     fun removeTagFromFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            _uiState.update { current ->
+                if (current is ManageTagsUiState.Success)
+                    current.copy(pendingTagIds = current.pendingTagIds + tagId)
+                else current
+            }
             val result = removeTagFromFileUseCase(
                 RemoveTagFromFileUseCase.Params(
                     accountName = accountName,
@@ -77,11 +82,21 @@ class ManageTagsViewModel(
                 is UseCaseResult.Success -> {
                     _uiState.update { current ->
                         if (current is ManageTagsUiState.Success) {
-                            ManageTagsUiState.Success(current.tags.filter { it.id != tagId })
+                            current.copy(
+                                tags = current.tags.filter { it.id != tagId },
+                                pendingTagIds = current.pendingTagIds - tagId,
+                            )
                         } else current
                     }
                 }
-                is UseCaseResult.Error -> _errorEvent.emit(result.throwable)
+                is UseCaseResult.Error -> {
+                    _uiState.update { current ->
+                        if (current is ManageTagsUiState.Success)
+                            current.copy(pendingTagIds = current.pendingTagIds - tagId)
+                        else current
+                    }
+                    _errorEvent.emit(result.throwable)
+                }
             }
         }
     }
@@ -100,6 +115,20 @@ class ManageTagsViewModel(
 
     fun assignTagToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagId: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val tagToAssign = (_allTagsUiState.value as? AllTagsUiState.Success)
+                ?.tags?.firstOrNull { it.id == tagId }
+
+            if (tagToAssign != null) {
+                _uiState.update { current ->
+                    val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
+                    val currentPending = (current as? ManageTagsUiState.Success)?.pendingTagIds ?: emptySet()
+                    ManageTagsUiState.Success(
+                        tags = currentTags + tagToAssign,
+                        pendingTagIds = currentPending + tagId,
+                    )
+                }
+            }
+
             val result = assignTagToFileUseCase(
                 AssignTagToFileUseCase.Params(
                     accountName = accountName,
@@ -110,30 +139,69 @@ class ManageTagsViewModel(
             )
             when (result) {
                 is UseCaseResult.Success -> {
-                    val assignedTag = (_allTagsUiState.value as? AllTagsUiState.Success)
-                        ?.tags?.firstOrNull { it.id == tagId }
-                    if (assignedTag != null) {
-                        _uiState.update { current ->
-                            val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
-                            ManageTagsUiState.Success(currentTags + assignedTag)
-                        }
+                    _uiState.update { current ->
+                        if (current is ManageTagsUiState.Success)
+                            current.copy(pendingTagIds = current.pendingTagIds - tagId)
+                        else current
                     }
                 }
-                is UseCaseResult.Error -> _errorEvent.emit(result.throwable)
+                is UseCaseResult.Error -> {
+                    _uiState.update { current ->
+                        if (current is ManageTagsUiState.Success)
+                            current.copy(
+                                tags = current.tags.filter { it.id != tagId },
+                                pendingTagIds = current.pendingTagIds - tagId,
+                            )
+                        else current
+                    }
+                    _errorEvent.emit(result.throwable)
+                }
             }
         }
     }
 
     fun createTagAndAssignToFile(accountName: String, fileLocalId: Long, fileRemoteId: Long, tagName: String) {
+        val tempId = "pending_$tagName"
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val tempTag = OCTag(
+                id = tempId,
+                displayName = tagName,
+                userVisible = true,
+                userAssignable = true,
+            )
+            _uiState.update { current ->
+                val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
+                val currentPending = (current as? ManageTagsUiState.Success)?.pendingTagIds ?: emptySet()
+                ManageTagsUiState.Success(
+                    tags = currentTags + tempTag,
+                    pendingTagIds = currentPending + tempId,
+                )
+            }
+
             val createResult = createTagUseCase(CreateTagUseCase.Params(accountName = accountName, name = tagName))
             if (createResult is UseCaseResult.Error) {
+                _uiState.update { current ->
+                    if (current is ManageTagsUiState.Success)
+                        current.copy(
+                            tags = current.tags.filter { it.id != tempId },
+                            pendingTagIds = current.pendingTagIds - tempId,
+                        )
+                    else current
+                }
                 _errorEvent.emit(createResult.throwable)
                 return@launch
             }
 
             val refreshResult = refreshTagsForAccountUseCase(RefreshTagsForAccountUseCase.Params(accountName))
             if (refreshResult is UseCaseResult.Error) {
+                _uiState.update { current ->
+                    if (current is ManageTagsUiState.Success)
+                        current.copy(
+                            tags = current.tags.filter { it.id != tempId },
+                            pendingTagIds = current.pendingTagIds - tempId,
+                        )
+                    else current
+                }
                 _errorEvent.emit(refreshResult.throwable)
                 return@launch
             }
@@ -142,7 +210,17 @@ class ManageTagsViewModel(
             _allTagsUiState.update { AllTagsUiState.Success(allTags.filter { it.userAssignable }) }
 
             val newTag = allTags.firstOrNull { it.displayName == tagName }
-            val tagId = newTag?.id ?: return@launch
+            val tagId = newTag?.id ?: run {
+                _uiState.update { current ->
+                    if (current is ManageTagsUiState.Success)
+                        current.copy(
+                            tags = current.tags.filter { it.id != tempId },
+                            pendingTagIds = current.pendingTagIds - tempId,
+                        )
+                    else current
+                }
+                return@launch
+            }
 
             val assignResult = assignTagToFileUseCase(
                 AssignTagToFileUseCase.Params(
@@ -155,18 +233,35 @@ class ManageTagsViewModel(
             when (assignResult) {
                 is UseCaseResult.Success -> {
                     _uiState.update { current ->
-                        val currentTags = (current as? ManageTagsUiState.Success)?.tags ?: emptyList()
-                        ManageTagsUiState.Success(currentTags + newTag)
+                        if (current is ManageTagsUiState.Success)
+                            current.copy(
+                                tags = current.tags.filter { it.id != tempId } + newTag,
+                                pendingTagIds = current.pendingTagIds - tempId,
+                            )
+                        else current
                     }
                 }
-                is UseCaseResult.Error -> _errorEvent.emit(assignResult.throwable)
+                is UseCaseResult.Error -> {
+                    _uiState.update { current ->
+                        if (current is ManageTagsUiState.Success)
+                            current.copy(
+                                tags = current.tags.filter { it.id != tempId },
+                                pendingTagIds = current.pendingTagIds - tempId,
+                            )
+                        else current
+                    }
+                    _errorEvent.emit(assignResult.throwable)
+                }
             }
         }
     }
 
     sealed class ManageTagsUiState {
         data object Loading : ManageTagsUiState()
-        data class Success(val tags: List<OCTag>) : ManageTagsUiState()
+        data class Success(
+            val tags: List<OCTag>,
+            val pendingTagIds: Set<String> = emptySet(),
+        ) : ManageTagsUiState()
         data class Error(val throwable: Throwable) : ManageTagsUiState()
     }
 
