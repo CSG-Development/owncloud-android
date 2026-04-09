@@ -56,6 +56,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
                         suppressDropdown = true
                         val query = text?.toString()?.trim().orEmpty()
                         onAddItemClickListener?.invoke(query)
+                        setText(null)
                         dismissDropdown()
                         suppressDropdown = false
                     }

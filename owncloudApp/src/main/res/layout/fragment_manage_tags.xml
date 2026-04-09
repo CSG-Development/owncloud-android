@@ -41,12 +41,13 @@
         android:padding="12dp"
         android:background="@drawable/selector_filterable_autocomplete"
         android:drawablePadding="4dp"
+        android:maxLength="30"
         app:drawableStartCompat="@drawable/ic_tag_tintable"
         app:drawableTint="@color/homecloud_color_on_secondary_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/file_name_title"
-        app:filterableDropdownMaxHeight="240dp" />
+        app:filterableDropdownMaxHeight="@dimen/filterable_autocomplete_max_height" />
 
     <FrameLayout
         android:id="@+id/manage_tags_list_container"
