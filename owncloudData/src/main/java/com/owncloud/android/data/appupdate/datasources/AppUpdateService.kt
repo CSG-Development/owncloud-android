@@ -17,4 +17,4 @@ interface AppUpdateService {
     suspend fun checkForUpdate(): AppUpdateResponse
 }
 
-internal const val APP_UPDATE_CHECK_PATH = "curator/app/android/files/files_android_app_update.json"
+internal const val APP_UPDATE_CHECK_PATH = "app/1/update/curator/prod/android/files/files_android_app_update.json"
