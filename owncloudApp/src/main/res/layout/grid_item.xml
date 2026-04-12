@@ -17,6 +17,7 @@
 -->
 <com.owncloud.android.ui.SquareLinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/ListItemLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -77,6 +78,17 @@
             android:layout_marginRight="12dp"
             android:layout_marginBottom="2dp"
             android:src="@drawable/sync_pin" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/uploadProgressIndicator"
+            android:layout_width="@dimen/file_indicator_pin_size_grid"
+            android:layout_height="@dimen/file_indicator_pin_size_grid"
+            android:layout_gravity="bottom|end"
+            android:layout_marginRight="12dp"
+            android:layout_marginBottom="2dp"
+            android:visibility="gone"
+            app:indicatorSize="20dp"
+            app:trackThickness="2dp" />
 
         <ImageView
             android:id="@+id/custom_checkbox"

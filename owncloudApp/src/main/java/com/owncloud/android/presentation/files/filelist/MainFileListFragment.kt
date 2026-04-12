@@ -126,6 +126,7 @@ import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
+import com.owncloud.android.workers.DownloadFileWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
@@ -513,6 +514,9 @@ class MainFileListFragment : FileFragment(),
         /* TransfersViewModel observables */
         // Observe transfers
         observeTransfers()
+
+        // Observe upload progress to show per-file progress indicators
+        observeUploadProgress()
 
         observeClearSelectionEvents()
 
@@ -1015,6 +1019,91 @@ class MainFileListFragment : FileFragment(),
             }
         }
 
+    }
+
+    private fun observeUploadProgress() {
+        transfersViewModel.workInfosListLiveData.observe(viewLifecycleOwner) { workInfos ->
+            val currentFolderPath = mainFileListViewModel.getFile().remotePath
+            val transfers = transfersViewModel.transfersWithSpaceStateFlow.value
+
+            Timber.d("observeUploadProgress: workInfos=%d, transfers=%d, currentFolder=%s",
+                workInfos.size, transfers.size, currentFolderPath)
+
+            // Build list of active uploads with their progress for the current folder
+            val activeUploads = mutableListOf<Pair<OCFileWithSyncInfo, Int>>()
+
+            workInfos.forEach { workInfo ->
+                Timber.d("observeUploadProgress: workInfo state=%s, tags=%s", workInfo.state, workInfo.tags)
+
+                // Match WorkInfo to a transfer via the transfer ID tag
+                val matchedTransfer = transfers.firstOrNull { (transfer, _) ->
+                    workInfo.tags.contains(transfer.id.toString())
+                }?.first
+
+                if (matchedTransfer != null) {
+                    val remotePath = matchedTransfer.remotePath
+                    val parentPath = remotePath.substringBeforeLast("/", "") + "/"
+
+                    Timber.d("observeUploadProgress: matched transfer remotePath=%s, parentPath=%s, currentFolderPath=%s",
+                        remotePath, parentPath, currentFolderPath)
+
+                    // Only process files in the currently displayed folder
+                    if (parentPath == currentFolderPath) {
+                        val progress = workInfo.progress.getInt(
+                            DownloadFileWorker.WORKER_KEY_PROGRESS, -1
+                        )
+                        Timber.d("observeUploadProgress: progress=%d for %s", progress, remotePath)
+                        if (progress in 0..100) {
+                            val virtualFile = createVirtualFileFromTransfer(matchedTransfer)
+                            activeUploads.add(virtualFile to progress)
+                        }
+                    }
+                } else {
+                    Timber.d("observeUploadProgress: no matching transfer found. Transfer IDs: %s",
+                        transfers.map { it.first.id })
+                }
+            }
+
+            // Update adapter with virtual items and progress
+            fileListAdapter.updateActiveUploads(activeUploads)
+        }
+    }
+
+    /**
+     * Create a synthetic OCFileWithSyncInfo from an OCTransfer, to represent
+     * a file being uploaded that doesn't yet exist in the database.
+     */
+    private fun createVirtualFileFromTransfer(transfer: OCTransfer): OCFileWithSyncInfo {
+        val fileName = transfer.remotePath.substringAfterLast("/")
+        val mimeType = android.webkit.MimeTypeMap.getSingleton()
+            .getMimeTypeFromExtension(fileName.substringAfterLast(".", ""))
+            ?: "application/octet-stream"
+
+        val virtualFile = OCFile(
+            id = FileListAdapter.VIRTUAL_FILE_ID,
+            parentId = null,
+            owner = transfer.accountName,
+            length = transfer.fileSize,
+            creationTimestamp = System.currentTimeMillis() / 1000,
+            modificationTimestamp = System.currentTimeMillis() / 1000,
+            remotePath = transfer.remotePath,
+            mimeType = mimeType,
+            etag = null,
+            permissions = null,
+            remoteId = null,
+            privateLink = null,
+            storagePath = transfer.localPath,
+            needsToUpdateThumbnail = false,
+            spaceId = transfer.spaceId,
+        )
+
+        return OCFileWithSyncInfo(
+            file = virtualFile,
+            uploadWorkerUuid = null,
+            downloadWorkerUuid = null,
+            isSynchronizing = true,
+            space = null,
+        )
     }
 
     private fun observeClearSelectionEvents() {

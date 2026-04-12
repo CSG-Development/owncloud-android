@@ -46,7 +46,12 @@ class FileListDiffCallback(
         } else if (oldItem is Boolean && newItem is Boolean) {
             true
         } else if (oldItem is OCFileWithSyncInfo && newItem is OCFileWithSyncInfo) {
-            oldItem.file.id == newItem.file.id
+            // Virtual upload items use VIRTUAL_FILE_ID, so compare by remotePath for them
+            if (oldItem.file.id == FileListAdapter.VIRTUAL_FILE_ID || newItem.file.id == FileListAdapter.VIRTUAL_FILE_ID) {
+                oldItem.file.remotePath == newItem.file.remotePath
+            } else {
+                oldItem.file.id == newItem.file.id
+            }
         } else if (oldItem is OCFooterFile && newItem is OCFooterFile) {
             oldItem.text == newItem.text
         }  else {
