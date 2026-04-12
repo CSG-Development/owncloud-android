@@ -131,6 +131,7 @@ import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsFromServerUseCase
 import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
+import com.owncloud.android.domain.tags.usecases.SyncTagsAndFilesForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.UpdateTagUseCase
 import com.owncloud.android.domain.transfers.usecases.ClearSuccessfulTransfersUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersAsStreamUseCase
@@ -275,6 +276,7 @@ val useCaseModule = module {
     factoryOf(::CreateTagUseCase)
     factoryOf(::UpdateTagUseCase)
     factoryOf(::DeleteTagUseCase)
+    factoryOf(::SyncTagsAndFilesForAccountUseCase)
 
     // Spaces
     factoryOf(::GetPersonalAndProjectSpacesForAccountUseCase)
