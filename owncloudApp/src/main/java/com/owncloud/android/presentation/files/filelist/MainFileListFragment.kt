@@ -429,6 +429,7 @@ class MainFileListFragment : FileFragment(),
                     shouldSyncContents = !isPickingAFolder(), // For picking a folder option, we just need a refresh
                 )
             )
+            tagsViewModel.loadTags(mainFileListViewModel.getFile().owner)
         }
 
         // Set Refresh FAB and its listener
@@ -442,6 +443,7 @@ class MainFileListFragment : FileFragment(),
                         shouldSyncContents = false,
                     )
                 )
+                tagsViewModel.loadTags(mainFileListViewModel.getFile().owner)
                 hideRefreshFab()
             }
         }
@@ -500,6 +502,7 @@ class MainFileListFragment : FileFragment(),
         /* FileOperationsViewModel observables */
         // Observe the refresh folder operation
         observeRefreshFolder()
+        observeTagsSync()
 
         // Observe the create file with app provider operation
         observeCreateFileWithAppProvider()
@@ -916,14 +919,19 @@ class MainFileListFragment : FileFragment(),
     private fun observeRefreshFolder() {
         fileOperationsViewModel.refreshFolderLiveData.observe(viewLifecycleOwner) {
             binding.syncProgressBar.isIndeterminate = it.peekContent().isLoading
-            binding.swipeRefreshMainFileList.isRefreshing = it.peekContent().isLoading
+            binding.swipeRefreshMainFileList.isRefreshing = it.peekContent().isLoading || tagsViewModel.isTagsSyncing.value
 
             // Refresh the spaces and update the quota
             spacesListViewModel.refreshSpacesFromServer()
 
-            requireArguments().getString(ARG_ACCOUNT_NAME)?.let { accountName -> tagsViewModel.loadTags(accountName) }
-
             hideRefreshFab()
+        }
+    }
+
+    private fun observeTagsSync() {
+        collectLatestLifecycleFlow(tagsViewModel.isTagsSyncing) { isSyncing ->
+            binding.swipeRefreshMainFileList.isRefreshing = isSyncing ||
+                    fileOperationsViewModel.refreshFolderLiveData.value?.peekContent()?.isLoading ?: false
         }
     }
 

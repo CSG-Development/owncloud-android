@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.owncloud.android.MainApp
-import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
+import com.owncloud.android.domain.tags.usecases.SyncTagsAndFilesForAccountUseCase
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -19,15 +19,15 @@ class TagsSyncPeriodicWorker(
     workerParameters
 ), KoinComponent {
 
-    private val refreshTagsForAccountUseCase: RefreshTagsForAccountUseCase by inject()
+    private val syncTagsAndFilesForAccountUseCase: SyncTagsAndFilesForAccountUseCase by inject()
 
     override suspend fun doWork(): Result =
         try {
             val accounts = AccountManager.get(appContext).getAccountsByType(MainApp.accountType)
-            Timber.i("Tags sync: refreshing tags for ${accounts.size} account(s)")
+            Timber.i("Tags sync: refreshing tags and files for ${accounts.size} account(s)")
 
             accounts.forEach { account ->
-                refreshTagsForAccountUseCase(RefreshTagsForAccountUseCase.Params(accountName = account.name))
+                syncTagsAndFilesForAccountUseCase(SyncTagsAndFilesForAccountUseCase.Params(accountName = account.name))
             }
 
             Result.success()
