@@ -31,8 +31,8 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
             allItems = items,
             selectedIds = selectedIds.toMutableSet(),
             isMultiSelect = isMultiSelect,
-            onItemClick = { item, isSelected ->
-                handleItemClick(item, isSelected)
+            onItemClick = { item, _ ->
+                handleItemClick(item)
             }
         )
     }
@@ -95,7 +95,7 @@ class FilterBottomSheetFragment : BottomSheetDialogFragment() {
         _binding = null
     }
 
-    private fun handleItemClick(item: FilterItem, isSelected: Boolean) {
+    private fun handleItemClick(item: FilterItem) {
         if (!isMultiSelect) {
             filterSelectionListener?.onFilterSelected(setOf(item.id))
             dismiss()

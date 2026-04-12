@@ -116,6 +116,7 @@ import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragme
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.presentation.tags.TagsActivity
+import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
@@ -163,6 +164,8 @@ class MainFileListFragment : FileFragment(),
             requireArguments().getString(ARG_ACCOUNT_NAME),
         )
     }
+
+    private val tagsViewModel by viewModel<TagsViewModel>()
 
     private var _binding: MainFileListFragmentBinding? = null
     private val binding get() = _binding!!
@@ -917,6 +920,8 @@ class MainFileListFragment : FileFragment(),
 
             // Refresh the spaces and update the quota
             spacesListViewModel.refreshSpacesFromServer()
+
+            requireArguments().getString(ARG_ACCOUNT_NAME)?.let { accountName -> tagsViewModel.loadTags(accountName) }
 
             hideRefreshFab()
         }
