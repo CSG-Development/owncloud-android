@@ -9,7 +9,7 @@ import androidx.room.Transaction
 @Dao
 interface TagDao {
 
-    @Query("SELECT * FROM tags WHERE accountOwner = :accountOwner")
+    @Query("SELECT * FROM tags WHERE accountOwner = :accountOwner ORDER BY displayName COLLATE NOCASE ASC")
     fun getTagsForAccount(accountOwner: String): List<OCTagEntity>
 
     @Query("SELECT * FROM tags WHERE id IN (:localIds)")

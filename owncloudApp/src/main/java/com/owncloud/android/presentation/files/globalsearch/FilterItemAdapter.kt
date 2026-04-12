@@ -21,7 +21,10 @@ class FilterItemAdapter(
         displayedItems = if (query.isBlank()) {
             allItems
         } else {
-            allItems.filter { it.label.contains(query, ignoreCase = true) }
+            val matched = allItems.filter { it.label.contains(query, ignoreCase = true) }
+            val startsWith = matched.filter { it.label.startsWith(query, ignoreCase = true) }.sortedBy { it.label.lowercase() }
+            val containsOnly = matched.filter { !it.label.startsWith(query, ignoreCase = true) }.sortedBy { it.label.lowercase() }
+            startsWith + containsOnly
         }
         notifyDataSetChanged()
     }

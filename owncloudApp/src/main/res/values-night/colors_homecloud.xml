@@ -47,7 +47,7 @@
 
     <color name="homecloud_checkbox_checked">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_checkbox_unchecked">@color/white</color>
-    <color name="homecloud_checkbox_checkmark">@color/white</color>
+    <color name="homecloud_checkbox_checkmark">#3D3E41</color>
     <color name="homecloud_checkbox_disabled_checked">#616161</color>
     <color name="homecloud_checkbox_disabled_unchecked">#616161</color>
     <color name="homecloud_checkbox_disabled_checkmark">#9E9E9E</color>
