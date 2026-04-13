@@ -6,6 +6,7 @@ import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
 import com.owncloud.android.domain.tags.usecases.DeleteTagUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.SyncTagsAndFilesForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.UpdateTagUseCase
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TagsViewModel(
+    private val refreshTagsForAccountUseCase: RefreshTagsForAccountUseCase,
     private val syncTagsAndFilesForAccountUseCase: SyncTagsAndFilesForAccountUseCase,
     private val createTagUseCase: CreateTagUseCase,
     private val updateTagUseCase: UpdateTagUseCase,
@@ -30,27 +32,35 @@ class TagsViewModel(
 
     fun loadTags(accountName: String) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            _isTagsSyncing.update { true }
             _tagsUiState.update { TagsUiState.Loading }
-            try {
-                val result = syncTagsAndFilesForAccountUseCase(
-                    SyncTagsAndFilesForAccountUseCase.Params(accountName = accountName)
-                )
-                when (result) {
-                    is UseCaseResult.Success -> {
-                        val visibleTags = result.data.filter { it.userVisible }
-                        _tagsUiState.update {
-                            if (visibleTags.isEmpty()) {
-                                TagsUiState.Empty
-                            } else {
-                                TagsUiState.Success(visibleTags)
-                            }
+            val result = refreshTagsForAccountUseCase(
+                RefreshTagsForAccountUseCase.Params(accountName = accountName)
+            )
+            when (result) {
+                is UseCaseResult.Success -> {
+                    val visibleTags = result.data.filter { it.userVisible }
+                    _tagsUiState.update {
+                        if (visibleTags.isEmpty()) {
+                            TagsUiState.Empty
+                        } else {
+                            TagsUiState.Success(visibleTags)
                         }
                     }
-                    is UseCaseResult.Error -> {
-                        _tagsUiState.update { TagsUiState.Error(result.throwable) }
-                    }
                 }
+                is UseCaseResult.Error -> {
+                    _tagsUiState.update { TagsUiState.Error(result.throwable) }
+                }
+            }
+        }
+    }
+
+    fun syncTagsAndFiles(accountName: String) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            _isTagsSyncing.update { true }
+            try {
+                syncTagsAndFilesForAccountUseCase(
+                    SyncTagsAndFilesForAccountUseCase.Params(accountName = accountName)
+                )
             } finally {
                 _isTagsSyncing.update { false }
             }

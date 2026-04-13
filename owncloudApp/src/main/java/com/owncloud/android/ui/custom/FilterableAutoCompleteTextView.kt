@@ -1,6 +1,8 @@
 package com.owncloud.android.ui.custom
 
 import android.content.Context
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Drawable
 import android.text.Editable
 import android.text.InputType
@@ -15,11 +17,13 @@ import android.view.ViewGroup
 import android.widget.PopupWindow
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.owncloud.android.R
 import com.owncloud.android.databinding.FilterableAutocompleteDropdownBinding
 import com.owncloud.android.databinding.FilterableAutocompleteItemBinding
+import com.owncloud.android.databinding.FilterableAutocompleteItemErrorBinding
 
 class FilterableAutoCompleteTextView @JvmOverloads constructor(
     context: Context,
@@ -51,7 +55,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
         DropdownAdapter(
             onItemClick = { item, _ ->
                 when (item.id) {
-                    ITEM_ID_EMPTY_STATE -> return@DropdownAdapter
+                    ITEM_ID_EMPTY_STATE, ITEM_ID_ERROR -> return@DropdownAdapter
                     ITEM_ID_ADD -> {
                         suppressDropdown = true
                         val query = text?.toString()?.trim().orEmpty()
@@ -145,11 +149,15 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
 
     private fun updateClearButton() {
         val clearDrawable = if (text?.isNotEmpty() == true) {
-            ContextCompat.getDrawable(context, R.drawable.ic_close_accent)
+            ContextCompat.getDrawable(context, R.drawable.ic_close)?.mutate()
         } else {
             null
         }
         setCompoundDrawablesRelativeWithIntrinsicBounds(startDrawable, null, clearDrawable, null)
+        clearDrawable?.colorFilter = PorterDuffColorFilter(
+            ContextCompat.getColor(context, R.color.homecloud_primary),
+            PorterDuff.Mode.SRC_IN
+        )
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -230,7 +238,9 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
             }
             query.isEmpty() -> allItems
             else -> {
-                val filtered = allItems.filter { it.text.contains(query, ignoreCase = true) }
+                val filtered = allItems.filter { item ->
+                    item.id == ITEM_ID_ERROR || item.text.contains(query, ignoreCase = true)
+                }
                 if (filtered.isEmpty() && onAddItemClickListener != null) {
                     listOf(
                         DropdownItem<Nothing>(
@@ -314,7 +324,7 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
 
     private class DropdownAdapter(
         private val onItemClick: (DropdownItem<*>, Int) -> Unit,
-    ) : RecyclerView.Adapter<DropdownAdapter.ViewHolder>() {
+    ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         private var items: List<DropdownItem<*>> = emptyList()
 
@@ -323,17 +333,28 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
             notifyDataSetChanged()
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = FilterableAutocompleteItemBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
-            return ViewHolder(binding)
-        }
+        override fun getItemViewType(position: Int): Int =
+            if (items[position].id == ITEM_ID_ERROR) VIEW_TYPE_ERROR else VIEW_TYPE_NORMAL
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.bind(items[position])
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
+            when (viewType) {
+                VIEW_TYPE_ERROR -> ErrorViewHolder(
+                    FilterableAutocompleteItemErrorBinding.inflate(
+                        LayoutInflater.from(parent.context), parent, false
+                    )
+                )
+                else -> ViewHolder(
+                    FilterableAutocompleteItemBinding.inflate(
+                        LayoutInflater.from(parent.context), parent, false
+                    )
+                )
+            }
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            when (holder) {
+                is ViewHolder -> holder.bind(items[position])
+                is ErrorViewHolder -> holder.bind(items[position])
+            }
         }
 
         override fun getItemCount(): Int = items.size
@@ -355,11 +376,26 @@ class FilterableAutoCompleteTextView @JvmOverloads constructor(
                 binding.textItem.text = item.text
             }
         }
+
+        inner class ErrorViewHolder(
+            private val binding: FilterableAutocompleteItemErrorBinding
+        ) : RecyclerView.ViewHolder(binding.root) {
+
+            fun bind(item: DropdownItem<*>) {
+                binding.textItemError.text = item.text
+            }
+        }
+
+        companion object {
+            private const val VIEW_TYPE_NORMAL = 0
+            private const val VIEW_TYPE_ERROR = 1
+        }
     }
 
     companion object {
         internal const val ITEM_ID_ADD = "__filterable_autocomplete_add__"
         internal const val ITEM_ID_EMPTY_STATE = "__filterable_autocomplete_empty__"
+        internal const val ITEM_ID_ERROR = "__filterable_autocomplete_error__"
         private const val DEFAULT_ADD_FORMAT = "Add \"%s\""
     }
 }
