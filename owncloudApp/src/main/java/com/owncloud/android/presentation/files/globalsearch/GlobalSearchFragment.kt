@@ -23,6 +23,7 @@ import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.isLandscapeMode
@@ -42,6 +43,7 @@ import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
+import com.owncloud.android.ui.activity.BaseActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
@@ -180,7 +182,8 @@ class GlobalSearchFragment : Fragment(),
     }
 
     private fun initViews() {
-        binding.optionsLayout.viewTypeSelected = if (globalSearchViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
+        binding.optionsLayout.viewTypeSelected =
+            if (globalSearchViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
         binding.optionsLayout.sortTypeSelected = globalSearchViewModel.getSortType()
         binding.optionsLayout.sortOrderSelected = globalSearchViewModel.getSortOrder()
 
@@ -198,10 +201,17 @@ class GlobalSearchFragment : Fragment(),
         val filterTypeButton = binding.searchFilters.filterTypeButton
         val filterDateButton = binding.searchFilters.filterDateButton
         val filterSizeButton = binding.searchFilters.filterSizeButton
+        val filterTagsButton = binding.searchFilters.filterTagsButton
 
         filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
         filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
         filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
+        filterTagsButton.setOnClickListener { loadTags() }
+    }
+
+    private fun loadTags() {
+        val accountName = AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name ?: return
+        globalSearchViewModel.loadTagsForAccount(accountName)
     }
 
     private fun showTypeFilterBottomSheet() {
@@ -283,6 +293,34 @@ class GlobalSearchFragment : Fragment(),
         bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
     }
 
+    private fun showTagFilterBottomSheet(tags: List<OCTag>) {
+        if (tags.isEmpty()) return
+
+        val items = tags.map { tag ->
+            FilterItem(
+                id = tag.localId.toString(),
+                label = tag.displayName.orEmpty(),
+                iconResId = null,
+            )
+        }
+
+        val bottomSheet = FilterBottomSheetFragment.newInstance(
+            title = getString(R.string.homecloud_global_search_filter_tags),
+            items = items,
+            selectedIds = globalSearchViewModel.getFiltersState().selectedTags.map { it.localId.toString() }.toSet(),
+            isMultiSelect = true,
+            searchHint = getString(R.string.tags_search_hint)
+        )
+
+        bottomSheet.filterSelectionListener = object : FilterBottomSheetFragment.FilterSelectionListener {
+            override fun onFilterSelected(selectedIds: Set<String>) {
+                globalSearchViewModel.updateTagFilters(selectedIds.mapNotNull { it.toLongOrNull() }.toSet())
+            }
+        }
+
+        bottomSheet.show(childFragmentManager, FilterBottomSheetFragment.TAG)
+    }
+
     private fun updateFilterButtonsUI(filtersState: SearchFiltersState) {
         val filterTypeButton = binding.searchFilters.filterTypeButton
         val filterDateButton = binding.searchFilters.filterDateButton
@@ -318,6 +356,20 @@ class GlobalSearchFragment : Fragment(),
                 getString(filtersState.sizeFilter.labelResId)
             }
             isSelected = filtersState.sizeFilter != SizeFilter.ANY
+        }
+
+        binding.searchFilters.filterTagsButton.apply {
+            val selectedCount = filtersState.selectedTags.size
+            text = when (selectedCount) {
+                0 -> getString(R.string.homecloud_global_search_filter_tags)
+                1 -> {
+                    val tag = filtersState.selectedTags.find { it.localId == filtersState.selectedTags.firstOrNull()?.localId }
+                    tag?.displayName?.takeIf { it.isNotEmpty() } ?: getString(R.string.homecloud_global_search_filter_tags)
+                }
+
+                else -> getString(R.string.homecloud_global_search_filter_tags_counter, selectedCount)
+            }
+            isSelected = selectedCount > 0
         }
     }
 
@@ -365,6 +417,19 @@ class GlobalSearchFragment : Fragment(),
 
         collectLatestLifecycleFlow(globalSearchViewModel.filtersState) { filtersState ->
             updateFilterButtonsUI(filtersState)
+        }
+
+        collectLatestLifecycleFlow(globalSearchViewModel.tagsLoading) { isLoading ->
+            val activity = requireActivity() as? BaseActivity
+            if (isLoading) {
+                activity?.showLoadingDialog(R.string.common_loading)
+            } else {
+                activity?.dismissLoadingDialog()
+            }
+        }
+
+        collectLatestLifecycleFlow(globalSearchViewModel.openTagsBottomSheetEvent) { tags ->
+            showTagFilterBottomSheet(tags)
         }
     }
 

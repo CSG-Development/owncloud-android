@@ -5,6 +5,7 @@ import com.owncloud.android.data.tags.db.OCFileTagEntity
 import com.owncloud.android.data.tags.db.OCTagEntity
 import com.owncloud.android.data.tags.db.TagDao
 import com.owncloud.android.domain.tags.model.OCTag
+import timber.log.Timber
 
 class OCLocalTagDataSource(
     private val tagDao: TagDao,
@@ -13,11 +14,14 @@ class OCLocalTagDataSource(
     override fun getTagsForAccount(accountOwner: String): List<OCTag> =
         tagDao.getTagsForAccount(accountOwner).map { it.toModel() }
 
+    override fun getTagsByLocalIds(localIds: List<Long>): List<OCTag> =
+        tagDao.getTagsByLocalIds(localIds).map { it.toModel() }
+
     override fun getTagsForFile(fileId: Long): List<OCTag> =
         tagDao.getTagsForFile(fileId).map { it.toModel() }
 
-    override fun getFileIdsByTag(tagId: Long): List<Long> =
-        tagDao.getFilesByTag(tagId).mapNotNull { it.id }
+    override fun getLocalTagId(accountOwner: String, serverTagId: String): Long? =
+        tagDao.getTagByServerTagId(accountOwner, serverTagId)?.id
 
     override fun assignTagToFile(fileId: Long, tagId: Long) {
         tagDao.assignTagToFile(OCFileTagEntity(fileId = fileId, tagId = tagId))
@@ -48,6 +52,19 @@ class OCLocalTagDataSource(
         tagDao.replaceFileAssociationsForTag(tagEntity.id, fileLocalIds)
     }
 
+    override fun replaceTagsForFile(fileLocalId: Long, accountOwner: String, tags: List<OCTag>) {
+        val validTags = tags.filter { it.id != null }
+        tagDao.upsertTags(validTags.map { it.toEntity(accountOwner) })
+        val localTagIds = validTags.mapNotNull { tag ->
+            tagDao.getTagByServerTagId(accountOwner, tag.id!!)?.id
+                ?: run {
+                    Timber.w("Tag ${tag.id} not found in local DB after upsert for file $fileLocalId")
+                    null
+                }
+        }
+        tagDao.replaceTagsForFile(fileLocalId, localTagIds)
+    }
+
     override fun saveTag(accountOwner: String, tag: OCTag) {
         tagDao.upsertTag(tag.toEntity(accountOwner))
     }
@@ -74,6 +91,7 @@ class OCLocalTagDataSource(
         fun OCTagEntity.toModel(): OCTag =
             OCTag(
                 id = tagId,
+                localId = id,
                 displayName = displayName,
                 userVisible = userVisible,
                 userAssignable = userAssignable,

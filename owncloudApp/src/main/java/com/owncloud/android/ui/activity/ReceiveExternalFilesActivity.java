@@ -610,7 +610,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
     private void updateToolbar(String toolbarName) {
         updateStandardToolbar(toolbarName,
                 false,
-                false
+                false,
+                null
         );
     }
 

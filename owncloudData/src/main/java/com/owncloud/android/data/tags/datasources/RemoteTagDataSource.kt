@@ -8,4 +8,7 @@ interface RemoteTagDataSource {
     fun createTag(accountName: String, name: String, userVisible: Boolean, userAssignable: Boolean): String
     fun updateTag(accountName: String, tagId: String, displayName: String?, userVisible: Boolean?, userAssignable: Boolean?)
     fun deleteTag(accountName: String, tagId: String)
+    fun assignTagToFile(accountName: String, fileRemoteId: Long, tagId: String)
+    fun unassignTagFromFile(accountName: String, fileRemoteId: Long, tagId: String)
+    fun getRemoteTagsForFile(accountName: String, fileRemoteId: Long): List<OCTag>
 }

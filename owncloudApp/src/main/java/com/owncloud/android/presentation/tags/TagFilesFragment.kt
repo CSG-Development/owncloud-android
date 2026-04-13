@@ -72,16 +72,10 @@ class TagFilesFragment : Fragment(),
         )
     }
 
-    private var serverTagId: String = ""
-    var tagName: String = ""
-        private set
-    private var accountName: String? = null
+    private val serverTagId: String by lazy { arguments?.getString(ARG_SERVER_TAG_ID).orEmpty() }
+    val tagName: String by lazy { "“${arguments?.getString(ARG_TAG_NAME).orEmpty()}”" }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        serverTagId = arguments?.getString(ARG_SERVER_TAG_ID).orEmpty()
-        tagName = arguments?.getString(ARG_TAG_NAME).orEmpty()
-    }
+    private var accountName: String? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = TagFilesFragmentBinding.inflate(inflater, container, false)
@@ -250,7 +244,6 @@ class TagFilesFragment : Fragment(),
     }
 
     companion object {
-        const val TAG_TAG_FILES = "TAG_TAG_FILES"
         private const val ARG_SERVER_TAG_ID = "ARG_SERVER_TAG_ID"
         private const val ARG_TAG_NAME = "ARG_TAG_NAME"
 

@@ -1,6 +1,7 @@
 package com.owncloud.android.domain.server.usecases
 
 import app.cash.turbine.test
+import com.owncloud.android.domain.device.StaticDeviceRepository
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
@@ -24,13 +25,14 @@ class GetAvailableDevicesUseCaseTest {
 
     private val mGetRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase = mockk()
     private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase = mockk()
-
     private val getSavedDeviceCertificateUseCase: GetSavedDeviceCertificateUseCase = mockk()
+    private val staticDeviceRepository: StaticDeviceRepository = mockk()
 
     private val useCase = GetAvailableDevicesUseCase(
         mGetRemoteAvailableDevicesUseCase,
         discoverLocalNetworkDevicesUseCase,
-        getSavedDeviceCertificateUseCase
+        getSavedDeviceCertificateUseCase,
+        staticDeviceRepository,
     )
 
     @Test

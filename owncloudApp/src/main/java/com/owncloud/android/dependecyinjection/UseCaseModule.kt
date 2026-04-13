@@ -123,12 +123,15 @@ import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncU
 import com.owncloud.android.domain.tags.usecases.AssignTagToFileUseCase
 import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
 import com.owncloud.android.domain.tags.usecases.DeleteTagUseCase
-import com.owncloud.android.domain.tags.usecases.GetFileIdsByTagUseCase
-import com.owncloud.android.domain.tags.usecases.GetTagsForFileUseCase
+import com.owncloud.android.domain.tags.usecases.GetLocalTagsForFileUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsByLocalIdsUseCase
+import com.owncloud.android.domain.tags.usecases.GetTagsForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshFilesByTagUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
+import com.owncloud.android.domain.tags.usecases.RefreshTagsForFileUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsFromServerUseCase
 import com.owncloud.android.domain.tags.usecases.RemoveTagFromFileUseCase
+import com.owncloud.android.domain.tags.usecases.SyncTagsAndFilesForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.UpdateTagUseCase
 import com.owncloud.android.domain.transfers.usecases.ClearSuccessfulTransfersUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersAsStreamUseCase
@@ -262,15 +265,18 @@ val useCaseModule = module {
 
     // Tags
     factoryOf(::RefreshTagsForAccountUseCase)
-    factoryOf(::GetTagsForFileUseCase)
-    factoryOf(::GetFileIdsByTagUseCase)
     factoryOf(::AssignTagToFileUseCase)
     factoryOf(::RefreshFilesByTagUseCase)
+    factoryOf(::RefreshTagsForFileUseCase)
+    factoryOf(::GetLocalTagsForFileUseCase)
+    factoryOf(::GetTagsByLocalIdsUseCase)
+    factoryOf(::GetTagsForAccountUseCase)
     factoryOf(::RefreshTagsFromServerUseCase)
     factoryOf(::RemoveTagFromFileUseCase)
     factoryOf(::CreateTagUseCase)
     factoryOf(::UpdateTagUseCase)
     factoryOf(::DeleteTagUseCase)
+    factoryOf(::SyncTagsAndFilesForAccountUseCase)
 
     // Spaces
     factoryOf(::GetPersonalAndProjectSpacesForAccountUseCase)

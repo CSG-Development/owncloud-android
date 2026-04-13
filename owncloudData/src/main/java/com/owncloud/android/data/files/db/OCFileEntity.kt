@@ -105,6 +105,8 @@ data class OCFileEntity(
     val spaceId: String? = null,
     @ColumnInfo(defaultValue = "0")
     val isFavorite: Boolean = false,
+    @ColumnInfo(defaultValue = "NULL")
+    val fileId: Long? = null,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0

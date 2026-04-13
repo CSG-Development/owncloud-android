@@ -47,7 +47,7 @@
 
     <color name="homecloud_checkbox_checked">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_checkbox_unchecked">@color/white</color>
-    <color name="homecloud_checkbox_checkmark">@color/white</color>
+    <color name="homecloud_checkbox_checkmark">#3D3E41</color>
     <color name="homecloud_checkbox_disabled_checked">#616161</color>
     <color name="homecloud_checkbox_disabled_unchecked">#616161</color>
     <color name="homecloud_checkbox_disabled_checkmark">#9E9E9E</color>
@@ -57,6 +57,7 @@
     <color name="homecloud_fab_label_text">@color/homecloud_primary_inverted</color>
 
     <color name="homecloud_search_view_background">#3D3E41</color>
+    <color name="homecloud_filter_bottom_sheet_background">#3D3E41</color>
 
     <color name="homecloud_menu_background">#424242</color>
 
@@ -77,8 +78,11 @@
     <color name="homecloud_passcode_text_lock">@color/homecloud_white_70</color>
     <color name="homecloud_text_error_lock">#F28F8C</color>
 
-    <color name="homecloud_server_list_dropdown">#1D1E21</color>
+    <color name="homecloud_dropdown_background">#1D1E21</color>
     <color name="homecloud_tags_list_remove_icon">#F2918A</color>
+    <color name="homecloud_tags_search_border_inactive">#616161</color>
+    <color name="homecloud_tag_background">@color/homecloud_blue_lighten_2_24</color>
+    <color name="homecloud_tag_content">#B2FFFFFF</color>
 
     <!-- Reconnecting snackbar -->
     <color name="homecloud_reconnecting_snackbar_background">#B8B8B8</color>

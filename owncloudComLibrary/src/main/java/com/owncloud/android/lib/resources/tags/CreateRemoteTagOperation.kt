@@ -20,7 +20,7 @@ class CreateRemoteTagOperation(
 
     override fun run(client: OwnCloudClient): RemoteOperationResult<String> {
         val stringUrl = "${client.baseUri}$SYSTEM_TAGS_PATH"
-        val json = """{"name":"$name","userVisible":"$userVisible","userAssignable":"$userAssignable"}"""
+        val json = """{"name":"$name","userVisible":"$userVisible","userAssignable":"$userAssignable", "canAssign" : "true", "userEditable" : "true"}""".trimMargin()
 
         return try {
             val postMethod = PostMethod(
@@ -54,6 +54,6 @@ class CreateRemoteTagOperation(
 
     companion object {
         private const val SYSTEM_TAGS_PATH = "/remote.php/dav/systemtags"
-        private const val TIMEOUT = 10_000L
+        private const val TIMEOUT = 10L
     }
 }

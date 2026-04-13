@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/homecloud_dropdown_background"/>
+    <stroke android:color="@color/homecloud_color_on_secondary_container" android:width="3dp"/>
+    <corners android:radius="4dp" />
+</shape>

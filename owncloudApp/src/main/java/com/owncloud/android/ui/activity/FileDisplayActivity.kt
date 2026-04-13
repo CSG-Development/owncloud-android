@@ -447,6 +447,7 @@ open class FileDisplayActivity : FileActivity(),
                 syncProfileOperation.syncUserProfile()
                 val workManagerProvider = WorkManagerProvider(context = baseContext)
                 workManagerProvider.enqueueAvailableOfflinePeriodicWorker()
+                workManagerProvider.enqueueTagsSyncPeriodicWorker()
             } else {
                 file?.isFolder?.let { isFolder ->
                     updateFragmentsVisibility(!isFolder)
@@ -626,7 +627,7 @@ open class FileDisplayActivity : FileActivity(),
      *
      * @param fragment New second Fragment to set.
      */
-    private fun setSecondFragment(fragment: Fragment) {
+    fun setSecondFragment(fragment: Fragment) {
         setGlobalSearchBarVisible(false, clearSearch = false)
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.right_fragment_container, fragment, TAG_SECOND_FRAGMENT)
@@ -869,7 +870,6 @@ open class FileDisplayActivity : FileActivity(),
             mainFileListFragment?.collapseFab()
             mainFileListFragment?.setFabMainContentDescription()
         } else {
-            // Every single menu is collapsed. We can navigate up.
             if (secondFragment != null) {
                 // If secondFragment was shown, we need to navigate to the parent of the displayed file
                 // Need a cleanup

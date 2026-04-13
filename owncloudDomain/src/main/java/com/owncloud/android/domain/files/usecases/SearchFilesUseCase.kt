@@ -17,6 +17,7 @@ class SearchFilesUseCase(
             mimePrefix = params.mimePrefix,
             minDate = params.minDate,
             maxDate = params.maxDate,
+            tagLocalIds = params.tagLocalIds,
         )
     }
 
@@ -28,6 +29,7 @@ class SearchFilesUseCase(
         val mimePrefix: String = "",
         val minDate: Long = 0L,
         val maxDate: Long = Long.MAX_VALUE,
+        val tagLocalIds: List<Long> = emptyList(),
     )
 
 }

@@ -85,6 +85,7 @@
             android:name=".presentation.tags.TagsActivity"
             android:label="@string/drawer_menu_tags"
             android:theme="@style/Theme.homeCloud.Toolbar.Drawer"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity android:name=".presentation.migration.StorageMigrationActivity" />
         <activity

@@ -10,4 +10,7 @@ interface TagService : Service {
     fun createTag(name: String, userVisible: Boolean, userAssignable: Boolean): RemoteOperationResult<String>
     fun updateTag(tagId: String, displayName: String?, userVisible: Boolean?, userAssignable: Boolean?): RemoteOperationResult<Unit>
     fun deleteTag(tagId: String): RemoteOperationResult<Unit>
+    fun assignTagToFile(fileRemoteId: Long, tagId: String): RemoteOperationResult<Unit>
+    fun unassignTagFromFile(fileRemoteId: Long, tagId: String): RemoteOperationResult<Unit>
+    fun getTagsForFile(fileRemoteId: Long): RemoteOperationResult<List<RemoteTag>>
 }

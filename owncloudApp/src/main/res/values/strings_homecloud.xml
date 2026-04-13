@@ -92,6 +92,8 @@
     <string name="homecloud_global_search_filter_type">Type</string>
     <string name="homecloud_global_search_filter_date">Date</string>
     <string name="homecloud_global_search_filter_size">Size</string>
+    <string name="homecloud_global_search_filter_tags">Tags</string>
+    <string name="homecloud_global_search_filter_tags_counter">Tags (%1$d)</string>
     <string name="homecloud_common_apply">Apply</string>
 
     <!-- Type Filter Options -->

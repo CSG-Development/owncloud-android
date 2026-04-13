@@ -76,6 +76,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.previews.PreviewVideoViewModel
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.presentation.transfers.TransfersViewModel
+import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
@@ -388,6 +389,11 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
                 player?.pause()
                 val dialog = newInstance(file)
                 dialog.show(supportFragmentManager, TAG_REMOVE_FILES_DIALOG_FRAGMENT)
+                true
+            }
+
+            R.id.action_manage_tags -> {
+                startActivity(TagsActivity.startForManageTags(this, file))
                 true
             }
 

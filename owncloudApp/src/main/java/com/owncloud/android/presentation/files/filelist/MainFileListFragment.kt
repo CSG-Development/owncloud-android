@@ -115,6 +115,8 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
+import com.owncloud.android.presentation.tags.TagsActivity
+import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
@@ -162,6 +164,8 @@ class MainFileListFragment : FileFragment(),
             requireArguments().getString(ARG_ACCOUNT_NAME),
         )
     }
+
+    private val tagsViewModel by viewModel<TagsViewModel>()
 
     private var _binding: MainFileListFragmentBinding? = null
     private val binding get() = _binding!!
@@ -425,6 +429,7 @@ class MainFileListFragment : FileFragment(),
                     shouldSyncContents = !isPickingAFolder(), // For picking a folder option, we just need a refresh
                 )
             )
+            tagsViewModel.loadTags(mainFileListViewModel.getFile().owner)
         }
 
         // Set Refresh FAB and its listener
@@ -438,6 +443,7 @@ class MainFileListFragment : FileFragment(),
                         shouldSyncContents = false,
                     )
                 )
+                tagsViewModel.loadTags(mainFileListViewModel.getFile().owner)
                 hideRefreshFab()
             }
         }
@@ -496,6 +502,7 @@ class MainFileListFragment : FileFragment(),
         /* FileOperationsViewModel observables */
         // Observe the refresh folder operation
         observeRefreshFolder()
+        observeTagsSync()
 
         // Observe the create file with app provider operation
         observeCreateFileWithAppProvider()
@@ -779,6 +786,10 @@ class MainFileListFragment : FileFragment(),
                         fileActions?.showDetails(file)
                     }
 
+                    FileMenuOption.MANAGE_TAGS -> {
+                        startActivity(TagsActivity.startForManageTags(requireActivity(), file))
+                    }
+
                     FileMenuOption.SEND -> {
                         if (!file.isAvailableLocally) { // Download the file
                             Timber.d("${file.remotePath} : File must be downloaded")
@@ -908,12 +919,19 @@ class MainFileListFragment : FileFragment(),
     private fun observeRefreshFolder() {
         fileOperationsViewModel.refreshFolderLiveData.observe(viewLifecycleOwner) {
             binding.syncProgressBar.isIndeterminate = it.peekContent().isLoading
-            binding.swipeRefreshMainFileList.isRefreshing = it.peekContent().isLoading
+            binding.swipeRefreshMainFileList.isRefreshing = it.peekContent().isLoading || tagsViewModel.isTagsSyncing.value
 
             // Refresh the spaces and update the quota
             spacesListViewModel.refreshSpacesFromServer()
 
             hideRefreshFab()
+        }
+    }
+
+    private fun observeTagsSync() {
+        collectLatestLifecycleFlow(tagsViewModel.isTagsSyncing) { isSyncing ->
+            binding.swipeRefreshMainFileList.isRefreshing = isSyncing ||
+                    fileOperationsViewModel.refreshFolderLiveData.value?.peekContent()?.isLoading ?: false
         }
     }
 
@@ -1513,6 +1531,11 @@ class MainFileListFragment : FileFragment(),
                 singleFile.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
                 }
+                true
+            }
+
+            R.id.action_manage_tags -> {
+                startActivity(TagsActivity.startForManageTags(requireActivity(), singleFile))
                 true
             }
 

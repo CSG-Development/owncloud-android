@@ -87,6 +87,7 @@ interface FileRepository {
         mimePrefix: String,
         minDate: Long,
         maxDate: Long,
+        tagLocalIds: List<Long> = emptyList(),
     ): List<OCFile>
 
 }

@@ -39,7 +39,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 
-class OCLocalFileDataSource(
+    class OCLocalFileDataSource(
     private val fileDao: FileDao,
 ) : LocalFileDataSource {
     override fun getFileById(fileId: Long): OCFile? =
@@ -224,15 +224,22 @@ class OCLocalFileDataSource(
         maxSize: Long,
         mimePrefix: String,
         minDate: Long,
-        maxDate: Long
+        maxDate: Long,
+        tagLocalIds: List<Long>,
     ): List<OCFile> {
-        return if (ignoreCase) {
-            fileDao.searchFilesCaseInsensitive(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate)
+        return if (tagLocalIds.isNotEmpty()) {
+            if (ignoreCase) {
+                fileDao.searchFilesCaseInsensitiveByTagLocalIds(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate, tagLocalIds)
+            } else {
+                fileDao.searchFilesCaseSensitiveByTagLocalIds(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate, tagLocalIds)
+            }
         } else {
-            fileDao.searchFilesCaseSensitive(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate)
-        }.map {
-            it.toModel()
-        }
+            if (ignoreCase) {
+                fileDao.searchFilesCaseInsensitive(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate)
+            } else {
+                fileDao.searchFilesCaseSensitive(searchPattern, minSize, maxSize, mimePrefix, minDate, maxDate)
+            }
+        }.map { it.toModel() }
     }
 
     override fun saveUploadWorkerUuid(fileId: Long, workerUuid: UUID) {
@@ -286,6 +293,7 @@ class OCLocalFileDataSource(
                 treeEtag = treeEtag,
                 spaceId = spaceId,
                 isFavorite = isFavorite,
+                fileId = fileId,
             )
 
         @VisibleForTesting
@@ -316,6 +324,7 @@ class OCLocalFileDataSource(
                 name = fileName,
                 spaceId = spaceId,
                 isFavorite = isFavorite,
+                fileId = fileId,
             ).apply { this@toEntity.id?.let { modelId -> this.id = modelId } }
     }
 }

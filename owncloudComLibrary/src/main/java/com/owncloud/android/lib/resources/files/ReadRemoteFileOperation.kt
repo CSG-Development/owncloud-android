@@ -23,6 +23,7 @@
 
 package com.owncloud.android.lib.resources.files
 
+import at.bitfire.dav4jvm.PropertyRegistry
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import com.owncloud.android.lib.common.http.HttpConstants.HTTP_MULTI_STATUS
@@ -30,6 +31,7 @@ import com.owncloud.android.lib.common.http.HttpConstants.HTTP_OK
 import com.owncloud.android.lib.common.http.methods.webdav.DavConstants.DEPTH_0
 import com.owncloud.android.lib.common.http.methods.webdav.DavUtils
 import com.owncloud.android.lib.common.http.methods.webdav.PropfindMethod
+import com.owncloud.android.lib.common.http.methods.webdav.properties.OCFileId
 import com.owncloud.android.lib.common.network.WebdavUtils
 import com.owncloud.android.lib.common.operations.RemoteOperation
 import com.owncloud.android.lib.common.operations.RemoteOperationResult
@@ -59,13 +61,14 @@ class ReadRemoteFileOperation(
      */
     override fun run(client: OwnCloudClient): RemoteOperationResult<RemoteFile> {
         try {
+            PropertyRegistry.register(OCFileId.Factory())
             if (client.account == null) {
                 throw AccountUtils.AccountNotFoundException()
             }
             val propFind = PropfindMethod(
                 url = getFinalWebDavUrl(),
                 depth = DEPTH_0,
-                propertiesToRequest = DavUtils.allPropSet
+                propertiesToRequest = (DavUtils.allPropSet + OCFileId.NAME)
             ).apply {
                 setReadTimeout(SYNC_READ_TIMEOUT, TimeUnit.SECONDS)
                 setConnectionTimeout(SYNC_CONNECTION_TIMEOUT, TimeUnit.SECONDS)
