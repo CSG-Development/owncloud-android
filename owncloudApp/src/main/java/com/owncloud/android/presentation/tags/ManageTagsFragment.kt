@@ -146,7 +146,7 @@ class ManageTagsFragment : FileFragment() {
             val filtered = source?.substring(start, end)?.filter { it.isLetterOrDigit() }
             if (filtered == source?.substring(start, end)) null else filtered
         }
-        binding.tagSearchEditText.filters = binding.tagSearchEditText.filters + alphanumericFilter
+        binding.tagSearchEditText.filters += alphanumericFilter
     }
 
     private fun observeErrors() {
@@ -317,7 +317,7 @@ class ManageTagsFragment : FileFragment() {
     private fun updateTagDropdown() {
         val query = binding.tagSearchEditText.text?.toString()?.trim().orEmpty()
 
-        if (query.length >= MAX_TAG_LENGTH) {
+        if (query.length > MAX_TAG_LENGTH) {
             binding.tagSearchEditText.isActivated = true
             binding.tagSearchEditText.setDropdownItems(
                 listOf(
