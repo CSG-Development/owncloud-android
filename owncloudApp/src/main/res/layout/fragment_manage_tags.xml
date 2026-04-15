@@ -41,7 +41,6 @@
         android:padding="12dp"
         android:background="@drawable/selector_filterable_autocomplete"
         android:drawablePadding="4dp"
-        android:maxLength="31"
         app:drawableStartCompat="@drawable/ic_tag_tintable"
         app:drawableTint="@color/homecloud_color_on_secondary_container"
         app:layout_constraintEnd_toEndOf="parent"
