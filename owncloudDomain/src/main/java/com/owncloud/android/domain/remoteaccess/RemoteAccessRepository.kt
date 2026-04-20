@@ -1,6 +1,7 @@
 package com.owncloud.android.domain.remoteaccess
 
 import com.owncloud.android.domain.device.model.Device
+import com.owncloud.android.domain.device.model.DevicePathType
 
 interface RemoteAccessRepository {
     /**
@@ -41,6 +42,16 @@ interface RemoteAccessRepository {
     suspend fun getAvailableDevices(): List<Device>
 
     suspend fun getCurrentDevice(): Device?
+
+    /**
+     * Fetch fresh connection paths for a specific device id. Used by the cache-refresh
+     * fast-path: when the cached paths fail and the cache is expired, we fetch fresh paths
+     * for the persisted [seagateDeviceId] without re-running the full discovery flow.
+     *
+     * @return The map of [DevicePathType] to base URL, or `null` when the request fails or
+     *  the response contains no paths.
+     */
+    suspend fun getDevicePathsById(seagateDeviceId: String): Map<DevicePathType, String>?
 
     /**
      * Clear all stored device paths

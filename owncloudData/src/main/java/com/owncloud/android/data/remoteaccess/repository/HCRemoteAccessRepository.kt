@@ -135,7 +135,11 @@ class HCRemoteAccessRepository(
             val deviceFilesUrl = remoteDevicePath.getDeviceBaseUrl()
             val baseUrl = deviceFilesUrl.removeSuffix("/files")
             if (certificateCommonName.isEmpty()) {
-                certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
+                // Path-aware timeout: LOCAL paths use the local 4s budget, others use 9s.
+                val isLocal = devicePathType == DevicePathType.LOCAL
+                certificateCommonName = deviceVerificationClient
+                    .getCertificateCommonName(baseUrl, isLocal = isLocal)
+                    .orEmpty()
             }
 
             availablePaths[devicePathType] = deviceFilesUrl
@@ -158,6 +162,18 @@ class HCRemoteAccessRepository(
             deviceResponse.certificateCommonName == currentDeviceStorage.getCertificateCommonName()
         }
         return deviceResponse?.let { getVerifiedDevice(deviceResponse = it) }
+    }
+
+    override suspend fun getDevicePathsById(seagateDeviceId: String): Map<DevicePathType, String>? {
+        return try {
+            val response = remoteAccessService.getDeviceById(seagateDeviceId)
+            val paths = response.paths
+                .associate { it.type.mapToDomain() to it.getDeviceBaseUrl() }
+            paths.takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            timber.log.Timber.w(e, "Failed to fetch device paths for id=$seagateDeviceId")
+            null
+        }
     }
 
     override fun clearDevicePaths() {
