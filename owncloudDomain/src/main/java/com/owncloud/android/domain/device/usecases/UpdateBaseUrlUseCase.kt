@@ -8,8 +8,10 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import timber.log.Timber
 import java.util.UUID
 
@@ -25,13 +27,22 @@ import java.util.UUID
  */
 class UpdateBaseUrlUseCase(
     private val workManager: WorkManager,
-    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase
+    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
 ) {
 
-    private val _tokenRequired: MutableSharedFlow<Unit> = MutableSharedFlow()
-    val tokenRequired: Flow<Unit> = _tokenRequired
+    // Conflated buffer so a single tokenRequired signal is not lost if no subscriber is
+    // present at emission time. Only the most recent signal is retained.
+    private val _tokenRequired: MutableSharedFlow<Unit> = MutableSharedFlow(
+        replay = 1,
+        extraBufferCapacity = 0,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    val tokenRequired: Flow<Unit> = _tokenRequired.asSharedFlow()
 
-    suspend fun execute(fromBackground: Boolean = false): UUID? {
+    suspend fun execute(
+        fromBackground: Boolean = false,
+        wifiAvailable: Boolean = true,
+    ): UUID? {
         if (!getRemoteAccessTokenUseCase.hasToken()) {
             _tokenRequired.emit(Unit)
             return null
@@ -42,7 +53,8 @@ class UpdateBaseUrlUseCase(
             .build()
 
         val inputData = workDataOf(
-            BaseUrlUpdateWorker.KEY_FROM_BACKGROUND to fromBackground
+            BaseUrlUpdateWorker.KEY_FROM_BACKGROUND to fromBackground,
+            BaseUrlUpdateWorker.KEY_WIFI_AVAILABLE to wifiAvailable,
         )
 
         val baseUrlUpdateWork = OneTimeWorkRequestBuilder<BaseUrlUpdateWorker>()
@@ -56,9 +68,20 @@ class UpdateBaseUrlUseCase(
             baseUrlUpdateWork
         )
 
-        Timber.i("Base URL update worker has been enqueued (fromBackground=$fromBackground).")
+        Timber.i(
+            "Base URL update worker has been enqueued (fromBackground=$fromBackground, wifiAvailable=$wifiAvailable)."
+        )
 
         return baseUrlUpdateWork.id
+    }
+
+    /**
+     * Notifies subscribers that Remote Access re-authentication is required. Used by
+     * downstream auth components (e.g. token-refresh interceptor) when the session can no
+     * longer recover.
+     */
+    suspend fun notifyTokenRequired() {
+        _tokenRequired.emit(Unit)
     }
 
     fun hasScheduled(): Boolean {

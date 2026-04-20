@@ -147,10 +147,14 @@ class HCLocalMdnsDiscoveryDataSource(
             }
 
             override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-                val host = serviceInfo.host?.hostAddress
+                // Some Android NSD implementations return the resolved hostname (with the
+                // canonical trailing dot) instead of the raw IP address. The trailing dot
+                // breaks downstream URL parsing / certificate validation, so strip it
+                // defensively before assembling the device URL.
+                val host = serviceInfo.host?.hostAddress?.removeSuffix(".")
                 val port = serviceInfo.port
 
-                if (host != null && port > 0) {
+                if (!host.isNullOrEmpty() && port > 0) {
                     val deviceUrl = "https://$host:$port"
                     Timber.d("Resolved device URL: $deviceUrl")
                     onServiceResolved(deviceUrl)

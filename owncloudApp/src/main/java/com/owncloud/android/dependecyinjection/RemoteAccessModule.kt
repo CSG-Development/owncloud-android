@@ -6,6 +6,7 @@ import com.owncloud.android.data.device.DynamicBaseUrlSwitcher
 import com.owncloud.android.data.device.HCAccountBaseUrlManager
 import com.owncloud.android.data.device.HCBaseUrlChooser
 import com.owncloud.android.data.device.HCDeviceUrlResolver
+import com.owncloud.android.data.remoteaccess.RemoteAccessAuthEvents
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessAuthInterceptor
@@ -52,6 +53,11 @@ val remoteAccessModule = module {
         RemoteAccessTokenStorage(get())
     }
 
+    // Remote Access auth events (session invalid, refresh exhausted)
+    single {
+        RemoteAccessAuthEvents()
+    }
+
     // Current Device Storage
     single {
         CurrentDeviceStorage(get())
@@ -68,7 +74,8 @@ val remoteAccessModule = module {
     single<BaseUrlChooser> {
         HCBaseUrlChooser(
             currentDeviceStorage = get(),
-            deviceUrlResolver = get()
+            deviceUrlResolver = get(),
+            remoteAccessRepository = get()
         )
     }
 
@@ -84,6 +91,7 @@ val remoteAccessModule = module {
     single {
         DynamicBaseUrlSwitcher(
             networkStateObserver = get(),
+            appLifecycleObserver = get(),
             coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
             updateBaseUrlUseCase = get()
         )
@@ -110,7 +118,8 @@ val remoteAccessModule = module {
             tokenStorage = get(),
             currentDeviceStorage = get(),
             remoteAccessServiceLazy = inject(),
-            getFirebaseInstallationIdUseCase = inject()
+            getFirebaseInstallationIdUseCase = inject(),
+            authEvents = get()
         )
     }
 
