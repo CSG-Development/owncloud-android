@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 
 import android.accounts.AccountManager
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
@@ -11,8 +12,10 @@ import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.LeadingMarginSpan
 import android.util.Patterns
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +25,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogDeveloperOptionsBinding
 import com.owncloud.android.databinding.AccountSetupHomecloudBinding
@@ -259,12 +263,57 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun handleResetPasswordResult(event: LoginViewModel.LoginEvent.ResetPasswordResult) {
-        val message = if (event.isSuccess) {
-            getString(R.string.homecloud_reset_password_success, event.email)
-        } else {
-            getString(R.string.homecloud_reset_password_error)
+        when (event) {
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Success -> {
+                showMessageInSnackbar(
+                    message = getString(R.string.homecloud_reset_password_success, event.email)
+                )
+            }
+
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Error -> {
+                showResetPasswordErrorSnackbar(event.errorType)
+            }
         }
-        showMessageInSnackbar(message = message)
+    }
+
+    private fun showResetPasswordErrorSnackbar(errorType: LoginViewModel.LoginEvent.ResetPasswordErrorType) {
+        val messageRes = when (errorType) {
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.BadRequest ->
+                R.string.homecloud_reset_password_error_bad_request
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.ServerError ->
+                R.string.homecloud_reset_password_error_server_error
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.Generic ->
+                R.string.homecloud_reset_password_error
+        }
+
+        val snackbar = Snackbar.make(
+            findViewById(android.R.id.content),
+            "",
+            Snackbar.LENGTH_INDEFINITE,
+        )
+        val snackbarLayout = snackbar.view as Snackbar.SnackbarLayout
+        snackbarLayout.setPadding(0, 0, 0, 0)
+        snackbarLayout.setBackgroundColor(Color.TRANSPARENT)
+
+        val defaultText = snackbarLayout.findViewById<TextView>(
+            com.google.android.material.R.id.snackbar_text
+        )
+        defaultText.visibility = View.INVISIBLE
+
+        val customView = LayoutInflater.from(this).inflate(
+            R.layout.snackbar_reset_password_error,
+            snackbarLayout,
+            false,
+        )
+        customView.findViewById<TextView>(R.id.reset_password_error_snackbar_text)
+            .setText(messageRes)
+        customView.findViewById<View>(R.id.reset_password_error_snackbar_dismiss)
+            .setOnClickListener { snackbar.dismiss() }
+
+        snackbarLayout.addView(customView, 0)
+        snackbar.show()
     }
 
     private fun showUntrustedCertDialog(certificateCombinedException: CertificateCombinedException) {

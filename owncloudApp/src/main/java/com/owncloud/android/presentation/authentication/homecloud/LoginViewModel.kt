@@ -19,6 +19,8 @@ import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OwncloudVersionNotSupportedException
+import com.owncloud.android.domain.exceptions.ResetPasswordBadRequestException
+import com.owncloud.android.domain.exceptions.ResetPasswordServerErrorException
 import com.owncloud.android.domain.exceptions.SSLErrorCode
 import com.owncloud.android.domain.exceptions.SSLErrorException
 import com.owncloud.android.domain.exceptions.UnauthorizedException
@@ -327,18 +329,20 @@ class LoginViewModel(
                             UseCaseResult.Error(IllegalStateException("Can't get available base url!"))
                         }
                     }
-                    val succeeded = useCaseResult is UseCaseResult.Success
-                    if (!succeeded) {
-                        Timber.e(
-                            (useCaseResult as? UseCaseResult.Error)?.throwable,
-                            "Reset password failed for $email"
-                        )
+                    when (useCaseResult) {
+                        is UseCaseResult.Success -> {
+                            _events.emit(LoginEvent.ResetPasswordResult.Success(email = email))
+                        }
+
+                        is UseCaseResult.Error -> {
+                            Timber.e(useCaseResult.throwable, "Reset password failed for $email")
+                            _events.emit(LoginEvent.ResetPasswordResult.Error(mapResetPasswordError(useCaseResult.throwable)))
+                        }
                     }
-                    _events.emit(LoginEvent.ResetPasswordResult(isSuccess = succeeded, email = email))
                 },
                 exceptionHandlerBlock = { throwable ->
                     Timber.e(throwable, "Reset password failed for $email")
-                    _events.emit(LoginEvent.ResetPasswordResult(isSuccess = false, email = email))
+                    _events.emit(LoginEvent.ResetPasswordResult.Error(mapResetPasswordError(throwable)))
                 },
                 completeBlock = {
                     _state.update { state ->
@@ -347,6 +351,12 @@ class LoginViewModel(
                 }
             )
         }
+    }
+
+    private fun mapResetPasswordError(throwable: Throwable?): LoginEvent.ResetPasswordErrorType = when (throwable) {
+        is ResetPasswordBadRequestException -> LoginEvent.ResetPasswordErrorType.BadRequest
+        is ResetPasswordServerErrorException -> LoginEvent.ResetPasswordErrorType.ServerError
+        else -> LoginEvent.ResetPasswordErrorType.Generic
     }
 
     fun onDeveloperOptionsClicked() {
@@ -603,6 +613,15 @@ class LoginViewModel(
 
         data class ShowUntrustedCertDialog(val certificateCombinedException: CertificateCombinedException) : LoginEvent()
 
-        data class ResetPasswordResult(val isSuccess: Boolean, val email: String) : LoginEvent()
+        sealed class ResetPasswordResult : LoginEvent() {
+            data class Success(val email: String) : ResetPasswordResult()
+            data class Error(val errorType: ResetPasswordErrorType) : ResetPasswordResult()
+        }
+
+        enum class ResetPasswordErrorType {
+            BadRequest,
+            ServerError,
+            Generic,
+        }
     }
 }
