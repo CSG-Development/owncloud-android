@@ -34,7 +34,9 @@ import com.owncloud.android.testutil.OC_SCOPE
 import com.owncloud.android.testutil.OC_SECURE_SERVER_INFO_BASIC_AUTH
 import com.owncloud.android.testutil.OC_USER_INFO
 import com.owncloud.android.testutil.oauth.OC_CLIENT_REGISTRATION
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -168,6 +170,29 @@ class OCAuthenticationRepositoryTest {
 
         verify(exactly = 1) {
             localAuthenticationDataSource.supportsOAuth2(OC_ACCOUNT_NAME)
+        }
+    }
+
+    @Test
+    fun `resetPassword delegates to remote data source with server path and email`() {
+        val email = "user@example.com"
+        every {
+            remoteAuthenticationDataSource.resetPassword(
+                serverPath = OC_SECURE_SERVER_INFO_BASIC_AUTH.baseUrl,
+                email = email,
+            )
+        } just Runs
+
+        ocAuthenticationRepository.resetPassword(
+            serverPath = OC_SECURE_SERVER_INFO_BASIC_AUTH.baseUrl,
+            email = email,
+        )
+
+        verify(exactly = 1) {
+            remoteAuthenticationDataSource.resetPassword(
+                serverPath = OC_SECURE_SERVER_INFO_BASIC_AUTH.baseUrl,
+                email = email,
+            )
         }
     }
 

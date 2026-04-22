@@ -88,4 +88,8 @@ class OCAuthenticationRepository(
         localAuthenticationDataSource.supportsOAuth2(accountName)
 
     override fun getBaseUrl(accountName: String): String = localAuthenticationDataSource.getBaseUrl(accountName)
+
+    override fun resetPassword(serverPath: String, email: String) {
+        remoteAuthenticationDataSource.resetPassword(serverPath = serverPath, email = email)
+    }
 }

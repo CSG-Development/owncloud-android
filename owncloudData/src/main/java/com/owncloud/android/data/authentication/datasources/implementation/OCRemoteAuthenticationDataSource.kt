@@ -31,6 +31,7 @@ import com.owncloud.android.lib.common.authentication.OwnCloudCredentials
 import com.owncloud.android.lib.common.authentication.OwnCloudCredentialsFactory
 import com.owncloud.android.lib.resources.files.GetBaseUrlRemoteOperation
 import com.owncloud.android.lib.resources.users.GetRemoteUserInfoOperation
+import com.owncloud.android.lib.resources.users.ResetPasswordRemoteOperation
 
 class OCRemoteAuthenticationDataSource(
     private val clientManager: ClientManager
@@ -40,6 +41,16 @@ class OCRemoteAuthenticationDataSource(
 
     override fun loginOAuth(serverPath: String, username: String, accessToken: String): Pair<UserInfo, String?> =
         login(OwnCloudCredentialsFactory.newBearerCredentials(username, accessToken), serverPath)
+
+    override fun resetPassword(serverPath: String, email: String) {
+        val client: OwnCloudClient = clientManager.getClientForAnonymousCredentials(
+            path = serverPath,
+            requiresNewClient = false,
+        )
+        executeRemoteOperation {
+            ResetPasswordRemoteOperation(email = email).execute(client)
+        }
+    }
 
     private fun login(ownCloudCredentials: OwnCloudCredentials, serverPath: String): Pair<UserInfo, String?> {
 

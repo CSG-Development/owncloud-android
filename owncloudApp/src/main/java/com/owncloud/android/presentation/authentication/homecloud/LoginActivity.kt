@@ -138,7 +138,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             loginViewModel.onPasswordChanged(text.toString())
         }
         binding.resetPasswordLink.setOnClickListener {
-            showMessageInSnackbar(message = "Not implemented yet")
+            loginViewModel.onResetPasswordClicked()
         }
         binding.cantFindDevice.setOnClickListener {
             loginViewModel.onCantFindDeviceClicked()
@@ -254,7 +254,17 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
             LoginViewModel.LoginEvent.Close -> finish()
             is LoginViewModel.LoginEvent.ShowDeveloperOptions -> showDeveloperOptionsDialog(event.staticDeviceUrl, event.isSettingsMenuEnabled)
+            is LoginViewModel.LoginEvent.ResetPasswordResult -> handleResetPasswordResult(event)
         }
+    }
+
+    private fun handleResetPasswordResult(event: LoginViewModel.LoginEvent.ResetPasswordResult) {
+        val message = if (event.isSuccess) {
+            getString(R.string.homecloud_reset_password_success, event.email)
+        } else {
+            getString(R.string.homecloud_reset_password_error)
+        }
+        showMessageInSnackbar(message = message)
     }
 
     private fun showUntrustedCertDialog(certificateCombinedException: CertificateCombinedException) {

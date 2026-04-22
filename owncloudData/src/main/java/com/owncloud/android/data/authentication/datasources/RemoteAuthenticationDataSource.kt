@@ -24,4 +24,9 @@ interface RemoteAuthenticationDataSource {
     // Returns a Pair with UserInfo and last permanent redirection
     fun loginBasic(serverPath: String, username: String, password: String): Pair<UserInfo, String?>
     fun loginOAuth(serverPath: String, username: String, accessToken: String): Pair<UserInfo, String?>
+
+    /**
+     * Request a password reset email for the given [email] against the server at [serverPath].
+     */
+    fun resetPassword(serverPath: String, email: String)
 }

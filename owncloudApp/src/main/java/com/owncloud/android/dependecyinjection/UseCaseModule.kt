@@ -35,6 +35,7 @@ import com.owncloud.android.domain.authentication.oauth.RequestTokenUseCase
 import com.owncloud.android.domain.authentication.usecases.GetBaseUrlUseCase
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
 import com.owncloud.android.domain.authentication.usecases.LoginOAuthAsyncUseCase
+import com.owncloud.android.domain.authentication.usecases.ResetPasswordUseCase
 import com.owncloud.android.domain.authentication.usecases.SupportsOAuth2UseCase
 import com.owncloud.android.domain.automaticuploads.usecases.GetAutomaticUploadsConfigurationUseCase
 import com.owncloud.android.domain.automaticuploads.usecases.GetPictureUploadsConfigurationStreamUseCase
@@ -182,6 +183,7 @@ val useCaseModule = module {
     factoryOf(::GetOwnCloudInstancesFromAuthenticatedWebFingerUseCase)
     factoryOf(::LoginBasicAsyncUseCase)
     factoryOf(::LoginOAuthAsyncUseCase)
+    factoryOf(::ResetPasswordUseCase)
     factoryOf(::SupportsOAuth2UseCase)
 
     // OAuth

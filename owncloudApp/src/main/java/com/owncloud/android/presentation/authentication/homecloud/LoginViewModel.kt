@@ -6,7 +6,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.R
+import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.authentication.usecases.LoginBasicAsyncUseCase
+import com.owncloud.android.domain.authentication.usecases.ResetPasswordUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.device.model.Device
@@ -24,6 +26,7 @@ import com.owncloud.android.domain.exceptions.UnknownErrorException
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
+import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import com.owncloud.android.domain.server.usecases.GetAvailableDevicesUseCase
 import com.owncloud.android.domain.server.usecases.GetAvailableServerInfoUseCase
 import com.owncloud.android.domain.spaces.usecases.RefreshSpacesFromServerAsyncUseCase
@@ -62,6 +65,8 @@ class LoginViewModel(
     private val getAvailableServerInfoUseCase: GetAvailableServerInfoUseCase,
     private val saveStaticDeviceUseCase: SaveStaticDeviceUseCase,
     private val getStaticDeviceUseCase: GetStaticDeviceUseCase,
+    private val resetPasswordUseCase: ResetPasswordUseCase,
+    private val deviceUrlResolver: DeviceUrlResolver,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -293,6 +298,46 @@ class LoginViewModel(
         saveStaticDeviceUseCase.execute(staticDeviceUrl)
         _state.update {
             it.copyGeneralState(isSettingsVisible = isSettingsMenuEnabled)
+        }
+    }
+
+    fun onResetPasswordClicked() {
+        val currentState = _state.value as? LoginScreenState.LoginState ?: return
+        val selectedDevice = currentState.selectedDevice ?: return
+        val email = currentState.username
+        if (email.isEmpty()) return
+
+        viewModelScope.launch {
+            runCatchingException(
+                block = {
+                    val useCaseResult = withContext(coroutinesDispatcherProvider.io) {
+                        val serverPath = deviceUrlResolver.resolveAvailableBaseUrl(selectedDevice.availablePaths)
+                        if (!serverPath.isNullOrEmpty()) {
+                            resetPasswordUseCase(
+                                ResetPasswordUseCase.Params(
+                                    serverPath = serverPath.removeSuffix("/files"),
+                                    email = email,
+                                )
+                            )
+                        } else {
+                            UseCaseResult.Error(IllegalStateException("Can't get available base url!"))
+                        }
+                    }
+                    val succeeded = useCaseResult is UseCaseResult.Success
+                    if (!succeeded) {
+                        Timber.e(
+                            (useCaseResult as? UseCaseResult.Error)?.throwable,
+                            "Reset password failed for $email"
+                        )
+                    }
+                    _events.emit(LoginEvent.ResetPasswordResult(isSuccess = succeeded, email = email))
+                },
+                exceptionHandlerBlock = { throwable ->
+                    Timber.e(throwable, "Reset password failed for $email")
+                    _events.emit(LoginEvent.ResetPasswordResult(isSuccess = false, email = email))
+                },
+                completeBlock = {}
+            )
         }
     }
 
@@ -548,5 +593,7 @@ class LoginViewModel(
         data class LoginResult(val accountName: String, val error: String? = null) : LoginEvent()
 
         data class ShowUntrustedCertDialog(val certificateCombinedException: CertificateCombinedException) : LoginEvent()
+
+        data class ResetPasswordResult(val isSuccess: Boolean, val email: String) : LoginEvent()
     }
 }
