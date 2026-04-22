@@ -24,13 +24,17 @@ import com.owncloud.android.data.ClientManager
 import com.owncloud.android.data.authentication.datasources.RemoteAuthenticationDataSource
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.data.user.datasources.implementation.toDomain
+import com.owncloud.android.domain.exceptions.ResetPasswordBadRequestException
+import com.owncloud.android.domain.exceptions.ResetPasswordServerErrorException
 import com.owncloud.android.domain.user.model.UserInfo
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.OwnCloudClient.WEBDAV_FILES_PATH_4_0
 import com.owncloud.android.lib.common.authentication.OwnCloudCredentials
 import com.owncloud.android.lib.common.authentication.OwnCloudCredentialsFactory
+import com.owncloud.android.lib.common.http.HttpConstants
 import com.owncloud.android.lib.resources.files.GetBaseUrlRemoteOperation
 import com.owncloud.android.lib.resources.users.GetRemoteUserInfoOperation
+import com.owncloud.android.lib.resources.users.ResetPasswordRemoteOperation
 
 class OCRemoteAuthenticationDataSource(
     private val clientManager: ClientManager
@@ -40,6 +44,20 @@ class OCRemoteAuthenticationDataSource(
 
     override fun loginOAuth(serverPath: String, username: String, accessToken: String): Pair<UserInfo, String?> =
         login(OwnCloudCredentialsFactory.newBearerCredentials(username, accessToken), serverPath)
+
+    override fun resetPassword(serverPath: String, email: String) {
+        val client: OwnCloudClient = clientManager.getClientForAnonymousCredentials(
+            path = serverPath,
+            requiresNewClient = false,
+        )
+        val result = ResetPasswordRemoteOperation(email = email).execute(client)
+        when (result.httpCode) {
+            HttpConstants.HTTP_NO_CONTENT -> Unit
+            HttpConstants.HTTP_BAD_REQUEST -> throw ResetPasswordBadRequestException()
+            HttpConstants.HTTP_INTERNAL_SERVER_ERROR -> throw ResetPasswordServerErrorException()
+            else -> executeRemoteOperation { result }
+        }
+    }
 
     private fun login(ownCloudCredentials: OwnCloudCredentials, serverPath: String): Pair<UserInfo, String?> {
 

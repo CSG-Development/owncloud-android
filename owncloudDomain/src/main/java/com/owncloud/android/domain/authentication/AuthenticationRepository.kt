@@ -44,4 +44,11 @@ interface AuthenticationRepository {
     fun supportsOAuth2UseCase(accountName: String): Boolean
 
     fun getBaseUrl(accountName: String): String
+
+    /**
+     * Trigger a password-reset email for [email] against the server at [serverPath].
+     *
+     * Throws on any non-success response (e.g. 400 bad input, 500 backend failure).
+     */
+    fun resetPassword(serverPath: String, email: String)
 }

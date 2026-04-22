@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.authentication.homecloud
 
 import android.accounts.AccountManager
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
@@ -11,8 +12,10 @@ import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.LeadingMarginSpan
 import android.util.Patterns
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +25,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogDeveloperOptionsBinding
 import com.owncloud.android.databinding.AccountSetupHomecloudBinding
@@ -138,7 +142,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             loginViewModel.onPasswordChanged(text.toString())
         }
         binding.resetPasswordLink.setOnClickListener {
-            showMessageInSnackbar(message = "Not implemented yet")
+            loginViewModel.onResetPasswordClicked()
         }
         binding.cantFindDevice.setOnClickListener {
             loginViewModel.onCantFindDeviceClicked()
@@ -254,7 +258,62 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
             LoginViewModel.LoginEvent.Close -> finish()
             is LoginViewModel.LoginEvent.ShowDeveloperOptions -> showDeveloperOptionsDialog(event.staticDeviceUrl, event.isSettingsMenuEnabled)
+            is LoginViewModel.LoginEvent.ResetPasswordResult -> handleResetPasswordResult(event)
         }
+    }
+
+    private fun handleResetPasswordResult(event: LoginViewModel.LoginEvent.ResetPasswordResult) {
+        when (event) {
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Success -> {
+                showMessageInSnackbar(
+                    message = getString(R.string.homecloud_reset_password_success, event.email)
+                )
+            }
+
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Error -> {
+                showResetPasswordErrorSnackbar(event.errorType)
+            }
+        }
+    }
+
+    private fun showResetPasswordErrorSnackbar(errorType: LoginViewModel.LoginEvent.ResetPasswordErrorType) {
+        val messageRes = when (errorType) {
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.BadRequest ->
+                R.string.homecloud_reset_password_error_bad_request
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.ServerError ->
+                R.string.homecloud_reset_password_error_server_error
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.Generic ->
+                R.string.homecloud_reset_password_error
+        }
+
+        val snackbar = Snackbar.make(
+            findViewById(android.R.id.content),
+            "",
+            Snackbar.LENGTH_INDEFINITE,
+        )
+        val snackbarLayout = snackbar.view as Snackbar.SnackbarLayout
+        snackbarLayout.setPadding(0, 0, 0, 0)
+        snackbarLayout.setBackgroundColor(Color.TRANSPARENT)
+
+        val defaultText = snackbarLayout.findViewById<TextView>(
+            com.google.android.material.R.id.snackbar_text
+        )
+        defaultText.visibility = View.INVISIBLE
+
+        val customView = LayoutInflater.from(this).inflate(
+            R.layout.snackbar_reset_password_error,
+            snackbarLayout,
+            false,
+        )
+        customView.findViewById<TextView>(R.id.reset_password_error_snackbar_text)
+            .setText(messageRes)
+        customView.findViewById<View>(R.id.reset_password_error_snackbar_dismiss)
+            .setOnClickListener { snackbar.dismiss() }
+
+        snackbarLayout.addView(customView, 0)
+        snackbar.show()
     }
 
     private fun showUntrustedCertDialog(certificateCombinedException: CertificateCombinedException) {
@@ -347,6 +406,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
             is LoginScreenState.LoginState -> {
                 changeLoadingState(state)
+                updateResetPasswordState(state)
                 if (state.authError != null) {
                     when (state.authError) {
                         is LoginScreenState.AuthError.LoginError -> {
@@ -403,6 +463,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.VISIBLE
             binding.actionButton.visibility = View.GONE
             binding.loginStateGroup.visibility = View.GONE
+            binding.resetPasswordLink.visibility = View.GONE
         } else {
             binding.accountUsernameText.visibility = View.VISIBLE
             binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
@@ -411,6 +472,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.GONE
             binding.actionButton.visibility = View.VISIBLE
             binding.loginStateGroup.visibility = View.VISIBLE
+            binding.resetPasswordLink.visibility = View.VISIBLE
             binding.actionButton.setText(R.string.setup_btn_login)
             if (state.isActionButtonLoading) {
                 binding.actionButton.setState(LoadingButton.State.LOADING)
@@ -428,6 +490,13 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.setState(state)
             }
         }
+    }
+
+    private fun updateResetPasswordState(state: LoginScreenState.LoginState) {
+        val showProgress = state.isResetPasswordLoading
+        binding.resetPasswordProgress.visibility = if (showProgress) View.VISIBLE else View.GONE
+        binding.resetPasswordLink.isEnabled = !showProgress && state.selectedDevice != null
+        binding.resetPasswordLink.visibility = if (showProgress || state.isLoading) View.GONE else View.VISIBLE
     }
 
     private fun launchFileDisplayActivity() {
