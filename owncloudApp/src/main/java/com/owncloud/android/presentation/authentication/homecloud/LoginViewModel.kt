@@ -304,10 +304,14 @@ class LoginViewModel(
     fun onResetPasswordClicked() {
         val currentState = _state.value as? LoginScreenState.LoginState ?: return
         val selectedDevice = currentState.selectedDevice ?: return
+        if (currentState.isResetPasswordLoading) return
         val email = currentState.username
         if (email.isEmpty()) return
 
         viewModelScope.launch {
+            _state.update { state ->
+                (state as? LoginScreenState.LoginState)?.copy(isResetPasswordLoading = true) ?: state
+            }
             runCatchingException(
                 block = {
                     val useCaseResult = withContext(coroutinesDispatcherProvider.io) {
@@ -336,7 +340,11 @@ class LoginViewModel(
                     Timber.e(throwable, "Reset password failed for $email")
                     _events.emit(LoginEvent.ResetPasswordResult(isSuccess = false, email = email))
                 },
-                completeBlock = {}
+                completeBlock = {
+                    _state.update { state ->
+                        (state as? LoginScreenState.LoginState)?.copy(isResetPasswordLoading = false) ?: state
+                    }
+                }
             )
         }
     }
@@ -575,6 +583,7 @@ class LoginViewModel(
             val password: String = "",
             val isLoading: Boolean = false,
             val isRefreshServersLoading: Boolean = false,
+            val isResetPasswordLoading: Boolean = false,
             val authError: AuthError? = null,
             override val devices: List<Device> = emptyList(),
             override val selectedDevice: Device? = null,

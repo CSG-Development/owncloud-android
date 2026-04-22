@@ -357,6 +357,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
             is LoginScreenState.LoginState -> {
                 changeLoadingState(state)
+                updateResetPasswordState(state)
                 if (state.authError != null) {
                     when (state.authError) {
                         is LoginScreenState.AuthError.LoginError -> {
@@ -413,6 +414,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.VISIBLE
             binding.actionButton.visibility = View.GONE
             binding.loginStateGroup.visibility = View.GONE
+            binding.resetPasswordLink.visibility = View.GONE
         } else {
             binding.accountUsernameText.visibility = View.VISIBLE
             binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
@@ -421,6 +423,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.GONE
             binding.actionButton.visibility = View.VISIBLE
             binding.loginStateGroup.visibility = View.VISIBLE
+            binding.resetPasswordLink.visibility = View.VISIBLE
             binding.actionButton.setText(R.string.setup_btn_login)
             if (state.isActionButtonLoading) {
                 binding.actionButton.setState(LoadingButton.State.LOADING)
@@ -438,6 +441,13 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.setState(state)
             }
         }
+    }
+
+    private fun updateResetPasswordState(state: LoginScreenState.LoginState) {
+        val showProgress = state.isResetPasswordLoading
+        binding.resetPasswordProgress.visibility = if (showProgress) View.VISIBLE else View.GONE
+        binding.resetPasswordLink.isEnabled = !showProgress && state.selectedDevice != null
+        binding.resetPasswordLink.visibility = if (showProgress || state.isLoading) View.GONE else View.VISIBLE
     }
 
     private fun launchFileDisplayActivity() {
