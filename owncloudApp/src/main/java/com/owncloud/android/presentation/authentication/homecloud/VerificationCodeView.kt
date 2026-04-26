@@ -132,7 +132,9 @@ class VerificationCodeView @JvmOverloads constructor(
             gravity = Gravity.CENTER
             textAlignment = TEXT_ALIGNMENT_CENTER
             isCursorVisible = true
-            imeOptions = EditorInfo.IME_ACTION_NEXT
+            imeOptions = EditorInfo.IME_ACTION_NEXT or
+                    EditorInfo.IME_FLAG_NO_EXTRACT_UI or
+                    EditorInfo.IME_FLAG_NO_FULLSCREEN
             background = createBorderDrawable(borderColor, borderWidth)
             inputType = EditorInfo.TYPE_CLASS_NUMBER
             textSize = digitTextSize
