@@ -5,6 +5,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.annotation.StringRes
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
@@ -112,6 +116,16 @@ class VerificationCodeDialogFragment : DialogFragment() {
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(binding.root)
             .create()
+
+        dialog.window?.let { window ->
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+                val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+                val sysBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+                v.updatePadding(bottom = maxOf(imeBottom, sysBottom))
+                insets
+            }
+        }
 
         return dialog
     }
