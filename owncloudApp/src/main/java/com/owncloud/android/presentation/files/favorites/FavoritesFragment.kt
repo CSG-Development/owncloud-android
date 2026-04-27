@@ -40,15 +40,9 @@ import com.owncloud.android.presentation.files.filelist.FileListAdapter
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
-import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
-import com.owncloud.android.ui.preview.PreviewImageActivity
-import com.owncloud.android.ui.preview.PreviewImageFragment
-import com.owncloud.android.ui.preview.PreviewTextFragment
-import com.owncloud.android.ui.preview.PreviewVideoActivity
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
-import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
@@ -61,7 +55,7 @@ class FavoritesFragment : Fragment(),
     private val binding get() = _binding ?: throw IllegalStateException("View binding is only valid between onCreateView and onDestroyView")
 
     private val favoritesViewModel: FavoritesViewModel by viewModel()
-    private val fileOperationsViewModel by sharedViewModel<FileOperationsViewModel>()
+    private val fileOperationsViewModel: FileOperationsViewModel by activityViewModel()
 
     private val capabilityViewModel: CapabilityViewModel by activityViewModel {
         parametersOf(
@@ -294,7 +288,7 @@ class FavoritesFragment : Fragment(),
         return when (menuId) {
             R.id.action_see_details -> {
                 disableSelectionMode()
-                (requireActivity() as? FavoritesActivity)?.showDetails(singleFile)
+                (requireActivity() as? FileDisplayActivity)?.showDetails(singleFile)
                 true
             }
 
@@ -443,38 +437,11 @@ class FavoritesFragment : Fragment(),
         }
 
         val file = ocFileWithSyncInfo.file
-        val account = AccountUtils.getCurrentOwnCloudAccount(requireContext())
-        val favoritesActivity = requireActivity() as? FavoritesActivity
-
-        when {
-            PreviewImageFragment.canBePreviewed(file) -> {
-                // Open image preview activity — back will return to favorites
-                val intent = Intent(requireContext(), PreviewImageActivity::class.java).apply {
-                    putExtra(FileActivity.EXTRA_FILE, file)
-                    putExtra(FileActivity.EXTRA_ACCOUNT, account)
-                }
-                startActivity(intent)
-            }
-
-            PreviewVideoActivity.canBePreviewed(file) -> {
-                // Open video preview activity — back will return to favorites
-                val intent = Intent(requireContext(), PreviewVideoActivity::class.java).apply {
-                    putExtra(PreviewVideoActivity.EXTRA_FILE, file)
-                    putExtra(PreviewVideoActivity.EXTRA_ACCOUNT, account)
-                    putExtra(PreviewVideoActivity.EXTRA_PLAY_POSITION, 0)
-                }
-                startActivity(intent)
-            }
-
-            PreviewTextFragment.canBePreviewed(file) -> {
-                // Open text preview fragment inside FavoritesActivity
-                favoritesActivity?.showTextPreview(file)
-            }
-
-            else -> {
-                // Other files — show file details fragment inside FavoritesActivity
-                favoritesActivity?.showDetails(file)
-            }
+        val fileDisplayActivity = requireActivity() as? FileDisplayActivity
+        if (file.isFolder) {
+            fileDisplayActivity?.startFolderPreview(file)
+        } else {
+            fileDisplayActivity?.onFileClicked(file)
         }
     }
 

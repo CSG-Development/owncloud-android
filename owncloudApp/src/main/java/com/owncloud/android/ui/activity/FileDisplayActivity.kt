@@ -545,7 +545,7 @@ open class FileDisplayActivity : FileActivity(),
     }
 
     private fun initFragmentsWithFile() {
-        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH && !fileListOption.isTagFiles()) {
+        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH && !fileListOption.isTagFiles() && !fileListOption.isFavorites()) {
             /// First fragment
             mainFileListFragment?.navigateToFolder(currentDir)
                 ?: Timber.e("Still have a chance to lose the initialization of list fragment >(")
@@ -653,7 +653,7 @@ open class FileDisplayActivity : FileActivity(),
         leftFragmentContainer?.isVisible = !existsSecondFragment
         rightFragmentContainer?.isVisible = existsSecondFragment
 
-        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles())
+        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles() && !fileListOption.isFavorites())
     }
 
     private fun cleanSecondFragment() {
@@ -662,6 +662,11 @@ open class FileDisplayActivity : FileActivity(),
             val tr = supportFragmentManager.beginTransaction()
             tr.remove(second)
             tr.commitNow()
+        }
+        // Favorites: startFolderPreview / previews set [file] to the opened item; if we do not clear it,
+        // updateToolbar(null) still uses that file and the toolbar title stays on the folder/file name.
+        if (fileListOption.isFavorites()) {
+            file = null
         }
         updateFragmentsVisibility(false)
         updateToolbar(null)
@@ -881,7 +886,7 @@ open class FileDisplayActivity : FileActivity(),
                         showBackArrow = false,
                     )
                     setGlobalSearchBarVisible(isVisible = true, clearSearch = false)
-                } else if (fileListOption.isTagFiles()) {
+                } else if (fileListOption.isTagFiles() || fileListOption.isFavorites()) {
                     cleanSecondFragment()
                 } else {
                     val folderIdToDisplay =
@@ -1130,7 +1135,7 @@ open class FileDisplayActivity : FileActivity(),
                     FileListOption.TAG_FILES -> getAppName()
                 }
             setTitle(title)
-            val showBackArrow = fileListOption.isSharedByLink()
+            val showBackArrow = fileListOption.isSharedByLink() || fileListOption.isFavorites()
             updateStandardToolbar(title = title, homeButtonDisplayed = true, showBackArrow = showBackArrow)
         } else if ((space?.isProject == true || (space?.isPersonal == true && isMultiPersonal)) && chosenFile.remotePath == OCFile.ROOT_PATH) {
             updateStandardToolbar(title = space.name, homeButtonDisplayed = true, showBackArrow = false)
