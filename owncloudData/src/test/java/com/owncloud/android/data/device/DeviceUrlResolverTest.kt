@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -16,95 +17,148 @@ class DeviceUrlResolverTest {
 
     private val deviceVerificationClient: HCDeviceVerificationClient = mockk()
 
-    private val resolver = HCDeviceUrlResolver(
-        deviceVerificationClient
-    )
+    private val resolver = HCDeviceUrlResolver(deviceVerificationClient)
 
     @Test
-    fun `resolveAvailableBaseUrl returns LOCAL url when available and verified`() = runTest {
-        val devicePaths = mapOf(
-            DevicePathType.LOCAL to "https://192.168.1.100/files"
+    fun `testPriorityPaths returns LOCAL url when LOCAL succeeds`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } returns true
+        // PUBLIC is probed in parallel; stub its reply so mockk does not throw even
+        // though the resolver will cancel it as soon as LOCAL succeeds.
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } returns true
+
+        val result = resolver.testPriorityPaths(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+            ),
+            wifiAvailable = true,
         )
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns true
 
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
-
-        assertEquals("https://192.168.1.100/files", result)
-        coVerify { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
+        assertEquals("https://local/files", result)
     }
 
     @Test
-    fun `resolveAvailableBaseUrl returns PUBLIC url when LOCAL is not verified`() = runTest {
-        val devicePaths = mapOf(
-            DevicePathType.LOCAL to "https://192.168.1.100/files",
-            DevicePathType.PUBLIC to "https://public.example.com/files"
+    fun `testPriorityPaths returns PUBLIC url when LOCAL fails`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } returns false
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } returns true
+
+        val result = resolver.testPriorityPaths(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+            ),
+            wifiAvailable = true,
         )
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://public.example.com") } returns true
 
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
-
-        assertEquals("https://public.example.com/files", result)
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://public.example.com") }
+        assertEquals("https://public/files", result)
+        coVerify { deviceVerificationClient.verifyDevice("https://local", isLocal = true) }
+        coVerify { deviceVerificationClient.verifyDevice("https://public", isLocal = false) }
     }
 
     @Test
-    fun `resolveAvailableBaseUrl returns REMOTE url when LOCAL and PUBLIC are not verified`() = runTest {
-        val devicePaths = mapOf(
-            DevicePathType.LOCAL to "https://192.168.1.100/files",
-            DevicePathType.PUBLIC to "https://public.example.com/files",
-            DevicePathType.REMOTE to "https://remote.example.com/files"
+    fun `testPriorityPaths skips LOCAL when wifi unavailable`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } returns true
+
+        val result = resolver.testPriorityPaths(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+            ),
+            wifiAvailable = false,
         )
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://public.example.com") } returns false
-        coEvery { deviceVerificationClient.verifyDevice("https://remote.example.com") } returns true
 
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
-
-        assertEquals("https://remote.example.com/files", result)
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://public.example.com") }
-        coVerify(exactly = 1) { deviceVerificationClient.verifyDevice("https://remote.example.com") }
+        assertEquals("https://public/files", result)
+        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice("https://local", any()) }
     }
 
     @Test
-    fun `resolveAvailableBaseUrl returns null when all URLs are not verified`() = runTest {
-        val devicePaths = mapOf(
-            DevicePathType.LOCAL to "https://192.168.1.100/files",
-            DevicePathType.PUBLIC to "https://public.example.com/files",
-            DevicePathType.REMOTE to "https://remote.example.com/files"
+    fun `testPriorityPaths LOCAL wins even when PUBLIC responds first`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } coAnswers {
+            // local is slower
+            delay(50)
+            true
+        }
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } coAnswers {
+            // public responds quickly first
+            true
+        }
+
+        val result = resolver.testPriorityPaths(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+            ),
+            wifiAvailable = true,
         )
-        coEvery { deviceVerificationClient.verifyDevice(any()) } returns false
+        // Even though public was instant, local is preferred when it ultimately succeeds.
+        assertEquals("https://local/files", result)
+    }
 
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
+    @Test
+    fun `testPriorityPaths returns null when all priority paths fail`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } returns false
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } returns false
 
+        val result = resolver.testPriorityPaths(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+            ),
+            wifiAvailable = true,
+        )
         assertNull(result)
     }
 
     @Test
-    fun `resolveAvailableBaseUrl returns null when empty list provided`() = runTest {
-        val devicePaths = mapOf<DevicePathType, String>()
-
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
-
+    fun `testPriorityPaths ignores REMOTE entry`() = runTest {
+        // No LOCAL/PUBLIC, only REMOTE provided. testPriorityPaths must not probe it.
+        val result = resolver.testPriorityPaths(
+            mapOf(DevicePathType.REMOTE to "https://relay/files"),
+            wifiAvailable = true,
+        )
         assertNull(result)
-        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice(any()) }
+        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice(any(), any()) }
     }
 
     @Test
-    fun `resolveAvailableBaseUrl removes files suffix for verification`() = runTest {
-        val devicePaths = mapOf(
-            DevicePathType.LOCAL to "https://192.168.1.100/files"
+    fun `testSinglePath returns the url when reachable`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://relay", isLocal = false) } returns true
+
+        val result = resolver.testSinglePath("https://relay/files", isLocal = false)
+        assertEquals("https://relay/files", result)
+    }
+
+    @Test
+    fun `testSinglePath returns null when unreachable`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://relay", isLocal = false) } returns false
+
+        val result = resolver.testSinglePath("https://relay/files", isLocal = false)
+        assertNull(result)
+    }
+
+    // Legacy sequential resolver — kept for the login flow.
+
+    @Test
+    fun `resolveAvailableBaseUrl returns LOCAL url sequentially`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } returns true
+        val result = resolver.resolveAvailableBaseUrl(
+            mapOf(DevicePathType.LOCAL to "https://local/files"),
         )
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns true
+        assertEquals("https://local/files", result)
+    }
 
-        val result = resolver.resolveAvailableBaseUrl(devicePaths)
-
-        assertEquals("https://192.168.1.100/files", result)
-        // Should verify without /files suffix
-        coVerify { deviceVerificationClient.verifyDevice("https://192.168.1.100") }
-        coVerify(exactly = 0) { deviceVerificationClient.verifyDevice("https://192.168.1.100/files") }
+    @Test
+    fun `resolveAvailableBaseUrl falls back through priorities`() = runTest {
+        coEvery { deviceVerificationClient.verifyDevice("https://local", isLocal = true) } returns false
+        coEvery { deviceVerificationClient.verifyDevice("https://public", isLocal = false) } returns false
+        coEvery { deviceVerificationClient.verifyDevice("https://remote", isLocal = false) } returns true
+        val result = resolver.resolveAvailableBaseUrl(
+            mapOf(
+                DevicePathType.LOCAL to "https://local/files",
+                DevicePathType.PUBLIC to "https://public/files",
+                DevicePathType.REMOTE to "https://remote/files",
+            ),
+        )
+        assertEquals("https://remote/files", result)
     }
 }
-

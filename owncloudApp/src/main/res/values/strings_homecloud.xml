@@ -17,6 +17,13 @@
     <string name="homecloud_login_server_address_input_hint">No device detected</string>
     <string name="homecloud_login_password_input_hint">Enter password</string>
     <string name="homecloud_reset_password">Reset Password</string>
+    <string name="homecloud_reset_password_success">Password reset email sent to %s</string>
+    <string name="homecloud_reset_password_error_title">Error</string>
+    <string name="homecloud_reset_password_error">Error occurred while sending reset email</string>
+    <string name="homecloud_reset_password_error_bad_request_title">Email not registered</string>
+    <string name="homecloud_reset_password_error_bad_request">This email isn’t authorized to access this device. Please contact the owner.</string>
+    <string name="homecloud_reset_password_error_server_error_title">Unable to connect</string>
+    <string name="homecloud_reset_password_error_server_error">Could not reach your Personal Cloud.</string>
     <string name="homecloud_cant_find_device">Can’t find your device?</string>
     <string name="homecloud_login_loading">Logging in to your account</string>
     <string name="homecloud_login_auth_unauthorized">Incorrect email or password</string>

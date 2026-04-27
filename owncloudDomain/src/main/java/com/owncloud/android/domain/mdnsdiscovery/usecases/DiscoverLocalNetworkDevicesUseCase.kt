@@ -35,10 +35,11 @@ class DiscoverLocalNetworkDevicesUseCase(
 
     companion object {
 
+        // 5 seconds matches the reference algorithm "local discovery window".
         val DEFAULT_MDNS_PARAMS = Params(
             serviceType = "_https._tcp",
             serviceName = "HomeCloud",
-            duration = 10.seconds
+            duration = 5.seconds
         )
     }
 }

@@ -12,6 +12,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
@@ -145,7 +146,7 @@ class ManageTagsFragment : FileFragment() {
             val filtered = source?.substring(start, end)?.filter { it.isLetterOrDigit() }
             if (filtered == source?.substring(start, end)) null else filtered
         }
-        binding.tagSearchEditText.filters = binding.tagSearchEditText.filters + alphanumericFilter
+        binding.tagSearchEditText.filters += alphanumericFilter
     }
 
     private fun observeErrors() {
@@ -278,11 +279,11 @@ class ManageTagsFragment : FileFragment() {
             this.isCloseIconVisible = closeIconVisible
             if (closeIconVisible) {
                 if (isLoading) {
-                    val spinnerDrawable = resources.getDrawable(R.drawable.animated_chip_spinner, context.theme)
+                    val spinnerDrawable = ResourcesCompat.getDrawable(resources, R.drawable.animated_chip_spinner, context.theme)
                     this.closeIcon = spinnerDrawable
                     (spinnerDrawable as? AnimatedVectorDrawable)?.start()
                 } else {
-                    this.closeIcon = resources.getDrawable(R.drawable.ic_close_accent)
+                    this.closeIcon = ResourcesCompat.getDrawable(resources, R.drawable.ic_close_accent, context.theme)
                     setCloseIconTintResource(R.color.homecloud_tag_content)
                 }
             }
@@ -315,6 +316,22 @@ class ManageTagsFragment : FileFragment() {
 
     private fun updateTagDropdown() {
         val query = binding.tagSearchEditText.text?.toString()?.trim().orEmpty()
+
+        if (query.length > MAX_TAG_LENGTH) {
+            binding.tagSearchEditText.isActivated = true
+            binding.tagSearchEditText.setDropdownItems(
+                listOf(
+                    FilterableAutoCompleteTextView.DropdownItem(
+                        id = FilterableAutoCompleteTextView.ITEM_ID_ERROR,
+                        text = getString(R.string.manage_tags_name_too_long, MAX_TAG_LENGTH),
+                        data = null
+                    )
+                )
+            )
+            return
+        }
+        binding.tagSearchEditText.isActivated = false
+
         val appliedTagIds = (manageTagsViewModel.uiState.value as? ManageTagsUiState.Success)
             ?.tags?.mapNotNull { it.id }?.toSet() ?: emptySet()
 
@@ -324,6 +341,7 @@ class ManageTagsFragment : FileFragment() {
             ?.filter { it.id != null }
             ?.filter { it.id !in appliedTagIds }
             ?.filter { tag -> query.isEmpty() || tag.displayName?.contains(query, ignoreCase = true) == true }
+            ?.sortedByDescending { tag -> tag.displayName?.startsWith(query, ignoreCase = true) == true }
             ?: emptyList()
 
         val items: List<FilterableAutoCompleteTextView.DropdownItem<OCTag?>> = when {
@@ -363,6 +381,7 @@ class ManageTagsFragment : FileFragment() {
     companion object {
         private const val ARG_FILE = "arg_file"
         private const val MAX_VISIBLE_ROWS = 4
+        private const val MAX_TAG_LENGTH = 30
 
         fun newInstance(file: OCFile): ManageTagsFragment =
             ManageTagsFragment().apply {

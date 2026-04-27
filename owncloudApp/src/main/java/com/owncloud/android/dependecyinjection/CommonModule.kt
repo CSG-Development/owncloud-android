@@ -57,10 +57,12 @@ val commonModule = module {
     single<DynamicUrlSwitchingController> {
         val mainScope = MainScope()
         DynamicUrlSwitchingControllerImpl(
-            get(),
-            get(),
-            mainScope,
-            get(),
+            appContext = androidContext(),
+            dynamicBaseUrlSwitcher = get(),
+            coroutineScope = mainScope,
+            appLifecycleObserver = get(),
+            authEvents = get(),
+            updateBaseUrlUseCase = get(),
         )
     }
 

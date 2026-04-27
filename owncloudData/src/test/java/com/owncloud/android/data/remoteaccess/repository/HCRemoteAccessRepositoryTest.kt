@@ -62,13 +62,13 @@ class HCRemoteAccessRepositoryTest {
     }
 
     @Test
-    fun `getAvailableDevices returns device with unverified server when verifyDevice fails`() = runTest {
+    fun `getAvailableDevices returns device with empty common name when certificate lookup fails`() = runTest {
         val devices = listOf(RemoteAccessDeviceResponse(seagateDeviceId = "1", friendlyName = "Test Device", "local.com", ""))
         val paths = listOf(RemoteAccessPath(type = RemoteAccessPathType.REMOTE, address = "test.com", port = 443))
         coEvery { remoteAccessService.getDevices() } returns devices
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1", paths = paths)
-        coEvery { deviceVerificationClient.verifyDevice("https://test.com:443") } returns false
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://test.com:443") } returns ""
+        // REMOTE path ⇒ non-local timeout (isLocal = false).
+        coEvery { deviceVerificationClient.getCertificateCommonName("https://test.com:443", isLocal = false) } returns null
 
         val result = repository.getAvailableDevices()
 
@@ -79,7 +79,7 @@ class HCRemoteAccessRepositoryTest {
     }
 
     @Test
-    fun `getAvailableDevices returns device with verified server as preferred`() = runTest {
+    fun `getAvailableDevices uses non-local timeout for PUBLIC and REMOTE paths`() = runTest {
         val devices = listOf(RemoteAccessDeviceResponse(seagateDeviceId = "1", friendlyName = "Test Device", "local.com", ""))
         val paths = listOf(
             RemoteAccessPath(type = RemoteAccessPathType.PUBLIC, address = "public.com", port = 443),
@@ -87,10 +87,9 @@ class HCRemoteAccessRepositoryTest {
         )
         coEvery { remoteAccessService.getDevices() } returns devices
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1",  paths = paths)
-        coEvery { deviceVerificationClient.verifyDevice("https://public.com:443") } returns false
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://public.com:443") } returns ""
-        coEvery { deviceVerificationClient.verifyDevice("https://test.com:443") } returns true
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://test.com:443") } returns "test-cert-001"
+        // PUBLIC is visited first and fills in the common name; REMOTE lookup is skipped
+        // because the cached name is already non-empty.
+        coEvery { deviceVerificationClient.getCertificateCommonName("https://public.com:443", isLocal = false) } returns "test-cert-001"
 
         val result = repository.getAvailableDevices()
 
@@ -100,7 +99,7 @@ class HCRemoteAccessRepositoryTest {
         assertEquals(2, device.availablePaths.size)
         assertEquals("test-cert-001", device.certificateCommonName)
     }
-    
+
     @Test
     fun `getAvailableDevices returns device with all available paths`() = runTest {
         val devices = listOf(RemoteAccessDeviceResponse(seagateDeviceId = "1", friendlyName = "Test Device", "local.com", ""))
@@ -111,12 +110,9 @@ class HCRemoteAccessRepositoryTest {
         )
         coEvery { remoteAccessService.getDevices() } returns devices
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1",  paths = paths)
-        coEvery { deviceVerificationClient.verifyDevice("https://192.168.1.100") } returns true
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://192.168.1.100") } returns "test-cert-001"
-        coEvery { deviceVerificationClient.verifyDevice("https://public.com:443") } returns true
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://public.com:443") } returns "test-cert-001"
-        coEvery { deviceVerificationClient.verifyDevice("https://remote.com:8080") } returns true
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://remote.com:8080") } returns "test-cert-001"
+        // Only the first iteration performs the certificate lookup. Paths are iterated in
+        // declaration order, so LOCAL is visited first and the local timeout is used.
+        coEvery { deviceVerificationClient.getCertificateCommonName("https://192.168.1.100", isLocal = true) } returns "test-cert-001"
 
         val result = repository.getAvailableDevices()
 
@@ -127,6 +123,6 @@ class HCRemoteAccessRepositoryTest {
         assertEquals(true, device.availablePaths.containsKey(DevicePathType.LOCAL))
         assertEquals(true, device.availablePaths.containsKey(DevicePathType.PUBLIC))
         assertEquals(true, device.availablePaths.containsKey(DevicePathType.REMOTE))
-        // First verified should be preferred (LOCAL in this case)
+        assertEquals("test-cert-001", device.certificateCommonName)
     }
 }

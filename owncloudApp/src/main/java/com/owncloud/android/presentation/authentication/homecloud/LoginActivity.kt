@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -138,7 +139,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             loginViewModel.onPasswordChanged(text.toString())
         }
         binding.resetPasswordLink.setOnClickListener {
-            showMessageInSnackbar(message = "Not implemented yet")
+            loginViewModel.onResetPasswordClicked()
         }
         binding.cantFindDevice.setOnClickListener {
             loginViewModel.onCantFindDeviceClicked()
@@ -254,7 +255,60 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             is LoginViewModel.LoginEvent.ShowUntrustedCertDialog -> showUntrustedCertDialog(event.certificateCombinedException)
             LoginViewModel.LoginEvent.Close -> finish()
             is LoginViewModel.LoginEvent.ShowDeveloperOptions -> showDeveloperOptionsDialog(event.staticDeviceUrl, event.isSettingsMenuEnabled)
+            is LoginViewModel.LoginEvent.ResetPasswordResult -> handleResetPasswordResult(event)
         }
+    }
+
+    private fun handleResetPasswordResult(event: LoginViewModel.LoginEvent.ResetPasswordResult) {
+        when (event) {
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Success -> {
+                showMessageInSnackbar(
+                    message = getString(R.string.homecloud_reset_password_success, event.email)
+                )
+            }
+
+            is LoginViewModel.LoginEvent.ResetPasswordResult.Error -> {
+                showResetPasswordErrorDialog(event.errorType)
+            }
+        }
+    }
+
+    private fun showResetPasswordErrorDialog(errorType: LoginViewModel.LoginEvent.ResetPasswordErrorType) {
+        @StringRes val titleRes: Int
+        @StringRes val messageRes: Int
+        when (errorType) {
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.BadRequest -> {
+                titleRes = R.string.homecloud_reset_password_error_bad_request_title
+                messageRes = R.string.homecloud_reset_password_error_bad_request
+            }
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.ServerError -> {
+                titleRes = R.string.homecloud_reset_password_error_server_error_title
+                messageRes = R.string.homecloud_reset_password_error_server_error
+            }
+
+            LoginViewModel.LoginEvent.ResetPasswordErrorType.Generic -> {
+                titleRes = R.string.homecloud_reset_password_error_title
+                messageRes = R.string.homecloud_reset_password_error
+            }
+        }
+
+        val builder = MaterialAlertDialogBuilder(this)
+            .setTitle(titleRes)
+            .setMessage(messageRes)
+
+        if (errorType == LoginViewModel.LoginEvent.ResetPasswordErrorType.ServerError) {
+            builder
+                .setNegativeButton(R.string.homecloud_cancel) { dialog, _ -> dialog.dismiss() }
+                .setPositiveButton(R.string.homecloud_retry) { dialog, _ ->
+                    dialog.dismiss()
+                    loginViewModel.onResetPasswordClicked()
+                }
+        } else {
+            builder.setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss() }
+        }
+
+        builder.show()
     }
 
     private fun showUntrustedCertDialog(certificateCombinedException: CertificateCombinedException) {
@@ -326,6 +380,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.backButton.visibility = View.GONE
                 binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
+                binding.resetPasswordLink.visibility = View.GONE
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
                 // Enable button only if username is not empty and is a valid email
                 if (state.isActionButtonLoading) {
@@ -347,6 +402,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
             is LoginScreenState.LoginState -> {
                 changeLoadingState(state)
+                updateResetPasswordState(state)
                 if (state.authError != null) {
                     when (state.authError) {
                         is LoginScreenState.AuthError.LoginError -> {
@@ -403,6 +459,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.VISIBLE
             binding.actionButton.visibility = View.GONE
             binding.loginStateGroup.visibility = View.GONE
+            binding.resetPasswordLink.visibility = View.GONE
         } else {
             binding.accountUsernameText.visibility = View.VISIBLE
             binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
@@ -411,6 +468,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loadingLayout.visibility = View.GONE
             binding.actionButton.visibility = View.VISIBLE
             binding.loginStateGroup.visibility = View.VISIBLE
+            binding.resetPasswordLink.visibility = View.VISIBLE
             binding.actionButton.setText(R.string.setup_btn_login)
             if (state.isActionButtonLoading) {
                 binding.actionButton.setState(LoadingButton.State.LOADING)
@@ -428,6 +486,13 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 binding.actionButton.setState(state)
             }
         }
+    }
+
+    private fun updateResetPasswordState(state: LoginScreenState.LoginState) {
+        val showProgress = state.isResetPasswordLoading
+        binding.resetPasswordProgress.visibility = if (showProgress) View.VISIBLE else View.GONE
+        binding.resetPasswordLink.isEnabled = !showProgress && state.selectedDevice != null
+        binding.resetPasswordLink.visibility = if (showProgress || state.isLoading) View.GONE else View.VISIBLE
     }
 
     private fun launchFileDisplayActivity() {
