@@ -221,6 +221,9 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
         player?.addListener(this)
         playerView.player = player
 
+        // The player is in STATE_IDLE until the media source is prepared, so the built-in
+        // PlayerView buffering indicator would not be shown during that initial preparation.
+        showLoadingIndicator(true)
         PrepareVideoPlayerAsyncTask(this, this, file, account).execute()
     }
 
@@ -237,7 +240,22 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
     override fun onPlayerError(error: PlaybackException) {
         Timber.e(error, "Error in video player")
 
+        showLoadingIndicator(false)
         showAlertDialog(PreviewVideoErrorAdapter.handlePreviewVideoError(error as ExoPlaybackException, this))
+    }
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        val isLoading = playbackState == Player.STATE_BUFFERING
+        showLoadingIndicator(isLoading)
+    }
+
+    private fun showLoadingIndicator(show: Boolean) {
+        binding.loadingProgress.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) {
+            // PlayerView lays out its own children (controller, shutter, buffering view) after
+            // we add ours, so make sure our spinner stays on top of them.
+            binding.loadingProgress.bringToFront()
+        }
     }
 
     override fun OnPrepareVideoPlayerTaskCallback(mediaSource: MediaSource?) {
