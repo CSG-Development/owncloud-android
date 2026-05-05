@@ -429,7 +429,6 @@ class MainFileListFragment : FileFragment(),
                     shouldSyncContents = !isPickingAFolder(), // For picking a folder option, we just need a refresh
                 )
             )
-            tagsViewModel.syncTagsAndFiles(mainFileListViewModel.getFile().owner)
         }
 
         // Set Refresh FAB and its listener
@@ -443,7 +442,6 @@ class MainFileListFragment : FileFragment(),
                         shouldSyncContents = false,
                     )
                 )
-                tagsViewModel.syncTagsAndFiles(mainFileListViewModel.getFile().owner)
                 hideRefreshFab()
             }
         }
@@ -923,10 +921,6 @@ class MainFileListFragment : FileFragment(),
 
             // Refresh the spaces and update the quota
             spacesListViewModel.refreshSpacesFromServer()
-
-            requireArguments().getString(ARG_ACCOUNT_NAME)?.let { accountName ->
-                tagsViewModel.syncTagsAndFiles(accountName)
-            }
 
             hideRefreshFab()
         }
