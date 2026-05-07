@@ -24,6 +24,7 @@ import android.accounts.AccountManager
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.owncloud.android.BuildConfig
 import com.owncloud.android.MainApp
 import com.owncloud.android.R
@@ -56,6 +57,7 @@ class SplashActivity : AppCompatActivity(), AppUpdateDialogFragment.AppUpdateDia
     private val appUpdateViewModel: AppUpdateViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         val mdmProvider = MdmProvider(this)
