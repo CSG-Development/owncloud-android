@@ -5,11 +5,11 @@
     <string name="setup_btn_next">Next</string>
     <string name="welcome_feature_done_button">Done</string>
 
-    <string name="homecloud_app_name_1">Personal Cloud</string>
-    <string name="homecloud_app_name_2">Files</string>
+    <string name="homecloud_app_name">Files</string>
     <string name="homecloud_biometric_sign_in_title">Personal Cloud Files</string>
     <string name="homecloud_biometric_sign_in_description">Sign in</string>
 
+    <string name="homecloud_login_label">Login</string>
     <string name="homecloud_login_email_hint">Email</string>
     <string name="homecloud_login_server_address_hint">Connecting to</string>
     <string name="homecloud_login_password_hint">Password</string>

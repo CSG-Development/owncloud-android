@@ -50,7 +50,7 @@ class RootCursor(projection: Array<String>?) : MatrixCursor(projection ?: DEFAUL
             .add(Root.COLUMN_DOCUMENT_ID, mainDirId)
             .add(Root.COLUMN_SUMMARY, account.name)
             .add(Root.COLUMN_TITLE, context.getString(R.string.app_name))
-            .add(Root.COLUMN_ICON, R.mipmap.icon)
+            .add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
             .add(Root.COLUMN_FLAGS, flags)
     }
 
@@ -61,7 +61,7 @@ class RootCursor(projection: Array<String>?) : MatrixCursor(projection ?: DEFAUL
                 context.getString(R.string.document_provider_locked)
             )
             .add(Root.COLUMN_TITLE, context.getString(R.string.app_name))
-            .add(Root.COLUMN_ICON, R.mipmap.icon)
+            .add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
     }
 
     companion object {

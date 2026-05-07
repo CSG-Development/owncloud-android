@@ -90,7 +90,6 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
         binding = AccountSetupHomecloudBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.thumbnailName.text = getAppName()
         binding.settingsLink.applyStatusBarInsets(usePaddings = false)
         binding.backButton.applyStatusBarInsets(usePaddings = false)
         binding.root.filterTouchesWhenObscured =
@@ -371,6 +370,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 // Show main scroll view, hide unable to connect
                 binding.scrollView.visibility = View.VISIBLE
                 binding.unableToConnectLayout.unableToConnectContainer.visibility = View.GONE
+                binding.thumbnailLabel.visibility = View.VISIBLE
 
                 // Show email input, hide email text
                 binding.accountUsernameContainer.visibility = View.VISIBLE
@@ -451,6 +451,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     private fun changeLoadingState(state: LoginScreenState.LoginState) {
         if (state.isLoading) {
+            binding.thumbnailLabel.visibility = View.VISIBLE
             binding.accountUsernameText.visibility = View.GONE
             binding.errorMessage.visibility = View.GONE
             binding.serversRefreshButton.visibility = View.INVISIBLE
@@ -461,6 +462,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             binding.loginStateGroup.visibility = View.GONE
             binding.resetPasswordLink.visibility = View.GONE
         } else {
+            binding.thumbnailLabel.visibility = View.GONE
             binding.accountUsernameText.visibility = View.VISIBLE
             binding.serversRefreshButton.visibility = if (state.isRefreshServersLoading) View.INVISIBLE else View.VISIBLE
             binding.serversRefreshLoading.visibility = if (state.isRefreshServersLoading) View.VISIBLE else View.GONE
