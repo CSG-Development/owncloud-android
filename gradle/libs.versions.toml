@@ -52,8 +52,10 @@ sonarqube = "4.0.0.2929"
 stetho = "1.6.0"
 timber = "5.0.1"
 turbine = "1.0.0"
+splash = "1.0.1"
 
 [libraries]
+androidx-splash = { group = "androidx.core", name = "core-splashscreen", version.ref = "splash" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "androidxAnnotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppCompat" }
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidxArch" }
