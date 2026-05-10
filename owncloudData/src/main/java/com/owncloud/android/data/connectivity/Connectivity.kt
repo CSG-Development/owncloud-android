@@ -1,9 +1,24 @@
 package com.owncloud.android.data.connectivity
 
+import android.net.Network
 import android.net.NetworkCapabilities
 
+/**
+ * Snapshot of the device's network connectivity.
+ *
+ * [networkHandle] is the stable identity of the underlying [Network] object
+ * (see [Network.getNetworkHandle]). Two emissions with the same transport type but a
+ * different [networkHandle] represent a genuine network switch (e.g. hopping between
+ * WiFi SSIDs). A value of [HANDLE_UNKNOWN] (-1) is used when the handle is not
+ * available (e.g. when there is no active network, or for list-based factory calls).
+ *
+ * This field participates in [equals]/[hashCode] so that [kotlinx.coroutines.flow.distinctUntilChanged]
+ * correctly lets WiFi-to-WiFi transitions through while still suppressing redundant
+ * capability-change noise for the same network object.
+ */
 data class Connectivity(
     val type: Set<ConnectionType> = setOf(ConnectionType.NONE),
+    val networkHandle: Long = HANDLE_UNKNOWN,
 ) {
 
     fun hasAnyNetwork(): Boolean =
@@ -43,6 +58,20 @@ data class Connectivity(
     }
 
     companion object {
+
+        const val HANDLE_UNKNOWN = -1L
+
+        /**
+         * Network-aware factory. Includes the [Network.getNetworkHandle] so that transitions
+         * between different network objects of the same type (e.g. WiFi SSID change) are
+         * detected as distinct by [distinctUntilChanged].
+         */
+        fun fromNetworkCapabilities(network: Network, networkCapabilities: NetworkCapabilities): Connectivity {
+            val networkTypes = mutableSetOf<ConnectionType>()
+            addCapabilities(networkCapabilities, networkTypes)
+            networkTypes.takeIf { it.isEmpty() }?.run { networkTypes.add(ConnectionType.NONE) }
+            return Connectivity(networkTypes, networkHandle = network.networkHandle)
+        }
 
         fun fromNetworkCapabilities(networkCapabilities: NetworkCapabilities): Connectivity {
             val networkTypes = mutableSetOf<ConnectionType>()

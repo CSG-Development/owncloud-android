@@ -60,7 +60,6 @@ val commonModule = module {
             appContext = androidContext(),
             dynamicBaseUrlSwitcher = get(),
             coroutineScope = mainScope,
-            appLifecycleObserver = get(),
             authEvents = get(),
             updateBaseUrlUseCase = get(),
         )

@@ -28,7 +28,6 @@ class DynamicUrlSwitchingControllerImpl(
     private val appContext: Context,
     private val dynamicBaseUrlSwitcher: DynamicBaseUrlSwitcher,
     private val coroutineScope: CoroutineScope,
-    @Suppress("unused") private val appLifecycleObserver: AppLifecycleObserver,
     private val authEvents: RemoteAccessAuthEvents,
     private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
 ) : DynamicUrlSwitchingController {

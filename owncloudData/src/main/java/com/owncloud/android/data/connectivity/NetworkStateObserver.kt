@@ -31,7 +31,10 @@ class NetworkStateObserver(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(networkCapabilities))
+                // Pass the Network object so the handle is included in the Connectivity value.
+                // distinctUntilChanged will then detect WiFi→WiFi (different handle) while
+                // still suppressing repeated capability updates on the same network.
+                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(network, networkCapabilities))
             }
 
             override fun onLost(network: Network) {
@@ -46,7 +49,7 @@ class NetworkStateObserver(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(networkCapabilities))
+                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(network, networkCapabilities))
             }
 
             override fun onLost(network: Network) {

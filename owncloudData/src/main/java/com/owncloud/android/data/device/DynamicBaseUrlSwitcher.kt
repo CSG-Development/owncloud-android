@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,6 +50,7 @@ class DynamicBaseUrlSwitcher(
 
     private var observationJob: Job? = null
     private var lifecycleJob: Job? = null
+    private var cooldownDeferJob: Job? = null
     private var currentAccount: Account? = null
 
     // State guarded by [stateMutex]
@@ -137,20 +139,37 @@ class DynamicBaseUrlSwitcher(
 
     private suspend fun triggerDetection(connectivity: Connectivity, force: Boolean) {
         val now = timeProvider()
+        var deferDelayMs = 0L
         val fromBackground: Boolean
+
         stateMutex.withLock {
             if (!force && lastDetectionAtMs != 0L) {
                 val sinceLast = now - lastDetectionAtMs
                 if (sinceLast < cooldownMs) {
+                    deferDelayMs = cooldownMs - sinceLast
                     Timber.d(
-                        "DynamicBaseUrlSwitcher: cooldown not elapsed (${sinceLast}ms < ${cooldownMs}ms), skipping"
+                        "DynamicBaseUrlSwitcher: cooldown not elapsed (${sinceLast}ms < ${cooldownMs}ms), deferring by ${deferDelayMs}ms"
                     )
-                    return
                 }
             }
-            lastDetectionAtMs = now
+            if (deferDelayMs == 0L) {
+                lastDetectionAtMs = now
+            }
             fromBackground = isInitialForegroundCheck
-            isInitialForegroundCheck = false
+            if (deferDelayMs == 0L) isInitialForegroundCheck = false
+        }
+
+        // Cancel any previous deferred job regardless of path: either we're replacing it
+        // with a new one (deferred path) or we're executing now and it's no longer needed.
+        cooldownDeferJob?.cancel()
+        cooldownDeferJob = null
+
+        if (deferDelayMs > 0L) {
+            cooldownDeferJob = coroutineScope.launch {
+                delay(deferDelayMs)
+                triggerDetection(connectivity, force = false)
+            }
+            return
         }
 
         // Gating rule (reference): try local discovery only when we have a LAN-capable
@@ -175,6 +194,8 @@ class DynamicBaseUrlSwitcher(
         observationJob = null
         lifecycleJob?.cancel()
         lifecycleJob = null
+        cooldownDeferJob?.cancel()
+        cooldownDeferJob = null
 
         currentAccount?.let {
             Timber.d("DynamicBaseUrlSwitcher: stopped dynamic URL switching for account: ${it.name}")
