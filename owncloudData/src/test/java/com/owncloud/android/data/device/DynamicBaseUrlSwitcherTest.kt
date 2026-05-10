@@ -44,8 +44,9 @@ class DynamicBaseUrlSwitcherTest {
     )
 
     private val testAccount: Account = mockk(relaxed = true)
-    private val wifi = Connectivity(setOf(Connectivity.ConnectionType.WIFI))
-    private val cellular = Connectivity(setOf(Connectivity.ConnectionType.CELLULAR))
+    private val wifi = Connectivity(setOf(Connectivity.ConnectionType.WIFI), networkHandle = 1L)
+    private val wifi2 = Connectivity(setOf(Connectivity.ConnectionType.WIFI), networkHandle = 2L)
+    private val cellular = Connectivity(setOf(Connectivity.ConnectionType.CELLULAR), networkHandle = 3L)
 
     @Test
     fun `initial start triggers update with fromBackground=true and wifiAvailable=true`() = runTest(testDispatcher) {
@@ -70,6 +71,10 @@ class DynamicBaseUrlSwitcherTest {
         every { appLifecycleObserver.appState } returns MutableStateFlow(AppState.FOREGROUND)
         every { appLifecycleObserver.isInBackground() } returns false
 
+        // Non-zero so the cooldown sentinel (lastDetectionAtMs == 0L) works correctly:
+        // without this, lastDetectionAtMs = 0 after the initial detection and any subsequent
+        // trigger would bypass the cooldown check, causing an unintended second execute() call.
+        fakeNow = 100L
         val switcher = newSwitcher()
         switcher.startDynamicUrlSwitching(testAccount, fromBackground = true)
         advanceUntilIdle()
@@ -79,10 +84,19 @@ class DynamicBaseUrlSwitcherTest {
             updateBaseUrlUseCase.execute(fromBackground = true, wifiAvailable = true)
         }
 
-        // Now emit another (still the same) value. Distinct + skip-first means nothing else.
+        // Emitting the identical object is suppressed by distinctUntilChanged — no extra trigger.
         flow.value = wifi
-        advanceUntilIdle()
+        advanceTimeBy(DynamicBaseUrlSwitcher.DEBOUNCE_MS + 100)
         coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Emitting wifi2 (same type, different networkHandle) simulates an SSID change and
+        // passes distinctUntilChanged — but the cooldown defers it, so still no immediate trigger.
+        flow.value = wifi2
+        advanceTimeBy(DynamicBaseUrlSwitcher.DEBOUNCE_MS + 100)
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Cancel the pending deferred job so runTest cleanup does not loop on stale fakeNow.
+        switcher.stopDynamicUrlSwitching()
     }
 
     @Test
@@ -129,19 +143,22 @@ class DynamicBaseUrlSwitcherTest {
         // Initial detection ran and stamped lastDetection = 100.
         coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
 
-        // Skip-first then a change at t+1s. Cooldown not elapsed → should NOT trigger.
+        // Skip-first then a change at t+1s. Cooldown not elapsed → blocked, deferred.
+        // Use advanceTimeBy(1) not advanceUntilIdle(): the deferred job sits ~29 s away;
+        // advanceUntilIdle() would advance into it and loop because fakeNow is frozen.
         fakeNow = 1_100L
         flow.value = cellular
-        advanceUntilIdle()
+        advanceTimeBy(1)
         coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
 
-        // Emit another change inside the cooldown.
+        // Emit another change inside the cooldown. Replaces the previous deferred job.
         fakeNow = 5_100L
         flow.value = wifi
-        advanceUntilIdle()
+        advanceTimeBy(1)
         coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
 
-        // After cooldown expires, the next change does trigger.
+        // After cooldown expires, the next change passes immediately and triggers.
+        // advanceUntilIdle() is safe here: the trigger succeeds so no new deferred job is left.
         fakeNow = 31_100L
         flow.value = cellular
         advanceUntilIdle()
@@ -216,6 +233,71 @@ class DynamicBaseUrlSwitcherTest {
         flow.value = Connectivity.unavailable()
         advanceUntilIdle()
         coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+    }
+
+    @Test
+    fun `wifi-to-wifi transition triggers update after cooldown via deferred job`() = runTest(testDispatcher) {
+        val flow = MutableStateFlow(wifi)
+        every { networkStateObserver.observeNetworkState() } returns flow
+        every { appLifecycleObserver.appState } returns MutableStateFlow(AppState.FOREGROUND)
+        every { appLifecycleObserver.isInBackground() } returns false
+
+        // Non-zero start time so the cooldown sentinel (lastDetectionAtMs == 0L) works correctly.
+        fakeNow = 1_000L
+        val switcher = newSwitcher(cooldownMs = 30_000L, debounceMs = 0L)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground = true)
+        advanceUntilIdle()
+        // Initial detection ran and stamped lastDetectionAtMs = 1_000.
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Emit wifi2 (same type, different networkHandle) — simulates moving to a different
+        // WiFi SSID. distinctUntilChanged passes it because handles differ; the cooldown
+        // blocks and defers it. No immediate extra trigger.
+        flow.value = wifi2
+        advanceTimeBy(1_000)  // past debounce (0), deferred job now scheduled
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Advance fakeNow past the cooldown so the deferred triggerDetection passes.
+        fakeNow = 1_000L + 30_000L + 1L
+        advanceTimeBy(30_000L) // deferred delay elapses → triggerDetection fires again
+        advanceUntilIdle()
+        coVerify(exactly = 2) { updateBaseUrlUseCase.execute(any(), wifiAvailable = true) }
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(fromBackground = false, wifiAvailable = true) }
+    }
+
+    @Test
+    fun `event blocked by cooldown is deferred and triggered after cooldown expires`() = runTest(testDispatcher) {
+        val flow = MutableStateFlow(wifi)
+        every { networkStateObserver.observeNetworkState() } returns flow
+        every { appLifecycleObserver.appState } returns MutableStateFlow(AppState.FOREGROUND)
+        every { appLifecycleObserver.isInBackground() } returns false
+
+        fakeNow = 1_000L
+        val switcher = newSwitcher(cooldownMs = 30_000L, debounceMs = 0L)
+        switcher.startDynamicUrlSwitching(testAccount, fromBackground = true)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Network change within the cooldown window: blocked → deferred, no immediate trigger.
+        fakeNow = 5_000L
+        flow.value = cellular
+        advanceTimeBy(2_000)
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // A second blocked event replaces the deferred job (only the latest is kept).
+        fakeNow = 10_000L
+        flow.value = wifi2
+        advanceTimeBy(2_000)
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(any(), any()) }
+
+        // Advance fakeNow past cooldown so the deferred trigger passes when it fires.
+        fakeNow = 1_000L + 30_000L + 1L
+        advanceTimeBy(30_000L) // remaining deferred delay elapses
+        advanceUntilIdle()
+        // Only one extra trigger (the second/latest deferred event), with wifiAvailable=true.
+        // Initial call was fromBackground=true; deferred call is fromBackground=false.
+        coVerify(exactly = 2) { updateBaseUrlUseCase.execute(any(), wifiAvailable = true) }
+        coVerify(exactly = 1) { updateBaseUrlUseCase.execute(fromBackground = false, wifiAvailable = true) }
     }
 
     @Test
