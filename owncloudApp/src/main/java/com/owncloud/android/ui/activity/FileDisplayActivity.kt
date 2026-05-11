@@ -108,6 +108,7 @@ import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
+import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
 import com.owncloud.android.presentation.security.bayPassUnlockOnce
@@ -198,6 +199,7 @@ open class FileDisplayActivity : FileActivity(),
     private val transfersViewModel: TransfersViewModel by viewModel()
     private lateinit var spacesListViewModel: SpacesListViewModel
     private val manageAccountsViewModel: ManageAccountsViewModel by viewModel()
+    private val networkMonitorViewModel: NetworkMonitorViewModel by viewModel()
 
     private val sharedPreferences: SharedPreferencesProvider by inject()
 
@@ -208,7 +210,6 @@ open class FileDisplayActivity : FileActivity(),
 
     private var isLightUser = false
     private var isMultiPersonal = false
-    private var reconnectingSnackbarDismissedByUser = false
 
     override fun onDrawerToggled() {
         mainFileListFragment?.onContentWidthChanged()
@@ -311,49 +312,18 @@ open class FileDisplayActivity : FileActivity(),
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
 
-        setupReconnectingSnackbar()
-        observeBaseUrlUpdateWorker()
+        observeNetworkMonitorState()
 
         Timber.v("onCreate() end")
     }
 
-    private fun setupReconnectingSnackbar() {
-        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingCloseButton.setOnClickListener {
-            reconnectingSnackbarDismissedByUser = true
-            binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
+    private fun observeNetworkMonitorState() {
+        val snackbarBinding = binding.navCoordinatorLayout.networkMonitorSnackbarInclude
+        snackbarBinding.networkMonitorCloseButton.setOnClickListener {
+            snackbarBinding.networkMonitorSnackbar.isVisible = false
         }
-        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingRetryButton.setOnClickListener {
-            transfersViewModel.retryBaseUrlUpdate()
-        }
-    }
-
-    private fun observeBaseUrlUpdateWorker() {
-        collectLatestLifecycleFlow(transfersViewModel.baseUrlUpdateStateFlow) { state ->
-            val snackbarBinding = binding.navCoordinatorLayout.reconnectingSnackbarInclude
-            when (state) {
-                is TransfersViewModel.BaseUrlUpdateState.Running -> {
-                    if (!reconnectingSnackbarDismissedByUser) {
-                        snackbarBinding.reconnectingSnackbar.isVisible = true
-                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_reconnecting_title)
-                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_reconnecting_message)
-                        snackbarBinding.reconnectingProgress.isVisible = true
-                        snackbarBinding.reconnectingRetryButton.isVisible = false
-                    }
-                }
-                is TransfersViewModel.BaseUrlUpdateState.Failed -> {
-                    if (!reconnectingSnackbarDismissedByUser) {
-                        snackbarBinding.reconnectingSnackbar.isVisible = true
-                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_unable_to_reconnect_title)
-                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_unable_to_reconnect_message)
-                        snackbarBinding.reconnectingProgress.isVisible = false
-                        snackbarBinding.reconnectingRetryButton.isVisible = true
-                    }
-                }
-                is TransfersViewModel.BaseUrlUpdateState.Idle -> {
-                    snackbarBinding.reconnectingSnackbar.isVisible = false
-                    reconnectingSnackbarDismissedByUser = false
-                }
-            }
+        collectLatestLifecycleFlow(networkMonitorViewModel.isNetworkUnavailable) { unavailable ->
+            snackbarBinding.networkMonitorSnackbar.isVisible = unavailable
         }
     }
 
