@@ -108,6 +108,7 @@ import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
+import com.owncloud.android.presentation.network.NetworkMonitorState
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
@@ -322,8 +323,18 @@ open class FileDisplayActivity : FileActivity(),
         snackbarBinding.networkMonitorCloseButton.setOnClickListener {
             snackbarBinding.networkMonitorSnackbar.isVisible = false
         }
-        collectLatestLifecycleFlow(networkMonitorViewModel.isNetworkUnavailable) { unavailable ->
-            snackbarBinding.networkMonitorSnackbar.isVisible = unavailable
+        collectLatestLifecycleFlow(networkMonitorViewModel.networkMonitorState) { state ->
+            when (state) {
+                NetworkMonitorState.Hidden -> snackbarBinding.networkMonitorSnackbar.isVisible = false
+                NetworkMonitorState.NoInternet -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_no_internet)
+                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                }
+                NetworkMonitorState.FindingNetwork -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_finding_network)
+                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                }
+            }
         }
     }
 

@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+sealed class NetworkMonitorState {
+    object Hidden : NetworkMonitorState()
+    object NoInternet : NetworkMonitorState()
+    object FindingNetwork : NetworkMonitorState()
+}
+
 class NetworkMonitorViewModel(
     private val deviceUrlResolver: DeviceUrlResolver,
     private val getCurrentDevicePathsUseCase: GetCurrentDevicePathsUseCase,
@@ -26,36 +32,42 @@ class NetworkMonitorViewModel(
     private val dispatchers: CoroutinesDispatcherProvider,
 ) : ViewModel() {
 
-    private val _isNetworkUnavailable = MutableSharedFlow<Boolean>(replay = 1)
-    val isNetworkUnavailable: SharedFlow<Boolean> = _isNetworkUnavailable.asSharedFlow()
+    private val _networkMonitorState = MutableSharedFlow<NetworkMonitorState>(replay = 1)
+    val networkMonitorState: SharedFlow<NetworkMonitorState> = _networkMonitorState.asSharedFlow()
 
     private var probeJob: Job? = null
 
     init {
         viewModelScope.launch {
-            var wasNoNetwork = false
+            var lastAppState: AppState? = null
             combine(
                 networkStateObserver.observeNetworkState(),
                 appLifecycleObserver.appState
             ) { connectivity, appState ->
-                Pair(connectivity.hasAnyNetwork(), appState == AppState.FOREGROUND)
-            }.collect { (hasNetwork, isForeground) ->
+                Pair(connectivity.hasAnyNetwork(), appState)
+            }.collect { (hasNetwork, appState) ->
+                val isForeground = appState == AppState.FOREGROUND
+                val justCameToForeground = isForeground && lastAppState != AppState.FOREGROUND
+                lastAppState = appState
+
                 when {
                     isForeground && hasNetwork -> {
-                        val probeImmediately = wasNoNetwork
-                        wasNoNetwork = false
-                        if (probeImmediately) _isNetworkUnavailable.emit(false)
-                        restartProbeLoop(immediate = probeImmediately)
+                        if (justCameToForeground) {
+                            // fresh foreground entry — wait 30s before first probe
+                            restartProbeLoop(immediate = false)
+                        } else {
+                            // network changed while already in foreground — hide snackbar and probe now
+                            _networkMonitorState.emit(NetworkMonitorState.Hidden)
+                            restartProbeLoop(immediate = true)
+                        }
                     }
                     isForeground && !hasNetwork -> {
-                        wasNoNetwork = true
                         stopProbeLoop()
-                        _isNetworkUnavailable.emit(true)
+                        _networkMonitorState.emit(NetworkMonitorState.NoInternet)
                     }
-                    else -> {
-                        wasNoNetwork = false
+                    else -> { // backgrounded
                         stopProbeLoop()
-                        _isNetworkUnavailable.emit(false)
+                        _networkMonitorState.emit(NetworkMonitorState.Hidden)
                     }
                 }
             }
@@ -76,18 +88,20 @@ class NetworkMonitorViewModel(
     private suspend fun runProbe() {
         val paths = getCurrentDevicePathsUseCase()
         if (paths.isEmpty()) {
-            _isNetworkUnavailable.emit(false)
+            _networkMonitorState.emit(NetworkMonitorState.Hidden)
             return
         }
         try {
             val result = deviceUrlResolver.resolveAvailableBaseUrl(paths)
             Timber.d("NetworkMonitor: probe result=$result")
-            _isNetworkUnavailable.emit(result == null)
+            _networkMonitorState.emit(
+                if (result == null) NetworkMonitorState.FindingNetwork else NetworkMonitorState.Hidden
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.e(e, "NetworkMonitor: probe failed with exception")
-            _isNetworkUnavailable.emit(true)
+            _networkMonitorState.emit(NetworkMonitorState.FindingNetwork)
         }
     }
 
