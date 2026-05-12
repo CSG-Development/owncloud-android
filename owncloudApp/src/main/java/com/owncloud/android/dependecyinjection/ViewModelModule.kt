@@ -42,6 +42,7 @@ import com.owncloud.android.presentation.files.globalsearch.GlobalSearchViewMode
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.logging.LogListViewModel
 import com.owncloud.android.presentation.migration.MigrationViewModel
+import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.previews.PreviewAudioViewModel
 import com.owncloud.android.presentation.previews.PreviewTextViewModel
 import com.owncloud.android.presentation.previews.PreviewVideoViewModel
@@ -94,6 +95,7 @@ val viewModelModule = module {
     viewModelOf(::SettingsViewModel)
     viewModelOf(::FavoritesViewModel)
     viewModelOf(::GlobalSearchViewModel)
+    viewModelOf(::NetworkMonitorViewModel)
     viewModelOf(::TagsViewModel)
     viewModelOf(::TagFilesViewModel)
     viewModelOf(::ManageTagsViewModel)
@@ -157,7 +159,7 @@ val viewModelModule = module {
     viewModel {
         TransfersViewModel(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(), get()
+            get()
         )
     }
     viewModel { ReceiveExternalFilesViewModel(get(), get(), get(), get()) }

@@ -33,6 +33,7 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:text=""
+        android:maxLength="30"
         android:inputType="textNoSuggestions|textCapSentences" />
 
 </com.google.android.material.textfield.TextInputLayout>

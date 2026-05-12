@@ -23,8 +23,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
-import android.text.SpannableStringBuilder
-import android.text.style.ForegroundColorSpan
 import androidx.annotation.RequiresApi
 import com.owncloud.android.R
 
@@ -45,20 +43,7 @@ fun Context.createNotificationChannel(
 }
 
 fun Context.getAppName(): CharSequence  {
-    val appName1 = getString(R.string.homecloud_app_name_1)
-    val appName2 = getString(R.string.homecloud_app_name_2)
-    val stringBuilder = SpannableStringBuilder()
-    stringBuilder.append(appName1)
-    stringBuilder.setSpan(
-        ForegroundColorSpan(getColor(R.color.homecloud_green)), 0, stringBuilder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
-    )
-    val startPart2 = stringBuilder.length
-    stringBuilder.append(" ")
-    stringBuilder.append(appName2)
-    stringBuilder.setSpan(
-        ForegroundColorSpan(getColor(R.color.homecloud_primary)), startPart2, stringBuilder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
-    )
-    return stringBuilder
+    return getString(R.string.homecloud_app_name)
 }
 
 val Context.isLandscapeMode: Boolean

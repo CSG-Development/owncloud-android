@@ -31,7 +31,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import com.owncloud.android.extensions.getRunningWorkInfosLiveData
 import com.owncloud.android.workers.AccountDiscoveryWorker
 import com.owncloud.android.workers.AutomaticUploadsWorker
@@ -146,9 +145,6 @@ class WorkManagerProvider(
                 UploadFileFromFileSystemWorker::class.java.name
             )
         )
-
-    fun getRunningBaseUrlUpdateWorkInfosLiveData(): LiveData<List<WorkInfo>> =
-        WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(BaseUrlUpdateWorker.BASE_URL_UPDATE_WORKER)
 
     fun cancelAllWorkByTag(tag: String) = WorkManager.getInstance(context).cancelAllWorkByTag(tag)
 

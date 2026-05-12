@@ -77,7 +77,7 @@ class TagDialogFragment : DialogFragment() {
 
     private fun validate(name: String, existingTagNames: List<String>): String? = when {
         specialCharRegex.containsMatchIn(name) -> getString(R.string.tags_error_special_characters)
-        name.length > MAX_TAG_LENGTH -> getString(R.string.tags_error_max_length)
+        name.length >= MAX_TAG_LENGTH -> getString(R.string.tags_error_max_length)
         existingTagNames.any { it.equals(name, ignoreCase = true) } -> getString(R.string.tags_error_already_exists)
         else -> null
     }

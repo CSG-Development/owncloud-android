@@ -52,6 +52,7 @@ dependencies {
     implementation libs.androidx.work.runtime.ktx
     implementation(libs.androidx.browser) { because "CustomTabs required for OAuth2 and OIDC" }
     implementation(libs.androidx.enterprise.feedback) { because "MDM feedback" }
+    implementation(libs.androidx.splash)
 
     // Image loading
     implementation libs.coil
@@ -126,8 +127,8 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_23_00_0
-        versionName = "1.23.0"
+        versionCode = 1_24_00_0
+        versionName = "1.24.0"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""

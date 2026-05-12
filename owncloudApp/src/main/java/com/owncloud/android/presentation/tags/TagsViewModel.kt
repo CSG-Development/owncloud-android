@@ -7,7 +7,6 @@ import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.domain.tags.usecases.CreateTagUseCase
 import com.owncloud.android.domain.tags.usecases.DeleteTagUseCase
 import com.owncloud.android.domain.tags.usecases.RefreshTagsForAccountUseCase
-import com.owncloud.android.domain.tags.usecases.SyncTagsAndFilesForAccountUseCase
 import com.owncloud.android.domain.tags.usecases.UpdateTagUseCase
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +16,6 @@ import kotlinx.coroutines.launch
 
 class TagsViewModel(
     private val refreshTagsForAccountUseCase: RefreshTagsForAccountUseCase,
-    private val syncTagsAndFilesForAccountUseCase: SyncTagsAndFilesForAccountUseCase,
     private val createTagUseCase: CreateTagUseCase,
     private val updateTagUseCase: UpdateTagUseCase,
     private val deleteTagUseCase: DeleteTagUseCase,
@@ -50,19 +48,6 @@ class TagsViewModel(
                 is UseCaseResult.Error -> {
                     _tagsUiState.update { TagsUiState.Error(result.throwable) }
                 }
-            }
-        }
-    }
-
-    fun syncTagsAndFiles(accountName: String) {
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            _isTagsSyncing.update { true }
-            try {
-                syncTagsAndFilesForAccountUseCase(
-                    SyncTagsAndFilesForAccountUseCase.Params(accountName = accountName)
-                )
-            } finally {
-                _isTagsSyncing.update { false }
             }
         }
     }

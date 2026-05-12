@@ -1,78 +1,73 @@
 package com.owncloud.android.presentation.files.favorites
 
 import android.os.Bundle
+import android.view.Menu
 import com.owncloud.android.R
-import com.owncloud.android.databinding.ActivityFavoritesBinding
-import com.owncloud.android.domain.files.model.OCFile
-import com.owncloud.android.presentation.files.details.FileDetailsFragment
-import com.owncloud.android.ui.activity.FileActivity
-import com.owncloud.android.ui.fragment.FileFragment
+import com.owncloud.android.domain.files.model.FileListOption
+import com.owncloud.android.ui.activity.FileDisplayActivity
 
-class FavoritesActivity : FileActivity(), FileFragment.ContainerActivity {
-
-    private lateinit var binding: ActivityFavoritesBinding
+class FavoritesActivity : FileDisplayActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityFavoritesBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
-        setupStandardToolbar(
-            title = getString(R.string.drawer_menu_favorites),
-            homeButtonEnabled = true,
-            displayShowTitleEnabled = true,
-        )
+        fileListOption = FileListOption.FAVORITES
+        setBottomBarVisibility(false)
 
         if (savedInstanceState == null) {
+            updateStandardToolbar(
+                title = getString(R.string.drawer_menu_favorites),
+                homeButtonDisplayed = true,
+                showBackArrow = true,
+            )
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container_favorites, FavoritesFragment.newInstance(), TAG_FAVORITES_LIST)
+                .replace(R.id.left_fragment_container, FavoritesFragment.newInstance(), TAG_FAVORITES_LIST)
                 .commit()
+        } else {
+            updateStandardToolbar(
+                title = getString(R.string.drawer_menu_favorites),
+                homeButtonDisplayed = true,
+                showBackArrow = true,
+            )
+        }
+
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                updateStandardToolbar(
+                    title = getString(R.string.drawer_menu_favorites),
+                    homeButtonDisplayed = true,
+                    showBackArrow = true,
+                )
+            }
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
     }
 
-    override fun showDetails(file: OCFile) {
-        val detailsFragment = FileDetailsFragment.newInstance(
-            fileToDetail = file,
-            account = account,
-            syncFileAtOpen = false,
-            isMultiPersonal = false,
-        )
-        supportFragmentManager.beginTransaction()
-            .add(R.id.fragment_container_favorites, detailsFragment, TAG_FILE_DETAIL)
-            .addToBackStack(null)
-            .commit()
-        supportActionBar?.title = file.fileName
-    }
-
-    fun showTextPreview(file: OCFile) {
-        val previewFragment = com.owncloud.android.ui.preview.PreviewTextFragment.newInstance(
-            file,
-            account,
-        )
-        supportFragmentManager.beginTransaction()
-            .add(R.id.fragment_container_favorites, previewFragment, TAG_PREVIEW_TEXT)
-            .addToBackStack(null)
-            .commit()
-        supportActionBar?.title = file.fileName
-    }
-
     override fun onBackPressed() {
+        if (isDrawerOpen()) {
+            super.onBackPressed()
+            return
+        }
+
+        val hasSecondFragment = supportFragmentManager.findFragmentByTag(SECOND_FRAGMENT_TAG) != null
+        if (hasSecondFragment) {
+            super.onBackPressed()
+            setBottomBarVisibility(false)
+            return
+        }
+
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStack()
-            supportActionBar?.title = getString(R.string.drawer_menu_favorites)
         } else {
-            super.onBackPressed()
+            finish()
         }
     }
 
     companion object {
         private const val TAG_FAVORITES_LIST = "TAG_FAVORITES_LIST"
-        private const val TAG_FILE_DETAIL = "TAG_FILE_DETAIL"
-        private const val TAG_PREVIEW_TEXT = "TAG_PREVIEW_TEXT"
+        private const val SECOND_FRAGMENT_TAG = "SECOND_FRAGMENT"
     }
 }

@@ -108,6 +108,7 @@ import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
+import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
 import com.owncloud.android.presentation.security.bayPassUnlockOnce
@@ -198,6 +199,7 @@ open class FileDisplayActivity : FileActivity(),
     private val transfersViewModel: TransfersViewModel by viewModel()
     private lateinit var spacesListViewModel: SpacesListViewModel
     private val manageAccountsViewModel: ManageAccountsViewModel by viewModel()
+    private val networkMonitorViewModel: NetworkMonitorViewModel by viewModel()
 
     private val sharedPreferences: SharedPreferencesProvider by inject()
 
@@ -208,7 +210,6 @@ open class FileDisplayActivity : FileActivity(),
 
     private var isLightUser = false
     private var isMultiPersonal = false
-    private var reconnectingSnackbarDismissedByUser = false
 
     override fun onDrawerToggled() {
         mainFileListFragment?.onContentWidthChanged()
@@ -311,49 +312,18 @@ open class FileDisplayActivity : FileActivity(),
         checkNotificationPermission()
         WhatsNewActivity.runIfNeeded(this)
 
-        setupReconnectingSnackbar()
-        observeBaseUrlUpdateWorker()
+        observeNetworkMonitorState()
 
         Timber.v("onCreate() end")
     }
 
-    private fun setupReconnectingSnackbar() {
-        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingCloseButton.setOnClickListener {
-            reconnectingSnackbarDismissedByUser = true
-            binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingSnackbar.isVisible = false
+    private fun observeNetworkMonitorState() {
+        val snackbarBinding = binding.navCoordinatorLayout.networkMonitorSnackbarInclude
+        snackbarBinding.networkMonitorCloseButton.setOnClickListener {
+            snackbarBinding.networkMonitorSnackbar.isVisible = false
         }
-        binding.navCoordinatorLayout.reconnectingSnackbarInclude.reconnectingRetryButton.setOnClickListener {
-            transfersViewModel.retryBaseUrlUpdate()
-        }
-    }
-
-    private fun observeBaseUrlUpdateWorker() {
-        collectLatestLifecycleFlow(transfersViewModel.baseUrlUpdateStateFlow) { state ->
-            val snackbarBinding = binding.navCoordinatorLayout.reconnectingSnackbarInclude
-            when (state) {
-                is TransfersViewModel.BaseUrlUpdateState.Running -> {
-                    if (!reconnectingSnackbarDismissedByUser) {
-                        snackbarBinding.reconnectingSnackbar.isVisible = true
-                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_reconnecting_title)
-                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_reconnecting_message)
-                        snackbarBinding.reconnectingProgress.isVisible = true
-                        snackbarBinding.reconnectingRetryButton.isVisible = false
-                    }
-                }
-                is TransfersViewModel.BaseUrlUpdateState.Failed -> {
-                    if (!reconnectingSnackbarDismissedByUser) {
-                        snackbarBinding.reconnectingSnackbar.isVisible = true
-                        snackbarBinding.reconnectingTitle.setText(R.string.homecloud_unable_to_reconnect_title)
-                        snackbarBinding.reconnectingMessage.setText(R.string.homecloud_unable_to_reconnect_message)
-                        snackbarBinding.reconnectingProgress.isVisible = false
-                        snackbarBinding.reconnectingRetryButton.isVisible = true
-                    }
-                }
-                is TransfersViewModel.BaseUrlUpdateState.Idle -> {
-                    snackbarBinding.reconnectingSnackbar.isVisible = false
-                    reconnectingSnackbarDismissedByUser = false
-                }
-            }
+        collectLatestLifecycleFlow(networkMonitorViewModel.isNetworkUnavailable) { unavailable ->
+            snackbarBinding.networkMonitorSnackbar.isVisible = unavailable
         }
     }
 
@@ -545,7 +515,7 @@ open class FileDisplayActivity : FileActivity(),
     }
 
     private fun initFragmentsWithFile() {
-        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH && !fileListOption.isTagFiles()) {
+        if (account != null && file != null && fileListOption != FileListOption.GLOBAL_SEARCH && !fileListOption.isTagFiles() && !fileListOption.isFavorites()) {
             /// First fragment
             mainFileListFragment?.navigateToFolder(currentDir)
                 ?: Timber.e("Still have a chance to lose the initialization of list fragment >(")
@@ -653,7 +623,7 @@ open class FileDisplayActivity : FileActivity(),
         leftFragmentContainer?.isVisible = !existsSecondFragment
         rightFragmentContainer?.isVisible = existsSecondFragment
 
-        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles())
+        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles() && !fileListOption.isFavorites())
     }
 
     private fun cleanSecondFragment() {
@@ -662,6 +632,11 @@ open class FileDisplayActivity : FileActivity(),
             val tr = supportFragmentManager.beginTransaction()
             tr.remove(second)
             tr.commitNow()
+        }
+        // Favorites: startFolderPreview / previews set [file] to the opened item; if we do not clear it,
+        // updateToolbar(null) still uses that file and the toolbar title stays on the folder/file name.
+        if (fileListOption.isFavorites()) {
+            file = null
         }
         updateFragmentsVisibility(false)
         updateToolbar(null)
@@ -881,7 +856,7 @@ open class FileDisplayActivity : FileActivity(),
                         showBackArrow = false,
                     )
                     setGlobalSearchBarVisible(isVisible = true, clearSearch = false)
-                } else if (fileListOption.isTagFiles()) {
+                } else if (fileListOption.isTagFiles() || fileListOption.isFavorites()) {
                     cleanSecondFragment()
                 } else {
                     val folderIdToDisplay =
@@ -1130,7 +1105,7 @@ open class FileDisplayActivity : FileActivity(),
                     FileListOption.TAG_FILES -> getAppName()
                 }
             setTitle(title)
-            val showBackArrow = fileListOption.isSharedByLink()
+            val showBackArrow = fileListOption.isSharedByLink() || fileListOption.isFavorites()
             updateStandardToolbar(title = title, homeButtonDisplayed = true, showBackArrow = showBackArrow)
         } else if ((space?.isProject == true || (space?.isPersonal == true && isMultiPersonal)) && chosenFile.remotePath == OCFile.ROOT_PATH) {
             updateStandardToolbar(title = space.name, homeButtonDisplayed = true, showBackArrow = false)
