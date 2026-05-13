@@ -10,7 +10,9 @@ import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -93,6 +95,7 @@ class NetworkMonitorViewModel(
         }
         try {
             val result = deviceUrlResolver.resolveAvailableBaseUrl(paths)
+            currentCoroutineContext().ensureActive() // discard result if job was cancelled during blocking call
             Timber.d("NetworkMonitor: probe result=$result")
             _networkMonitorState.emit(
                 if (result == null) NetworkMonitorState.FindingNetwork else NetworkMonitorState.Hidden
@@ -100,6 +103,7 @@ class NetworkMonitorViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            currentCoroutineContext().ensureActive() // don't emit FindingNetwork if we were cancelled mid-exception
             Timber.e(e, "NetworkMonitor: probe failed with exception")
             _networkMonitorState.emit(NetworkMonitorState.FindingNetwork)
         }
