@@ -48,6 +48,7 @@ class NetworkMonitorViewModel(
             ) { connectivity, appState ->
                 Pair(connectivity.hasAnyNetwork(), appState)
             }.collect { (hasNetwork, appState) ->
+                Timber.d("NetworkMonitor: has network $hasNetwork state $appState")
                 val isForeground = appState == AppState.FOREGROUND
                 val justCameToForeground = isForeground && lastAppState != AppState.FOREGROUND
                 lastAppState = appState
