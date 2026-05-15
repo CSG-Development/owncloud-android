@@ -2,8 +2,8 @@
 <resources>
     <!-- Android 12+ system splash: keep it simple and visually close to branded screen. -->
     <style name="Theme.homeCloud.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/homecloud_splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.homeCloud.Toolbar</item>
-        <item name="android:windowBackground">@drawable/background_gradient_green_teal</item>
     </style>
 </resources>

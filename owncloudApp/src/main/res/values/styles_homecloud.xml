@@ -91,7 +91,7 @@
 
     <!-- Splash Screen -->
     <style name="Theme.homeCloud.Splash">
-        <item name="android:windowBackground">@drawable/background_gradient_green_teal</item>
+        <item name="android:windowBackground">@drawable/ic_splash</item>
     </style>
 
     <!-- Extends Theme.homeCloud to remove legacy ActionBar from the window and add, via layouts, a Toolbar -->
