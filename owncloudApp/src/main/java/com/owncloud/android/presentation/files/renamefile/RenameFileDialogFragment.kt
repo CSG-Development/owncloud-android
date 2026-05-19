@@ -51,7 +51,7 @@ class RenameFileDialogFragment : DialogFragment(), DialogInterface.OnClickListen
     private var targetFile: OCFile? = null
     private val filesViewModel: FileOperationsViewModel by sharedViewModel()
     private var isButtonEnabled = true
-    private val maxFilenameLength = 223
+    private val maxFilenameLength = 30
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         if (savedInstanceState != null) {
             isButtonEnabled = savedInstanceState.getBoolean(IS_BUTTON_ENABLED_FLAG_KEY)
@@ -77,9 +77,10 @@ class RenameFileDialogFragment : DialogFragment(), DialogInterface.OnClickListen
         val extensionStart = if (targetFile!!.isFolder) -1 else currentName.lastIndexOf(".")
         val selectionEnd = if (extensionStart >= 0) extensionStart else currentName.length
         if (selectionStart >= 0 && selectionEnd >= 0) {
+            val textLength = inputText.text?.length ?: 0
             inputText.setSelection(
-                selectionStart.coerceAtMost(selectionEnd),
-                selectionStart.coerceAtLeast(selectionEnd)
+                selectionStart.coerceAtMost(selectionEnd).coerceAtMost(textLength),
+                selectionStart.coerceAtLeast(selectionEnd).coerceAtMost(textLength)
             )
         }
 
