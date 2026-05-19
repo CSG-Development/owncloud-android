@@ -76,9 +76,15 @@ class DrawerViewModel(
     init {
         viewModelScope.launch {
             updateBaseUrlUseCase.tokenRequired.collect {
+                // After logout the account is removed but the replay = 1 buffer on
+                // tokenRequired can still deliver a stale signal to this collector while the
+                // parent activity is alive in the back stack. With no account there is no
+                // user to re-authenticate, so the signal is dropped.
                 val account = accountProvider.getCurrentOwnCloudAccount()
-                val email = accountManager.getUserData(account, KEY_EMAIL)
-                _shouldShowCodeDialog.emit(email)
+                if (account != null) {
+                    val email = accountManager.getUserData(account, KEY_EMAIL)
+                    _shouldShowCodeDialog.emit(email)
+                }
             }
         }
     }
