@@ -5,13 +5,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.StringRes
+import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
-import androidx.annotation.StringRes
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -146,9 +146,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
 
     private fun setupViews() {
         binding.codeEditVerification.onCodeChangedListener = { code ->
-            binding.allowButton.isEnabled =
-                code.length == binding.codeEditVerification.getFilledCodeLength() &&
-                        viewModel.state.value.isAllowButtonEnabled
+            updateAllowButtonState()
             // Clear error when user starts typing
             if (viewModel.state.value.error != null) {
                 viewModel.clearError()
@@ -207,7 +205,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             state.error == null -> {
                 setContentLoadingState(false)
                 binding.allowButton.visibility = View.VISIBLE
-                binding.allowButton.isEnabled = true
+                updateAllowButtonState()
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
                 binding.codeEditVerification.visibility = View.VISIBLE
@@ -221,7 +219,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             state.error is VerificationCodeViewModel.VerificationCodeError.WrongCode -> {
                 setContentLoadingState(false)
                 binding.allowButton.visibility = View.VISIBLE
-                binding.allowButton.isEnabled = false
+                updateAllowButtonState()
                 binding.resendButton.visibility = View.INVISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
                 binding.codeEditVerification.visibility = View.VISIBLE
@@ -293,7 +291,7 @@ class VerificationCodeDialogFragment : DialogFragment() {
             else -> {
                 setContentLoadingState(false)
                 binding.allowButton.visibility = View.INVISIBLE
-                binding.allowButton.isEnabled = false
+                updateAllowButtonState()
                 binding.resendButton.visibility = View.VISIBLE
                 binding.allowLoading.visibility = View.INVISIBLE
                 binding.codeEditVerification.visibility = View.VISIBLE
@@ -345,6 +343,13 @@ class VerificationCodeDialogFragment : DialogFragment() {
                 listener?.onSkipped()
                 dismiss()
             }
+        }
+    }
+
+    private fun updateAllowButtonState() {
+        binding.apply {
+            allowButton.isEnabled =
+                codeEditVerification.isCodeComplete() && viewModel.state.value.isAllowButtonEnabled
         }
     }
 
