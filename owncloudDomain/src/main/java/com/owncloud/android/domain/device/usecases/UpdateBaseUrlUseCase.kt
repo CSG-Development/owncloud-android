@@ -7,7 +7,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.owncloud.android.domain.device.BaseUrlUpdateWorker
-import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,10 +23,16 @@ import java.util.UUID
  * 2. Fetches remote devices from API
  * 3. Combines and saves the device paths
  * 4. Triggers one-shot dynamic URL switching
+ *
+ * The worker is always enqueued: Step 1 (probing the cached LOCAL/PUBLIC priority paths)
+ * does not require a Remote Access token, so a user that authenticated against a purely
+ * local path can keep working without being prompted for a verification code on every
+ * network change. The token-required signal is only emitted by the worker when the
+ * cached priority paths are unreachable AND no token is available (i.e. the user truly
+ * needs to re-authenticate against Remote Access to recover).
  */
 class UpdateBaseUrlUseCase(
     private val workManager: WorkManager,
-    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
 ) {
 
     // Conflated buffer so a single tokenRequired signal is not lost if no subscriber is
@@ -42,12 +47,7 @@ class UpdateBaseUrlUseCase(
     suspend fun execute(
         fromBackground: Boolean = false,
         wifiAvailable: Boolean = true,
-    ): UUID? {
-        if (!getRemoteAccessTokenUseCase.hasToken()) {
-            _tokenRequired.emit(Unit)
-            return null
-        }
-
+    ): UUID {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()

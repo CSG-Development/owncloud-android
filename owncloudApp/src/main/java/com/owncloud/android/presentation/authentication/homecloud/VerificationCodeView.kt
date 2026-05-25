@@ -208,7 +208,7 @@ class VerificationCodeView @JvmOverloads constructor(
 
     fun getCode(): String = editTexts.joinToString("") { it.text.toString() }
 
-    fun getFilledCodeLength(): Int = codeLength
+    fun isCodeComplete(): Boolean = getCode().length == codeLength
 
     fun clearCode() {
         editTexts.forEach { it.text?.clear() }

@@ -8,6 +8,7 @@ import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
@@ -43,6 +44,7 @@ class BaseUrlUpdateWorker(
     private val currentDeviceRepository: CurrentDeviceRepository by inject()
 
     private val switchToBestAvailableBaseUrlUseCase: SwitchToBestAvailableBaseUrlUseCase by inject()
+    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase by inject()
 
     override suspend fun doWork(): Result {
         return try {
@@ -62,6 +64,17 @@ class BaseUrlUpdateWorker(
             val updatedFromCurrentPaths = switchToBestAvailableBaseUrlUseCase.execute(wifiAvailable)
             if (updatedFromCurrentPaths) {
                 Timber.d("BaseUrlUpdateWorker: base URL updated from cached/refreshed paths")
+                return Result.success()
+            }
+
+            // Step 2 (full discovery) requires a Remote Access token. If we have no token,
+            // do NOT silently fail — surface the token-required signal so the UI can
+            // prompt for re-authentication. This signal is only emitted here (after the
+            // cached priority paths have proven unreachable) so a user that is on a
+            // working local-only path is never prompted on routine network changes.
+            if (!getRemoteAccessTokenUseCase.hasToken()) {
+                Timber.d("BaseUrlUpdateWorker: cached paths unreachable AND no Remote Access token, requesting token")
+                updateBaseUrlUseCase.notifyTokenRequired()
                 return Result.success()
             }
 

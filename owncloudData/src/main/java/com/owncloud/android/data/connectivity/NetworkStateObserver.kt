@@ -38,7 +38,9 @@ class NetworkStateObserver(
             }
 
             override fun onLost(network: Network) {
-                sendIfUnavailable(sendChannel)
+                // Exclude the just-lost network: activeNetwork may not yet reflect the loss
+                // at the time this callback fires, so checking it is unreliable.
+                sendChannel.trySendBlocking(remainingConnectivity(excluding = network))
             }
         }
     }
@@ -53,10 +55,17 @@ class NetworkStateObserver(
             }
 
             override fun onLost(network: Network) {
-                val capabilities = connectivityManager.allNetworks.mapNotNull { connectivityManager.getNetworkCapabilities(it) }
-                sendChannel.trySendBlocking(Connectivity.fromNetworkCapabilities(capabilities))
+                // Exclude the just-lost network: allNetworks may still contain it briefly.
+                sendChannel.trySendBlocking(remainingConnectivity(excluding = network))
             }
         }
+    }
+
+    private fun remainingConnectivity(excluding: Network): Connectivity {
+        val remaining = connectivityManager.allNetworks
+            .filter { it != excluding }
+            .mapNotNull { connectivityManager.getNetworkCapabilities(it) }
+        return Connectivity.fromNetworkCapabilities(remaining)
     }
 
     fun observeNetworkState(): Flow<Connectivity> = channelFlow {

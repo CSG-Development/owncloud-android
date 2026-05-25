@@ -82,12 +82,10 @@ class OCLocalAuthenticationDataSource(
             password = password,
             updateAccountWithUsername = updateAccountWithUsername
         ).also { account ->
-            updateAccountWithUsername?.let {
-                accountManager.setPassword(account, password)
-                SingleSessionManager.getDefaultSingleton().refreshCredentialsForAccount(
-                    account.name, OwnCloudBasicCredentials(userName, password)
-                )
-            }
+            accountManager.setPassword(account, password)
+            SingleSessionManager.getDefaultSingleton().refreshCredentialsForAccount(
+                account.name, OwnCloudBasicCredentials(userName, password)
+            )
             updateUserAndServerInfo(account, serverInfo, userInfo)
         }.name
 
@@ -113,11 +111,9 @@ class OCLocalAuthenticationDataSource(
 
             accountManager.setAuthToken(it, authTokenType, accessToken)
 
-            updateAccountWithUsername?.let { userName ->
-                SingleSessionManager.getDefaultSingleton().refreshCredentialsForAccount(
-                    it.name, OwnCloudBearerCredentials(userName, accessToken)
-                )
-            }
+            SingleSessionManager.getDefaultSingleton().refreshCredentialsForAccount(
+                it.name, OwnCloudBearerCredentials(userName, accessToken)
+            )
 
             clientRegistrationInfo?.let { clientRegistrationInfo ->
                 accountManager.apply {

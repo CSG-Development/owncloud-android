@@ -143,6 +143,7 @@
 
     <string name="homecloud_close">Close</string>
     <string name="homecloud_finding_network">Finding network…</string>
+    <string name="homecloud_no_internet">No internet</string>
 
     <!-- App Update Dialog -->
     <string name="homecloud_app_update_dialog_title">Update Available</string>
