@@ -44,6 +44,7 @@ import com.owncloud.android.presentation.logging.LogListViewModel
 import com.owncloud.android.presentation.migration.MigrationViewModel
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.previews.PreviewAudioViewModel
+import com.owncloud.android.presentation.previews.PreviewPdfViewModel
 import com.owncloud.android.presentation.previews.PreviewTextViewModel
 import com.owncloud.android.presentation.previews.PreviewVideoViewModel
 import com.owncloud.android.presentation.releasenotes.ReleaseNotesViewModel
@@ -83,6 +84,7 @@ val viewModelModule = module {
     viewModelOf(::PreviewAudioViewModel)
     viewModelOf(::PreviewImageViewModel)
     viewModelOf(::PreviewTextViewModel)
+    viewModelOf(::PreviewPdfViewModel)
     viewModelOf(::PreviewVideoViewModel)
     viewModelOf(::ReceiveExternalFilesViewModel)
     viewModelOf(::ReleaseNotesViewModel)

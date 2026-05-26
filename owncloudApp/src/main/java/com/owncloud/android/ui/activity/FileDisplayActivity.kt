@@ -129,6 +129,7 @@ import com.owncloud.android.ui.helpers.FilesUploadHelper
 import com.owncloud.android.ui.preview.PreviewAudioFragment
 import com.owncloud.android.ui.preview.PreviewImageActivity
 import com.owncloud.android.ui.preview.PreviewImageFragment
+import com.owncloud.android.ui.preview.PreviewPdfFragment
 import com.owncloud.android.ui.preview.PreviewTextFragment
 import com.owncloud.android.ui.preview.PreviewVideoActivity
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
@@ -587,6 +588,13 @@ open class FileDisplayActivity : FileActivity(),
 
                 PreviewTextFragment.canBePreviewed(file) -> {
                     PreviewTextFragment.newInstance(
+                        file,
+                        account
+                    )
+                }
+
+                PreviewPdfFragment.canBePreviewed(file) -> {
+                    PreviewPdfFragment.newInstance(
                         file,
                         account
                     )
@@ -1839,6 +1847,16 @@ open class FileDisplayActivity : FileActivity(),
         setFile(file)
     }
 
+    fun startPdfPreview(file: OCFile) {
+        val pdfPreviewFragment = PreviewPdfFragment.newInstance(
+            file,
+            account
+        )
+        setSecondFragment(pdfPreviewFragment)
+        updateToolbar(file)
+        setFile(file)
+    }
+
     fun startFolderPreview(file: OCFile) {
         val folderPreviewFragment = MainFileListFragment.newInstance(
             file,
@@ -1860,6 +1878,10 @@ open class FileDisplayActivity : FileActivity(),
             when {
                 PreviewTextFragment.canBePreviewed(file) -> {
                     startTextPreview(file)
+                }
+
+                PreviewPdfFragment.canBePreviewed(file) -> {
+                    startPdfPreview(file)
                 }
 
                 PreviewAudioFragment.canBePreviewed(file) -> {
@@ -2065,6 +2087,12 @@ open class FileDisplayActivity : FileActivity(),
             }
 
             PreviewTextFragment.canBePreviewed(file) -> {
+                setFile(file)
+                fileWaitingToPreview = file
+                fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, account.name))
+            }
+
+            file.isPdf -> {
                 setFile(file)
                 fileWaitingToPreview = file
                 fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, account.name))
