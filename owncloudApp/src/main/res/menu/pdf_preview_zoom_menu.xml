@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/pdf_zoom_fit_width"
+        android:icon="@drawable/ic_fit_width"
+        android:title="@string/homecloud_pdf_preview_zoom_fit_width"
+        app:iconTint="?attr/colorPrimary" />
+    <item
+        android:id="@+id/pdf_zoom_fit_page"
+        android:icon="@drawable/ic_fit_page"
+        android:title="@string/homecloud_pdf_preview_zoom_fit_page"
+        app:iconTint="?attr/colorPrimary" />
+    <item
+        android:id="@+id/pdf_zoom_preset_25"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_25" />
+    <item
+        android:id="@+id/pdf_zoom_preset_50"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_50" />
+    <item
+        android:id="@+id/pdf_zoom_preset_75"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_75" />
+    <item
+        android:id="@+id/pdf_zoom_preset_100"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_100" />
+    <item
+        android:id="@+id/pdf_zoom_preset_150"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_150" />
+    <item
+        android:id="@+id/pdf_zoom_preset_200"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_200" />
+    <item
+        android:id="@+id/pdf_zoom_preset_400"
+        android:title="@string/homecloud_pdf_preview_zoom_preset_400" />
+</menu>

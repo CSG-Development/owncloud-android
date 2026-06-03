@@ -98,6 +98,12 @@ data class OCFile(
         get() = isOfType(MIME_PREFIX_TEXT)
 
     /**
+     * @return 'True' if the file is a PDF document
+     */
+    val isPdf: Boolean
+        get() = mimeType == MIME_PDF || getMimeTypeFromName() == MIME_PDF
+
+    /**
      * @return 'True' if the file has the 'W' (can write) within its group of permissions
      */
     val hasWritePermission: Boolean

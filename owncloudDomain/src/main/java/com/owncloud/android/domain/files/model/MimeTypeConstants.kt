@@ -29,4 +29,5 @@ const val MIME_PREFIX_IMAGE = "image/"
 const val MIME_PREFIX_TEXT = "text/"
 
 const val MIME_SVG = "image/svg+xml"
+const val MIME_PDF = "application/pdf"
 
