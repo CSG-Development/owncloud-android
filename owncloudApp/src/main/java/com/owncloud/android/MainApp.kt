@@ -74,6 +74,7 @@ import com.owncloud.android.providers.LogsProvider
 import com.owncloud.android.providers.MdmProvider
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity.Companion.PREFERENCE_CLEAR_DATA_ALREADY_TRIGGERED
+import com.owncloud.android.ui.activity.SplashActivity
 import com.owncloud.android.utils.CONFIGURATION_ALLOW_SCREENSHOTS
 import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.DebugInjector
@@ -210,6 +211,10 @@ class MainApp : Application() {
 
             override fun onActivityStarted(activity: Activity) {
                 Timber.v("${activity.javaClass.simpleName} onStart() starting")
+                if (activity is SplashActivity) {
+                    // do not count SplashActivity when checking for security means
+                    return
+                }
                 PassCodeManager.onActivityStarted(activity)
                 PatternManager.onActivityStarted(activity)
                 BiometricManager.onActivityStarted(activity)
@@ -225,6 +230,10 @@ class MainApp : Application() {
 
             override fun onActivityStopped(activity: Activity) {
                 Timber.v("${activity.javaClass.simpleName} onStop() ending")
+                if (activity is SplashActivity) {
+                    // do not count SplashActivity when checking for security means
+                    return
+                }
                 PassCodeManager.onActivityStopped(activity)
                 PatternManager.onActivityStopped(activity)
                 BiometricManager.onActivityStopped(activity)
