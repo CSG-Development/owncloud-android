@@ -39,7 +39,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.RemoteException
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.TypedValue
@@ -52,6 +51,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -125,6 +125,7 @@ import com.owncloud.android.syncadapter.FileSyncAdapter
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.ui.fragment.TaskRetainerFragment
+import com.owncloud.android.ui.helpers.DocumentScannerUploadHelper
 import com.owncloud.android.ui.helpers.FilesUploadHelper
 import com.owncloud.android.ui.preview.PreviewAudioFragment
 import com.owncloud.android.ui.preview.PreviewImageActivity
@@ -207,6 +208,14 @@ open class FileDisplayActivity : FileActivity(),
 
     var filesUploadHelper: FilesUploadHelper? = null
         internal set
+
+    private val documentScannerUploadHelper = DocumentScannerUploadHelper()
+
+    private val documentScannerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            if (result.resultCode != RESULT_OK) return@registerForActivityResult
+            handleDocumentScanResult(result.data)
+        }
 
     private lateinit var binding: ActivityMainBinding
 
@@ -793,6 +802,10 @@ open class FileDisplayActivity : FileActivity(),
             streamsToUpload.add(contentIntent.data!!)
         }
 
+        requestUploadOfContentUris(streamsToUpload)
+    }
+
+    private fun requestUploadOfContentUris(streamsToUpload: List<Uri>) {
         val currentDir = currentDir
         val remotePath = currentDir?.remotePath ?: OCFile.ROOT_PATH
 
@@ -800,8 +813,8 @@ open class FileDisplayActivity : FileActivity(),
         streamsToUpload.forEach { uri ->
             try {
                 contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            } catch (remoteException: RemoteException) {
-                Timber.w(remoteException)
+            } catch (exception: Exception) {
+                Timber.w(exception, "Could not persist read permission for $uri")
             }
         }
 
@@ -811,6 +824,24 @@ open class FileDisplayActivity : FileActivity(),
             uploadFolderPath = remotePath,
             spaceId = currentDir.spaceId,
         )
+    }
+
+    private fun handleDocumentScanResult(data: Intent?) {
+        val scanResult = documentScannerUploadHelper.parseResult(data)
+        if (scanResult.isEmpty()) {
+            showMessageInSnackbar(message = getString(R.string.homecloud_upload_scan_failed))
+            return
+        }
+        if (!manageAccountsViewModel.hasEnoughQuota(account.name)) {
+            showMessageInSnackbar(message = getString(R.string.failed_upload_quota_exceeded_text))
+            return
+        }
+        if (scanResult.filePaths.isNotEmpty()) {
+            requestUploadOfFilesFromFileSystem(scanResult.filePaths.toTypedArray())
+        }
+        if (scanResult.contentUris.isNotEmpty()) {
+            requestUploadOfContentUris(scanResult.contentUris)
+        }
     }
 
     /**
@@ -2146,6 +2177,19 @@ open class FileDisplayActivity : FileActivity(),
 
     override fun uploadFromCamera() {
         filesUploadHelper?.uploadFromCamera(REQUEST_CODE__UPLOAD_FROM_CAMERA)
+    }
+
+    override fun uploadFromDocumentScanner() {
+        documentScannerUploadHelper.startScan(
+            activity = this,
+            onReady = { intentSender ->
+                documentScannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            },
+            onError = { error ->
+                Timber.e(error, "Document scanner unavailable")
+                showMessageInSnackbar(message = getString(R.string.homecloud_upload_scan_unavailable))
+            },
+        )
     }
 
     override fun uploadShortcutFileFromApp(shortcutFilePath: Array<String>) {
