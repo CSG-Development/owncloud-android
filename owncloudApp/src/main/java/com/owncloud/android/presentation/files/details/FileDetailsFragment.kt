@@ -81,6 +81,7 @@ import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.ui.preview.PreviewAudioFragment
 import com.owncloud.android.ui.preview.PreviewImageFragment
+import com.owncloud.android.ui.preview.PreviewPdfFragment
 import com.owncloud.android.ui.preview.PreviewTextFragment
 import com.owncloud.android.ui.preview.PreviewVideoActivity
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
@@ -592,6 +593,10 @@ class FileDetailsFragment : FileFragment() {
 
             PreviewTextFragment.canBePreviewed(fileWaitingToPreview) -> {
                 fileDisplayActivity.startTextPreview(fileWaitingToPreview)
+            }
+
+            PreviewPdfFragment.canBePreviewed(fileWaitingToPreview) -> {
+                fileDisplayActivity.startPdfPreview(fileWaitingToPreview)
             }
 
             else -> {
