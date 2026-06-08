@@ -36,8 +36,8 @@
 
             <ImageButton
                 android:id="@+id/pdf_page_previous"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/homecloud_pdf_preview_page_previous"
                 android:src="@drawable/ic_arrow_down"
@@ -57,8 +57,8 @@
 
             <ImageButton
                 android:id="@+id/pdf_page_next"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/homecloud_pdf_preview_page_next"
                 android:src="@drawable/ic_arrow_down"
@@ -75,8 +75,8 @@
 
             <ImageButton
                 android:id="@+id/pdf_zoom_out"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/homecloud_pdf_preview_zoom_out"
                 android:src="@drawable/ic_zoom_out"
@@ -98,8 +98,8 @@
 
             <ImageButton
                 android:id="@+id/pdf_zoom_in"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/homecloud_pdf_preview_zoom_in"
                 android:src="@drawable/ic_zoom_in"
