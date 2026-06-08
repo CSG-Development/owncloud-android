@@ -66,6 +66,9 @@ dependencies {
     implementation libs.koin.androidx.workmanager
     implementation libs.koin.core
 
+    // ML Kit Document Scanner
+    implementation libs.play.services.mlkit.document.scanner
+
     // Miscellaneous
     implementation libs.disklrucache
     implementation libs.media3.exoplayer

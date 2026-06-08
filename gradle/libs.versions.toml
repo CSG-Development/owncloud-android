@@ -47,6 +47,7 @@ okhttp = "4.9.2"
 patternlockview = "a90b0d4bf0"
 retrofit = "2.9.0"
 photoView = "2.3.0"
+playServicesMlkitDocumentScanner = "16.0.0"
 preference = "1.2.0"
 sonarqube = "4.0.0.2929"
 stetho = "1.6.0"
@@ -127,6 +128,7 @@ patternlockview = { group = "com.github.aritraroy.PatternLockView", name = "patt
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoView" }
+play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
 stetho = { group = "com.facebook.stetho", name = "stetho", version.ref = "stetho" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }

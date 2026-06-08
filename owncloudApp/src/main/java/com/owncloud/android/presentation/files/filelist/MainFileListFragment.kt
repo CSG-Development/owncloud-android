@@ -1237,6 +1237,7 @@ class MainFileListFragment : FileFragment(),
         dialog.setContentView(uploadBottomSheet)
         val uploadFromFilesItemView: BottomSheetFragmentItemView = uploadBottomSheet.findViewById(R.id.upload_from_files_item_view)
         val uploadFromCameraItemView: BottomSheetFragmentItemView = uploadBottomSheet.findViewById(R.id.upload_from_camera_item_view)
+        val uploadFromScanItemView: BottomSheetFragmentItemView = uploadBottomSheet.findViewById(R.id.upload_from_scan_item_view)
         val uploadToTextView = uploadBottomSheet.findViewById<TextView>(R.id.upload_to_text_view)
         uploadFromFilesItemView.setOnClickListener {
             uploadActions?.uploadFromFileSystem()
@@ -1244,6 +1245,10 @@ class MainFileListFragment : FileFragment(),
         }
         uploadFromCameraItemView.setOnClickListener {
             uploadActions?.uploadFromCamera()
+            dialog.hide()
+        }
+        uploadFromScanItemView.setOnClickListener {
+            uploadActions?.uploadFromDocumentScanner()
             dialog.hide()
         }
         uploadToTextView.text = String.format(
@@ -1726,6 +1731,7 @@ class MainFileListFragment : FileFragment(),
 
     interface UploadActions {
         fun uploadFromCamera()
+        fun uploadFromDocumentScanner()
         fun uploadShortcutFileFromApp(shortcutFilePath: Array<String>)
         fun uploadFromFileSystem()
     }
