@@ -2123,7 +2123,7 @@ open class FileDisplayActivity : FileActivity(),
                 fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, account.name))
             }
 
-            file.isPdf -> {
+            PreviewPdfFragment.canBePreviewed(file) -> {
                 setFile(file)
                 fileWaitingToPreview = file
                 fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(file, account.name))
