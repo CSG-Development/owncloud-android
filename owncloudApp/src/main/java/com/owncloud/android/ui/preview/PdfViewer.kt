@@ -310,13 +310,23 @@ class PdfViewer @JvmOverloads constructor(
     }
 
     fun zoomIn() {
-        val nextPercent = ZOOM_PRESETS.firstOrNull { it > zoomState.displayPercent } ?: ZOOM_PRESETS.last()
+        val currentSnapped = snapToStep(zoomState.displayPercent)
+        val nextPercent = (currentSnapped + ZOOM_STEP)
+            .coerceAtMost(MAX_ZOOM_SCALE * PERCENT_DIVISOR)
+
         applyZoom(nextPercent / PERCENT_DIVISOR, PdfZoomMode.Custom)
     }
 
     fun zoomOut() {
-        val previousPercent = ZOOM_PRESETS.lastOrNull { it < zoomState.displayPercent } ?: ZOOM_PRESETS.first()
+        val currentSnapped = snapToStep(zoomState.displayPercent)
+        val previousPercent = (currentSnapped - ZOOM_STEP)
+            .coerceAtLeast(MIN_ZOOM_SCALE * PERCENT_DIVISOR)
+
         applyZoom(previousPercent / PERCENT_DIVISOR, PdfZoomMode.Custom)
+    }
+
+    private fun snapToStep(percent: Int): Float {
+        return (percent + ZOOM_STEP / 2) / ZOOM_STEP * ZOOM_STEP.toFloat()
     }
 
     fun setZoomPreset(percent: Int) {
@@ -721,7 +731,6 @@ class PdfViewer @JvmOverloads constructor(
         private const val VELOCITY_UNITS_MS = 1000
         private const val MIN_ZOOM_SCALE = 0.25f
         private const val MAX_ZOOM_SCALE = 4f
-
-        private val ZOOM_PRESETS = listOf(25, 50, 75, 100, 150, 200, 400)
+        private const val ZOOM_STEP = 25
     }
 }
