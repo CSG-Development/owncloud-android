@@ -72,6 +72,7 @@ import com.owncloud.android.domain.files.usecases.GetFileWithSyncInfoByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFolderContentAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.GetFolderContentUseCase
 import com.owncloud.android.domain.files.usecases.GetFolderImagesUseCase
+import com.owncloud.android.domain.files.usecases.GetImageMetadataUseCase
 import com.owncloud.android.domain.files.usecases.GetPersonalRootFolderForAccountUseCase
 import com.owncloud.android.domain.files.usecases.GetSearchFolderContentUseCase
 import com.owncloud.android.domain.files.usecases.GetSharedByLinkForAccountAsStreamUseCase
@@ -226,6 +227,7 @@ val useCaseModule = module {
     factoryOf(::SaveDownloadWorkerUUIDUseCase)
     factoryOf(::SaveFileOrFolderUseCase)
     factoryOf(::SetLastUsageFileUseCase)
+    factoryOf(::GetImageMetadataUseCase)
     factoryOf(::SortFilesUseCase)
     factoryOf(::SortFilesWithSyncInfoUseCase)
     factoryOf(::SynchronizeFileUseCase)

@@ -28,6 +28,7 @@ import com.owncloud.android.data.capabilities.repository.OCCapabilityRepository
 import com.owncloud.android.data.device.HCCurrentDeviceRepository
 import com.owncloud.android.data.device.HCStaticDeviceRepository
 import com.owncloud.android.data.files.repository.OCFileRepository
+import com.owncloud.android.data.files.repository.OCImageMetadataRepository
 import com.owncloud.android.data.folderbackup.repository.OCFolderBackupRepository
 import com.owncloud.android.data.mdnsdiscovery.repository.HCMdnsDiscoveryRepository
 import com.owncloud.android.data.oauth.repository.OCOAuthRepository
@@ -50,6 +51,7 @@ import com.owncloud.android.domain.capabilities.CapabilityRepository
 import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.StaticDeviceRepository
 import com.owncloud.android.domain.files.FileRepository
+import com.owncloud.android.domain.files.ImageMetadataRepository
 import com.owncloud.android.domain.mdnsdiscovery.MdnsDiscoveryRepository
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
 import com.owncloud.android.domain.searches.SavedSearchesRepository
@@ -71,6 +73,7 @@ val repositoryModule = module {
     factoryOf(::OCAuthenticationRepository) bind AuthenticationRepository::class
     factoryOf(::OCCapabilityRepository) bind CapabilityRepository::class
     factoryOf(::OCFileRepository) bind FileRepository::class
+    factoryOf(::OCImageMetadataRepository) bind ImageMetadataRepository::class
     factoryOf(::OCFolderBackupRepository) bind FolderBackupRepository::class
     factoryOf(::OCOAuthRepository) bind OAuthRepository::class
     factoryOf(::OCServerInfoRepository) bind ServerInfoRepository::class
