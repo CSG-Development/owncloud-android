@@ -41,6 +41,7 @@ ksp = "1.9.20-1.0.14"
 ktlint = "11.1.0"
 markwon = "4.6.2"
 material = "1.13.0"
+metadataExtractor = "2.20.0"
 mockk = "1.13.3"
 moshi = "1.15.0"
 okhttp = "4.9.2"
@@ -118,6 +119,7 @@ markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version
 markwon-ext-tasklist = { group = "io.noties.markwon", name = "ext-tasklist", version.ref = "markwon" }
 markwon-html = { group = "io.noties.markwon", name = "html", version.ref = "markwon" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+metadata-extractor = { group = "com.drewnoakes", name = "metadata-extractor", version.ref = "metadataExtractor" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
 moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }

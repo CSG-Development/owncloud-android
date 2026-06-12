@@ -78,6 +78,9 @@ dependencies {
     // Timber
     implementation libs.timber
 
+    // Image metadata
+    implementation libs.metadata.extractor
+
     // Dependencies for unit tests
     testImplementation project(":owncloudTestUtil")
     testImplementation libs.androidx.arch.core.testing
