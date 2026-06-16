@@ -23,7 +23,9 @@
 package com.owncloud.android.presentation.files.filelist
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
 import com.owncloud.android.R
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.domain.appregistry.model.AppRegistryMimeType
@@ -56,10 +58,12 @@ import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
+import com.owncloud.android.providers.WorkManagerProvider
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase.SyncFolderMode.SYNC_CONTENTS
 import com.owncloud.android.usecases.synchronization.UpdateFoldersRecursivelyUseCase
+import com.owncloud.android.workers.DownloadFileWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -97,6 +101,7 @@ class MainFileListViewModel(
     private val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     private val sharedPreferencesProvider: SharedPreferencesProvider,
+    private val workManagerProvider: WorkManagerProvider,
     initialFolderToDisplay: OCFile,
     fileListOptionParam: FileListOption,
 ) : ViewModel() {
@@ -157,6 +162,21 @@ class MainFileListViewModel(
 
     private val _menuOptionsSingleFile: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptionsSingleFile: SharedFlow<List<FileMenuOption>> = _menuOptionsSingleFile
+    private val uploadProgressByTransferId: StateFlow<Map<Long, Int>> =
+        workManagerProvider.getRunningUploadsWorkInfosLiveData()
+            .asFlow()
+            .map { runningWorkInfos ->
+                runningWorkInfos.mapNotNull { workInfo ->
+                    val transferId = workInfo.extractTransferIdFromTags() ?: return@mapNotNull null
+                    val progress = workInfo.progress.getInt(DownloadFileWorker.WORKER_KEY_PROGRESS, 0).coerceIn(0, 100)
+                    transferId to progress
+                }.toMap()
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyMap(),
+            )
 
     init {
         val sortTypeSelected = SortType.values()[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
@@ -467,10 +487,14 @@ class MainFileListViewModel(
         searchFilter: String?,
         sortTypeAndOrder: Pair<SortType, SortOrder>,
         space: OCSpace?,
-    ) = this.map { folderContent ->
+    ) = combine(this, uploadProgressByTransferId) { folderContent, progressByTransferId ->
+        folderContent.map { fileWithSyncInfo ->
+            fileWithSyncInfo.withUploadProgress(progressByTransferId)
+        }
+    }.map { folderContentWithProgress ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,
-            folderContent = folderContent.filter { fileWithSyncInfo ->
+            folderContent = folderContentWithProgress.filter { fileWithSyncInfo ->
                 fileWithSyncInfo.file.fileName.contains(
                     searchFilter ?: "",
                     ignoreCase = true
@@ -481,6 +505,14 @@ class MainFileListViewModel(
             space = space,
         )
     }
+
+    private fun OCFileWithSyncInfo.withUploadProgress(progressByTransferId: Map<Long, Int>): OCFileWithSyncInfo {
+        val transferId = file.id?.takeIf { it < 0L }?.let { -it - 1L } ?: return this
+        return copy(uploadProgress = progressByTransferId[transferId])
+    }
+
+    private fun WorkInfo.extractTransferIdFromTags(): Long? =
+        tags.firstNotNullOfOrNull { tag -> tag.toLongOrNull() }
 
     sealed interface FileListUiState {
         object Loading : FileListUiState

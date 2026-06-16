@@ -220,7 +220,7 @@ class FileListAdapter(
             // Show/hide upload progress indicator and three_dot_menu
             val progressIndicator = holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)
             val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
-            val uploadProgress = 50 // TODO make it dynamic
+            val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
             if (isVirtual) {
                 threeDotMenu?.isVisible = false
                 progressIndicator?.apply {
