@@ -39,6 +39,9 @@ interface TransferDao {
     @Query(SELECT_TRANSFERS_WITH_STATUS)
     fun getTransfersWithStatus(status: List<Int>): List<OCTransferEntity>
 
+    @Query(SELECT_TRANSFERS_WITH_STATUS)
+    fun getTransfersWithStatusAsStream(status: List<Int>): Flow<List<OCTransferEntity>>
+
     @Query(SELECT_ALL_TRANSFERS)
     fun getAllTransfers(): List<OCTransferEntity>
 
