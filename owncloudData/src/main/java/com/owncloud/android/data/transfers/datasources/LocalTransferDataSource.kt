@@ -51,7 +51,7 @@ interface LocalTransferDataSource {
     fun getTransferById(id: Long): OCTransfer?
     fun getAllTransfers(): List<OCTransfer>
     fun getAllTransfersAsStream(): Flow<List<OCTransfer>>
-    fun getCurrentAndPendingTransfersAsStream(): Flow<List<OCTransfer>>
+    fun getTransfersForUploadVirtualFilesAsStream(): Flow<List<OCTransfer>>
     fun getLastTransferFor(remotePath: String, accountName: String): OCTransfer?
     fun getCurrentAndPendingTransfers(): List<OCTransfer>
     fun getFailedTransfers(): List<OCTransfer>

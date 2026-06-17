@@ -508,7 +508,7 @@ class MainFileListViewModel(
 
     private fun OCFileWithSyncInfo.withUploadProgress(progressByTransferId: Map<Long, Int>): OCFileWithSyncInfo {
         val transferId = file.id?.takeIf { it < 0L }?.let { -it - 1L } ?: return this
-        return copy(uploadProgress = progressByTransferId[transferId])
+        return copy(uploadProgress = progressByTransferId[transferId] ?: uploadProgress)
     }
 
     private fun WorkInfo.extractTransferIdFromTags(): Long? =

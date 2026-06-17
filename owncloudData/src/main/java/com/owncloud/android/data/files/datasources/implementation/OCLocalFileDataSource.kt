@@ -38,6 +38,7 @@ import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.transfers.model.OCTransfer
+import com.owncloud.android.domain.transfers.model.TransferStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -106,7 +107,7 @@ class OCLocalFileDataSource(
         combine(
             fileDao.getFolderContentWithSyncInfoAsFlow(folderId = folderId),
             fileDao.getFileByIdAsFlow(folderId),
-            localTransferDataSource.getCurrentAndPendingTransfersAsStream(),
+            localTransferDataSource.getTransfersForUploadVirtualFilesAsStream(),
         ) { folderContent, currentFolder, activeTransfers ->
             val persistedFolderContent = folderContent.map { it.toModel() }
             if (currentFolder == null) {
@@ -290,14 +291,26 @@ class OCLocalFileDataSource(
     ): List<OCFileWithSyncInfo> {
         val existingRemotePaths = persistedFolderContent.map { it.file.remotePath }.toSet()
         val folderRemotePath = currentFolder.remotePath
+        val now = System.currentTimeMillis()
 
         return activeTransfers.asSequence()
+            .filter { transfer -> transfer.isEligibleForVirtualFile(now, DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS) }
             .filter { transfer -> transfer.accountName == currentFolder.owner && transfer.spaceId == currentFolder.spaceId }
             .filter { transfer -> transfer.getParentRemotePath() == folderRemotePath }
             .filterNot { transfer -> transfer.remotePath in existingRemotePaths }
             .map { transfer -> transfer.toVirtualFile(parentId = currentFolder.id) }
             .toList()
     }
+
+    private fun OCTransfer.isEligibleForVirtualFile(now: Long, retentionMillis: Long): Boolean =
+        when (status) {
+            TransferStatus.TRANSFER_QUEUED,
+            TransferStatus.TRANSFER_IN_PROGRESS -> true
+            TransferStatus.TRANSFER_SUCCEEDED -> transferEndTimestamp?.let { endTimestamp ->
+                now - endTimestamp <= retentionMillis
+            } == true
+            else -> false
+        }
 
     private fun OCTransfer.toVirtualFile(parentId: Long?): OCFileWithSyncInfo {
         val transferRemotePath = remotePath
@@ -319,10 +332,13 @@ class OCLocalFileDataSource(
                 storagePath = null,
                 spaceId = spaceId,
             ),
+            uploadProgress = if (status == TransferStatus.TRANSFER_SUCCEEDED) 100 else null,
         )
     }
 
     companion object {
+        const val DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS = 5_000L
+
         @VisibleForTesting
         fun OCFileEntity.toModel(): OCFile =
             OCFile(
