@@ -128,7 +128,6 @@ import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okio.Path.Companion.toPath
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -988,7 +987,7 @@ class MainFileListFragment : FileFragment(),
                     differentNewlySucceededTransfers.forEach { transfer ->
                         numberOfUploadsRefreshed++
                         val currentFolder = mainFileListViewModel.getFile()
-                        if (transfer.remotePath.toPath().parent!!.toString() == currentFolder.remotePath.toPath().toString()) {
+                        if (transfer.getParentRemotePath() == currentFolder.remotePath) {
                             if (numberOfUploadsRefreshed <= maxUploadsToRefresh) {
                                 if (!fileOperationsViewModel.refreshFolderLiveData.value!!.peekContent().isLoading) {
                                     fileOperationsViewModel.performOperation(

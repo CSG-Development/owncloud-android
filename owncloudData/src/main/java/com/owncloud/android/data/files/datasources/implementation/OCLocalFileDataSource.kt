@@ -41,7 +41,6 @@ import com.owncloud.android.domain.transfers.model.OCTransfer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import java.io.File
 import java.util.Locale
 import java.util.UUID
 
@@ -322,11 +321,6 @@ class OCLocalFileDataSource(
             ),
         )
     }
-
-    private fun OCTransfer.getParentRemotePath(): String =
-        File(remotePath).parent?.let { parent ->
-            if (parent.endsWith(OCFile.PATH_SEPARATOR)) parent else "$parent${OCFile.PATH_SEPARATOR}"
-        } ?: ROOT_PATH
 
     companion object {
         @VisibleForTesting

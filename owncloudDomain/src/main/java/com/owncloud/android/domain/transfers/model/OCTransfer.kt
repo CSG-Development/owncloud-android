@@ -23,6 +23,7 @@ package com.owncloud.android.domain.transfers.model
 
 import android.os.Parcelable
 import com.owncloud.android.domain.automaticuploads.model.UploadBehavior
+import com.owncloud.android.domain.files.model.OCFile
 import kotlinx.parcelize.Parcelize
 import java.io.File
 
@@ -46,5 +47,10 @@ data class OCTransfer(
     init {
         if (!remotePath.startsWith(File.separator)) throw IllegalArgumentException("Remote path must be an absolute path in the local file system")
         if (accountName.isEmpty()) throw IllegalArgumentException("Invalid account name")
+    }
+
+    fun getParentRemotePath(): String {
+        val parentPath = File(remotePath).parent ?: OCFile.ROOT_PATH
+        return if (parentPath.endsWith(OCFile.PATH_SEPARATOR.toString())) parentPath else "$parentPath${OCFile.PATH_SEPARATOR}"
     }
 }
