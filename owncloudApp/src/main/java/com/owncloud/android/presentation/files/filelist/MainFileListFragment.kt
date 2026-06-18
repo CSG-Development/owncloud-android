@@ -46,6 +46,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
+import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
@@ -76,6 +77,7 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
@@ -119,6 +121,7 @@ import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
+import com.owncloud.android.ui.activity.DrawerActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
@@ -1682,6 +1685,35 @@ class MainFileListFragment : FileFragment(),
             listOf(file), listOf(fileSync),
             displaySelectAll = false, isMultiselection = false
         )
+    }
+
+    override fun onVirtualFileClick(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {
+        showVirtualFilePopupMenu(fileWithSyncInfo, anchorView)
+    }
+
+    private fun showVirtualFilePopupMenu(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {
+        val popupMenu = PopupMenu(requireContext(), anchorView)
+        popupMenu.menuInflater.inflate(R.menu.virtual_file_upload_menu, popupMenu.menu)
+        if (fileWithSyncInfo.uploadProgress == 100) {
+            popupMenu.menu.findItem(R.id.virtual_file_menu_cancel_upload)?.isVisible = false
+        }
+        popupMenu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.virtual_file_menu_uploads -> {
+                    val activity = requireActivity() as? DrawerActivity ?: return@setOnMenuItemClickListener true
+                    activity.setCheckedItemAtBottomBar(R.id.nav_uploads)
+                    activity.navigateToOption(FileListOption.UPLOADS_LIST)
+                    true
+                }
+                R.id.virtual_file_menu_cancel_upload -> {
+                    val transferId = fileWithSyncInfo.file.uploadTransferId() ?: return@setOnMenuItemClickListener false
+                    transfersViewModel.cancelUploadById(transferId)
+                    true
+                }
+                else -> false
+            }
+        }
+        popupMenu.show()
     }
 
     private fun syncFiles(files: List<OCFile>) {

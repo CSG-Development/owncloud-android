@@ -40,6 +40,7 @@ import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase.Params
@@ -507,7 +508,7 @@ class MainFileListViewModel(
     }
 
     private fun OCFileWithSyncInfo.withUploadProgress(progressByTransferId: Map<Long, Int>): OCFileWithSyncInfo {
-        val transferId = file.id?.takeIf { it < 0L }?.let { -it - 1L } ?: return this
+        val transferId = file.uploadTransferId() ?: return this
         return copy(uploadProgress = progressByTransferId[transferId] ?: uploadProgress)
     }
 

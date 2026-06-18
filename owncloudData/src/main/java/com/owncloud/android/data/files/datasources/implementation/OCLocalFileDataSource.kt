@@ -37,6 +37,7 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.VirtualUploadFileIds
 import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
 import kotlinx.coroutines.flow.Flow
@@ -298,7 +299,7 @@ class OCLocalFileDataSource(
             .filter { transfer -> transfer.accountName == currentFolder.owner && transfer.spaceId == currentFolder.spaceId }
             .filter { transfer -> transfer.getParentRemotePath() == folderRemotePath }
             .filterNot { transfer -> transfer.remotePath in existingRemotePaths }
-            .map { transfer -> transfer.toVirtualFile(parentId = currentFolder.id) }
+            .mapNotNull { transfer -> transfer.toVirtualFile(parentId = currentFolder.id) }
             .toList()
     }
 
@@ -312,11 +313,12 @@ class OCLocalFileDataSource(
             else -> false
         }
 
-    private fun OCTransfer.toVirtualFile(parentId: Long?): OCFileWithSyncInfo {
+    private fun OCTransfer.toVirtualFile(parentId: Long?): OCFileWithSyncInfo? {
+        val transferId = id ?: return null
         val transferRemotePath = remotePath
         val extension = transferRemotePath.substringAfterLast('.', missingDelimiterValue = "").lowercase(Locale.ROOT)
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
-        val syntheticId = id?.let { -it - 1L } ?: -kotlin.math.abs("$transferRemotePath|$localPath".hashCode().toLong()) - 1L
+        val syntheticId = VirtualUploadFileIds.fileIdForTransfer(transferId)
 
         return OCFileWithSyncInfo(
             file = OCFile(

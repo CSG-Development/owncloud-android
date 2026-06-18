@@ -47,6 +47,7 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.OCFooterFile
+import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
@@ -189,7 +190,7 @@ class FileListAdapter(
             val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
             val file = fileWithSyncInfo.file
             val name = file.fileName
-            val isVirtual = file.id?.let { it < 0L } ?: false
+            val isVirtual = file.isUploadVirtualFile()
             val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
                 tag = file.id
             }
@@ -246,11 +247,14 @@ class FileListAdapter(
                     )
                 }
             } else {
-                // Disable clicks on virtual (uploading) items
-                holder.itemView.setOnClickListener(null)
-                holder.itemView.setOnLongClickListener(null)
-                holder.itemView.isClickable = false
-                holder.itemView.isLongClickable = false
+                holder.itemView.apply {
+                    isClickable = true
+                    isLongClickable = false
+                    setOnClickListener {
+                        listener.onVirtualFileClick(fileWithSyncInfo, this)
+                    }
+                    setOnLongClickListener(null)
+                }
             }
             //holder.itemView.setBackgroundColor(Color.WHITE)
 
@@ -484,6 +488,7 @@ class FileListAdapter(
         fun onItemClick(ocFileWithSyncInfo: OCFileWithSyncInfo, position: Int)
         fun onLongItemClick(position: Int): Boolean = true
         fun onThreeDotButtonClick(fileWithSyncInfo: OCFileWithSyncInfo)
+        fun onVirtualFileClick(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {}
     }
 
     inner class GridViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)
