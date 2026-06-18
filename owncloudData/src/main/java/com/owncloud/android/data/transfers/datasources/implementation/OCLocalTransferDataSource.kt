@@ -115,6 +115,17 @@ class OCLocalTransferDataSource(
             newTransfersList
         }
 
+    override fun getTransfersForUploadVirtualFilesAsStream(): Flow<List<OCTransfer>> =
+        transferDao.getTransfersWithStatusAsStream(
+            listOf(
+                TransferStatus.TRANSFER_IN_PROGRESS.value,
+                TransferStatus.TRANSFER_QUEUED.value,
+                TransferStatus.TRANSFER_SUCCEEDED.value,
+            )
+        ).map { transferEntities ->
+            transferEntities.map { it.toModel() }
+        }
+
     override fun getLastTransferFor(remotePath: String, accountName: String): OCTransfer? =
         transferDao.getLastTransferWithRemotePathAndAccountName(remotePath, accountName)?.toModel()
 

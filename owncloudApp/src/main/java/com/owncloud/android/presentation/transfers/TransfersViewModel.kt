@@ -49,7 +49,6 @@ import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromSystemUseC
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -140,6 +139,13 @@ class TransfersViewModel(
                 CancelUploadUseCase.Params(upload = upload)
             )
         }
+    }
+
+    fun cancelUploadById(transferId: Long) {
+        transfersWithSpaceStateFlow.value
+            .map { it.first }
+            .find { it.id == transferId }
+            ?.let { cancelUpload(it) }
     }
 
     fun cancelTransfersForFile(ocFile: OCFile) {

@@ -22,12 +22,14 @@
 
 package com.owncloud.android.data.files.datasources.implementation
 
+import android.webkit.MimeTypeMap
 import androidx.annotation.VisibleForTesting
 import com.owncloud.android.data.files.datasources.LocalFileDataSource
 import com.owncloud.android.data.files.db.FileDao
 import com.owncloud.android.data.files.db.OCFileAndFileSync
 import com.owncloud.android.data.files.db.OCFileEntity
 import com.owncloud.android.data.spaces.datasources.implementation.OCLocalSpacesDataSource.Companion.toModel
+import com.owncloud.android.data.transfers.datasources.LocalTransferDataSource
 import com.owncloud.android.domain.availableoffline.model.AvailableOfflineStatus
 import com.owncloud.android.domain.files.model.MIME_DIR
 import com.owncloud.android.domain.files.model.MIME_PREFIX_IMAGE
@@ -35,12 +37,18 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.VirtualUploadFileIds
+import com.owncloud.android.domain.transfers.model.OCTransfer
+import com.owncloud.android.domain.transfers.model.TransferStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import java.util.Locale
 import java.util.UUID
 
-    class OCLocalFileDataSource(
+class OCLocalFileDataSource(
     private val fileDao: FileDao,
+    private val localTransferDataSource: LocalTransferDataSource,
 ) : LocalFileDataSource {
     override fun getFileById(fileId: Long): OCFile? =
         fileDao.getFileById(fileId)?.toModel()
@@ -97,8 +105,21 @@ import java.util.UUID
         }
 
     override fun getFolderContentWithSyncInfoAsFlow(folderId: Long): Flow<List<OCFileWithSyncInfo>> =
-        fileDao.getFolderContentWithSyncInfoAsFlow(folderId = folderId).map { folderContent ->
-            folderContent.map { it.toModel() }
+        combine(
+            fileDao.getFolderContentWithSyncInfoAsFlow(folderId = folderId),
+            fileDao.getFileByIdAsFlow(folderId),
+            localTransferDataSource.getTransfersForUploadVirtualFilesAsStream(),
+        ) { folderContent, currentFolder, activeTransfers ->
+            val persistedFolderContent = folderContent.map { it.toModel() }
+            if (currentFolder == null) {
+                persistedFolderContent
+            } else {
+                persistedFolderContent + buildUploadVirtualFiles(
+                    currentFolder = currentFolder.toModel(),
+                    persistedFolderContent = persistedFolderContent,
+                    activeTransfers = activeTransfers,
+                )
+            }
         }
 
     override fun getFolderImages(folderId: Long): List<OCFile> =
@@ -264,7 +285,62 @@ import java.util.UUID
             space = space?.toModel(),
         )
 
+    private fun buildUploadVirtualFiles(
+        currentFolder: OCFile,
+        persistedFolderContent: List<OCFileWithSyncInfo>,
+        activeTransfers: List<OCTransfer>,
+    ): List<OCFileWithSyncInfo> {
+        val existingRemotePaths = persistedFolderContent.map { it.file.remotePath }.toSet()
+        val folderRemotePath = currentFolder.remotePath
+        val now = System.currentTimeMillis()
+
+        return activeTransfers.asSequence()
+            .filter { transfer -> transfer.isEligibleForVirtualFile(now, DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS) }
+            .filter { transfer -> transfer.accountName == currentFolder.owner && transfer.spaceId == currentFolder.spaceId }
+            .filter { transfer -> transfer.getParentRemotePath() == folderRemotePath }
+            .filterNot { transfer -> transfer.remotePath in existingRemotePaths }
+            .mapNotNull { transfer -> transfer.toVirtualFile(parentId = currentFolder.id) }
+            .toList()
+    }
+
+    private fun OCTransfer.isEligibleForVirtualFile(now: Long, retentionMillis: Long): Boolean =
+        when (status) {
+            TransferStatus.TRANSFER_QUEUED,
+            TransferStatus.TRANSFER_IN_PROGRESS -> true
+            TransferStatus.TRANSFER_SUCCEEDED -> transferEndTimestamp?.let { endTimestamp ->
+                now - endTimestamp <= retentionMillis
+            } == true
+            else -> false
+        }
+
+    private fun OCTransfer.toVirtualFile(parentId: Long?): OCFileWithSyncInfo? {
+        val transferId = id ?: return null
+        val transferRemotePath = remotePath
+        val extension = transferRemotePath.substringAfterLast('.', missingDelimiterValue = "").lowercase(Locale.ROOT)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
+        val syntheticId = VirtualUploadFileIds.fileIdForTransfer(transferId)
+
+        return OCFileWithSyncInfo(
+            file = OCFile(
+                id = syntheticId,
+                parentId = parentId,
+                owner = accountName,
+                length = fileSize,
+                creationTimestamp = null,
+                modificationTimestamp = System.currentTimeMillis(),
+                remotePath = transferRemotePath,
+                mimeType = mimeType,
+                etag = null,
+                storagePath = null,
+                spaceId = spaceId,
+            ),
+            uploadProgress = if (status == TransferStatus.TRANSFER_SUCCEEDED) 100 else null,
+        )
+    }
+
     companion object {
+        const val DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS = 5_000L
+
         @VisibleForTesting
         fun OCFileEntity.toModel(): OCFile =
             OCFile(

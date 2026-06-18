@@ -41,6 +41,7 @@ import android.provider.DocumentsContract
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -79,6 +80,9 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.favorites.FavoritesActivity
 import com.owncloud.android.presentation.settings.SettingsActivity
 import com.owncloud.android.presentation.tags.TagsActivity
+import com.owncloud.android.presentation.transfers.PendingUploadsIndicatorState
+import com.owncloud.android.presentation.transfers.PendingUploadsIndicatorViewModel
+import com.owncloud.android.ui.custom.BottomNavUploadsProgressIndicator
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -92,6 +96,7 @@ import timber.log.Timber
 abstract class DrawerActivity : ToolbarActivity() {
 
     private val drawerViewModel by viewModel<DrawerViewModel>()
+    private val pendingUploadsIndicatorViewModel by viewModel<PendingUploadsIndicatorViewModel>()
     private val capabilitiesViewModel by viewModel<CapabilityViewModel> {
         parametersOf(
             account?.name
@@ -103,6 +108,8 @@ abstract class DrawerActivity : ToolbarActivity() {
     private var drawerToggle: ActionBarDrawerToggle? = null
 
     private var checkedMenuItem = Menu.NONE
+
+    private var bottomNavUploadsProgressIndicator: BottomNavUploadsProgressIndicator? = null
 
     /**
      * Initializes the drawer and its content.
@@ -276,6 +283,32 @@ abstract class DrawerActivity : ToolbarActivity() {
             bottomBarNavigationTo(menuItem.itemId, getBottomNavigationView()?.selectedItemId == menuItem.itemId)
             true
         }
+        setupUploadsTabProgressIndicator()
+    }
+
+    private fun setupUploadsTabProgressIndicator() {
+        val bottomNavigationView = getBottomNavigationView() ?: return
+        bottomNavUploadsProgressIndicator?.detach()
+        bottomNavUploadsProgressIndicator = BottomNavUploadsProgressIndicator(
+            bottomNavigationView = bottomNavigationView,
+        )
+        collectLatestLifecycleFlow(pendingUploadsIndicatorViewModel.state) { state ->
+            updateUploadsTabProgressIndicator(state)
+        }
+        updateUploadsTabProgressIndicator(pendingUploadsIndicatorViewModel.state.value)
+    }
+
+    protected open fun onBottomNavigationVisibilityChanged() {
+        updateUploadsTabProgressIndicator()
+    }
+
+    private fun updateUploadsTabProgressIndicator(
+        state: PendingUploadsIndicatorState = pendingUploadsIndicatorViewModel.state.value,
+    ) {
+        bottomNavUploadsProgressIndicator?.update(
+            state = state,
+            bottomNavVisible = getBottomNavigationView()?.isVisible == true,
+        )
     }
 
     private fun setSpacesVisibilityBottomBar(uiResult: UIResult<OCCapability>) {
@@ -292,6 +325,7 @@ abstract class DrawerActivity : ToolbarActivity() {
                 bottomMenu.findItem(R.id.nav_all_files)?.title = getString(R.string.bottom_nav_files)
                 bottomMenu.findItem(R.id.nav_spaces)?.isVisible = false
             }
+            getBottomNavigationView()?.post { updateUploadsTabProgressIndicator() }
         }
     }
 
@@ -644,7 +678,29 @@ abstract class DrawerActivity : ToolbarActivity() {
 
     private fun getDrawerLayout(): DrawerLayout? = findViewById(R.id.drawer_layout)
     private fun getNavView(): NavigationView? = findViewById(R.id.nav_view)
-    private fun getBottomNavigationView(): BottomNavigationView? = findViewById(R.id.bottom_nav_view)
+
+    protected open fun getBottomNavigationView(): BottomNavigationView? {
+        findActivityRootBottomNavigationView()?.let { return it }
+        return findViewById<View>(R.id.nav_coordinator_layout)?.findViewById(R.id.bottom_nav_view)
+    }
+
+    private fun findActivityRootBottomNavigationView(): BottomNavigationView? {
+        val drawerLayout = findViewById<View>(R.id.drawer_layout) ?: return null
+        val activityRoot = drawerLayout.parent as? ViewGroup ?: return null
+        for (index in 0 until activityRoot.childCount) {
+            val child = activityRoot.getChildAt(index)
+            if (child is BottomNavigationView) {
+                return child
+            }
+        }
+        return null
+    }
+
+    override fun onDestroy() {
+        bottomNavUploadsProgressIndicator?.detach()
+        bottomNavUploadsProgressIndicator = null
+        super.onDestroy()
+    }
     private fun getDrawerLogo(): AppCompatImageView? = findViewById(R.id.drawer_logo)
     private fun getDrawerLinkIcon(): ImageView? = findViewById(R.id.drawer_link_icon)
     private fun getDrawerLinkText(): TextView? = findViewById(R.id.drawer_link_text)

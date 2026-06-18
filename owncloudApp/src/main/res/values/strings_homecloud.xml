@@ -174,4 +174,5 @@
     <string name="homecloud_upload_scan_document_title">Scan document</string>
     <string name="homecloud_upload_scan_unavailable">Document scanning is not available on this device</string>
     <string name="homecloud_upload_scan_failed">Could not process scanned document</string>
+    <string name="homecloud_filelist_virtual_file_cancel_upload">Cancel upload</string>
 </resources>
