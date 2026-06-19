@@ -64,7 +64,6 @@ import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.presentation.tags.ManageTagsViewModel
 import com.owncloud.android.presentation.tags.TagFilesViewModel
 import com.owncloud.android.presentation.tags.TagsViewModel
-import com.owncloud.android.presentation.transfers.PendingUploadsIndicatorViewModel
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.ReceiveExternalFilesViewModel
 import com.owncloud.android.ui.preview.PreviewImageViewModel
@@ -165,7 +164,6 @@ val viewModelModule = module {
             get()
         )
     }
-    viewModelOf(::PendingUploadsIndicatorViewModel)
     viewModel { ReceiveExternalFilesViewModel(get(), get(), get(), get()) }
     viewModel { (accountName: String, showPersonalSpace: Boolean) ->
         SpacesListViewModel(get(), get(), get(), get(), get(), get(), get(), accountName, showPersonalSpace)
