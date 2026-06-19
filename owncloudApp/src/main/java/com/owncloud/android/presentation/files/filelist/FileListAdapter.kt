@@ -226,7 +226,7 @@ class FileListAdapter(
                 threeDotMenu?.isVisible = false
                 progressIndicator?.apply {
                     isVisible = true
-                    setProgressCompat(uploadProgress.coerceIn(0, 100), true)
+                    progress = uploadProgress.coerceIn(0, 100)
                 }
             } else {
                 progressIndicator?.isVisible = false
