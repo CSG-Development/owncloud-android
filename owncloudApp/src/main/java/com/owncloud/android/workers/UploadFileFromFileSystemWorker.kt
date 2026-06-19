@@ -31,7 +31,6 @@ import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.automaticuploads.model.UploadBehavior
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
-import com.owncloud.android.domain.exceptions.CancelledException
 import com.owncloud.android.domain.exceptions.LocalFileNotFoundException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.UnauthorizedException
@@ -224,6 +223,8 @@ class UploadFileFromFileSystemWorker(
             )
             if (remotePath != uploadPath) {
                 uploadPath = remotePath
+                transferRepository.updateTransferRemotePath(uploadIdInStorageManager, remotePath)
+                ocTransfer = ocTransfer.copy(remotePath = remotePath)
                 Timber.d("Name collision detected, let's rename it to $remotePath")
             }
         }
@@ -334,7 +335,7 @@ class UploadFileFromFileSystemWorker(
     private fun updateFilesDatabaseWithLatestDetails() {
         val currentTime = System.currentTimeMillis()
         val getFileByRemotePathUseCase: GetFileByRemotePathUseCase by inject()
-        val file = getFileByRemotePathUseCase(GetFileByRemotePathUseCase.Params(account.name, ocTransfer.remotePath, ocTransfer.spaceId))
+        val file = getFileByRemotePathUseCase(GetFileByRemotePathUseCase.Params(account.name, uploadPath, ocTransfer.spaceId))
         file.getDataOrNull()?.let { ocFile ->
             val fileWithNewDetails =
                 if (ocTransfer.forceOverwrite) {

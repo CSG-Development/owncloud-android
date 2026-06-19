@@ -32,6 +32,7 @@ interface TransferRepository {
     fun updateTransferStatusToInProgressById(id: Long)
     fun updateTransferStatusToEnqueuedById(id: Long)
     fun updateTransferLocalPath(id: Long, localPath: String)
+    fun updateTransferRemotePath(id: Long, remotePath: String)
     fun updateTransferSourcePath(id: Long, sourcePath: String)
     fun updateTransferWhenFinished(
         id: Long,

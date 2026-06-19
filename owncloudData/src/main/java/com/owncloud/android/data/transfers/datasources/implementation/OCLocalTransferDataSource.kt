@@ -64,6 +64,10 @@ class OCLocalTransferDataSource(
         transferDao.updateTransferLocalPath(id, localPath)
     }
 
+    override fun updateTransferRemotePath(id: Long, remotePath: String) {
+        transferDao.updateTransferRemotePath(id, remotePath)
+    }
+
     override fun updateTransferSourcePath(id: Long, sourcePath: String) {
         transferDao.updateTransferSourcePath(id, sourcePath)
     }

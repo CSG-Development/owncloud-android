@@ -60,6 +60,9 @@ interface TransferDao {
     @Query(UPDATE_TRANSFER_LOCAL_PATH_WITH_ID)
     fun updateTransferLocalPath(id: Long, localPath: String)
 
+    @Query(UPDATE_TRANSFER_REMOTE_PATH_WITH_ID)
+    fun updateTransferRemotePath(id: Long, remotePath: String)
+
     @Query(UPDATE_TRANSFER_SOURCE_PATH_WITH_ID)
     fun updateTransferSourcePath(id: Long, sourcePath: String)
 
@@ -116,6 +119,11 @@ interface TransferDao {
         private const val UPDATE_TRANSFER_LOCAL_PATH_WITH_ID = """
             UPDATE $TRANSFERS_TABLE_NAME
             SET localPath = :localPath
+            WHERE id = :id
+        """
+        private const val UPDATE_TRANSFER_REMOTE_PATH_WITH_ID = """
+            UPDATE $TRANSFERS_TABLE_NAME
+            SET remotePath = :remotePath
             WHERE id = :id
         """
         private const val UPDATE_TRANSFER_SOURCE_PATH_WITH_ID = """
