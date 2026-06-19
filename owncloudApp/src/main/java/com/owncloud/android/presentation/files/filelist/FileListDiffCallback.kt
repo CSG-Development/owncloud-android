@@ -55,8 +55,28 @@ class FileListDiffCallback(
 
     }
 
-    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
-        oldList[oldItemPosition] == newList[newItemPosition] && oldFileListOption == newFileListOption
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        if (oldFileListOption != newFileListOption) return false
+
+        val oldItem = oldList[oldItemPosition]
+        val newItem = newList[newItemPosition]
+
+        return if (oldItem is OCFileWithSyncInfo && newItem is OCFileWithSyncInfo) {
+            oldItem.equalsForFileListDiff(newItem)
+        } else {
+            oldItem == newItem
+        }
+    }
+
+    override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
+        val oldItem = oldList[oldItemPosition]
+        val newItem = newList[newItemPosition]
+
+        if (oldItem is OCFileWithSyncInfo && newItem is OCFileWithSyncInfo && oldItem.isUploadProgressOnlyChange(newItem)) {
+            return newItem.uploadProgress ?: 0
+        }
+        return null
+    }
 
     fun isOnlySortOrderChanged(): Boolean {
         if (oldList.size != newList.size) return false // different sizes

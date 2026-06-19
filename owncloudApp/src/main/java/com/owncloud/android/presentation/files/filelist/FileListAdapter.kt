@@ -181,6 +181,14 @@ class FileListAdapter(
         toggleSelectionInBulk(totalItems = files.size - 1)
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty() && payloads[0] is Int) {
+            bindUploadProgress(holder, payloads[0] as Int)
+            return
+        }
+        onBindViewHolder(holder, position)
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
 
         val viewType = getItemViewType(position)
@@ -224,10 +232,7 @@ class FileListAdapter(
             val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
             if (isVirtual) {
                 threeDotMenu?.isVisible = false
-                progressIndicator?.apply {
-                    isVisible = true
-                    setProgressCompat(uploadProgress.coerceIn(0, 100), true)
-                }
+                bindUploadProgress(holder, uploadProgress)
             } else {
                 progressIndicator?.isVisible = false
                 // three_dot_menu visibility is managed in setSpecificViewHolder for list items
@@ -306,6 +311,13 @@ class FileListAdapter(
                 }
                 view.binding.footerText.text = file.text
             }
+        }
+    }
+
+    private fun bindUploadProgress(holder: RecyclerView.ViewHolder, progress: Int) {
+        holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)?.apply {
+            isVisible = true
+            this.progress = progress.coerceIn(0, 100)
         }
     }
 

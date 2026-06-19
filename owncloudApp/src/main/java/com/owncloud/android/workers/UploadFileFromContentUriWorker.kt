@@ -35,7 +35,6 @@ import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.data.providers.LocalStorageProvider
 import com.owncloud.android.domain.automaticuploads.model.UploadBehavior
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
-import com.owncloud.android.domain.exceptions.CancelledException
 import com.owncloud.android.domain.exceptions.LocalFileNotFoundException
 import com.owncloud.android.domain.exceptions.NetworkErrorException
 import com.owncloud.android.domain.exceptions.UnauthorizedException
@@ -241,6 +240,8 @@ class UploadFileFromContentUriWorker(
         )
         if (remotePath != uploadPath) {
             uploadPath = remotePath
+            transferRepository.updateTransferRemotePath(uploadIdInStorageManager, remotePath)
+            ocTransfer = ocTransfer.copy(remotePath = remotePath)
             Timber.d("Name collision detected, let's rename it to %s", remotePath)
         }
     }

@@ -637,7 +637,6 @@ open class FileDisplayActivity : FileActivity(),
         // Do not show bottom bar in smartphone landscape mode
         val bottomNavView = binding.bottomNavView ?: binding.navCoordinatorLayout.bottomNavView
         bottomNavView?.isVisible = show && (!isLandscapeMode || isTablet)
-        onBottomNavigationVisibilityChanged()
     }
 
     /**
