@@ -1556,7 +1556,8 @@ open class FileDisplayActivity : FileActivity(),
                     }
 
                     SynchronizeFileUseCase.SyncType.FileNotFound -> {
-                        /** Nothing to do atm. If we are in details view, go back to file list */
+                        fileWaitingToPreview = null
+                        showSnackMessage(getString(R.string.sync_file_not_found_msg))
                     }
 
                     is SynchronizeFileUseCase.SyncType.UploadEnqueued -> {
