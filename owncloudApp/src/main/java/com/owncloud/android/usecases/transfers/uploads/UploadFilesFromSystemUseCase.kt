@@ -48,24 +48,24 @@ class UploadFilesFromSystemUseCase(
 ) : BaseUseCase<Unit, UploadFilesFromSystemUseCase.Params>() {
 
     override fun run(params: Params) {
-        params.listOfLocalPaths.forEach { localPath ->
+        params.listOfLocalPaths.forEachIndexed { index, localPath ->
             val localFile = File(localPath)
 
             if (!localFile.exists()) {
                 Timber.w("Upload of $localPath won't be enqueued. We were not able to find it in the local storage")
-                return@forEach
+                return@forEachIndexed
             }
 
             val uploadId = storeInUploadsDatabase(
                 localFile = localFile,
-                uploadPath = params.uploadFolderPath.plus(localFile.name),
+                uploadPath = params.uploadFolderPath.plus(params.listOfRemoteNames.getOrNull(index) ?: localFile.name),
                 accountName = params.accountName,
                 spaceId = params.spaceId,
             )
 
             enqueueSingleUpload(
                 localPath = localFile.absolutePath,
-                uploadPath = params.uploadFolderPath.plus(localFile.name),
+                uploadPath = params.uploadFolderPath.plus(params.listOfRemoteNames.getOrNull(index) ?: localFile.name),
                 lastModifiedInSeconds = localFile.lastModified().div(1_000).toString(),
                 accountName = params.accountName,
                 uploadIdInStorageManager = uploadId,
@@ -119,6 +119,7 @@ class UploadFilesFromSystemUseCase(
         val accountName: String,
         val listOfLocalPaths: List<String>,
         val uploadFolderPath: String,
+        val listOfRemoteNames: List<String> = emptyList(),
         val spaceId: String?,
     )
 }
