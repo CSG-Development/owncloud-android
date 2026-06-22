@@ -64,6 +64,10 @@ class OCLocalTransferDataSource(
         transferDao.updateTransferLocalPath(id, localPath)
     }
 
+    override fun updateTransferRemotePath(id: Long, remotePath: String) {
+        transferDao.updateTransferRemotePath(id, remotePath)
+    }
+
     override fun updateTransferSourcePath(id: Long, sourcePath: String) {
         transferDao.updateTransferSourcePath(id, sourcePath)
     }
@@ -113,6 +117,17 @@ class OCLocalTransferDataSource(
                 newTransfersList.addAll(items)
             }
             newTransfersList
+        }
+
+    override fun getTransfersForUploadVirtualFilesAsStream(): Flow<List<OCTransfer>> =
+        transferDao.getTransfersWithStatusAsStream(
+            listOf(
+                TransferStatus.TRANSFER_IN_PROGRESS.value,
+                TransferStatus.TRANSFER_QUEUED.value,
+                TransferStatus.TRANSFER_SUCCEEDED.value,
+            )
+        ).map { transferEntities ->
+            transferEntities.map { it.toModel() }
         }
 
     override fun getLastTransferFor(remotePath: String, accountName: String): OCTransfer? =

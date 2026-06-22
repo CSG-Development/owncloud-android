@@ -110,7 +110,7 @@ val viewModelModule = module {
     viewModel { (initialFolderToDisplay: OCFile, fileListOption: FileListOption) ->
         MainFileListViewModel(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(), initialFolderToDisplay, fileListOption
+            get(), get(), initialFolderToDisplay, fileListOption
         )
     }
     viewModel { (ocFile: OCFile) -> ConflictsResolveViewModel(get(), get(), get(), get(), get(), ocFile) }

@@ -35,6 +35,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.isVisible
 import androidx.work.WorkInfo
@@ -128,6 +130,10 @@ class FileDetailsFragment : FileFragment() {
         isMultiPersonal = requireArguments().getBoolean(ARG_IS_MULTIPERSONAL)
 
         observeCurrentFile()
+
+        collectLatestLifecycleFlow(fileDetailsViewModel.imageMetadataState) { state ->
+            renderExifSections(state)
+        }
 
         collectLatestLifecycleFlow(fileDetailsViewModel.appRegistryMimeType) { appRegistryMimeType ->
             if (appRegistryMimeType != null) {
@@ -352,7 +358,37 @@ class FileDetailsFragment : FileFragment() {
         setIconPinAccordingToFilesLocalState(binding.badgeDetailFile, ocFileWithSyncInfo)
         setMimeType(ocFileWithSyncInfo.file)
         setSpaceName(ocFileWithSyncInfo)
+        fileDetailsViewModel.onCurrentFileChanged()
         requireActivity().invalidateOptionsMenu()
+    }
+
+    private fun renderExifSections(state: ImageMetadataUiState) {
+        when (state) {
+            ImageMetadataUiState.Hidden,
+            ImageMetadataUiState.Initial,
+            ImageMetadataUiState.Loading,
+            ImageMetadataUiState.WaitingForDownload-> {
+                binding.fdExifSectionsContainer.isVisible = false
+                binding.fdExifSectionsContainer.removeAllViews()
+            }
+
+            is ImageMetadataUiState.Success -> {
+                binding.fdExifSectionsContainer.isVisible = true
+                binding.fdExifSectionsContainer.removeAllViews()
+                val inflater = LayoutInflater.from(requireContext())
+                state.sections.forEach { section ->
+                    val sectionView = inflater.inflate(R.layout.file_details_exif_section, binding.fdExifSectionsContainer, false)
+                    val rowsContainer = sectionView.findViewById<LinearLayout>(R.id.exifSectionRows)
+                    section.properties.forEach { property ->
+                        val rowView = inflater.inflate(R.layout.file_details_exif_row, rowsContainer, false)
+                        rowView.findViewById<TextView>(R.id.exifRowLabel).text = property.label
+                        rowView.findViewById<TextView>(R.id.exifRowValue).text = property.value
+                        rowsContainer.addView(rowView)
+                    }
+                    binding.fdExifSectionsContainer.addView(sectionView)
+                }
+            }
+        }
     }
 
     private fun setLastSync(ocFile: OCFile) {
@@ -531,6 +567,10 @@ class FileDetailsFragment : FileFragment() {
 
                 SYNC_AND_SEND -> {
                     requireActivity().sendDownloadedFilesByShareSheet(listOf(safeFile.file))
+                    fileDetailsViewModel.updateActionInDetailsView(NONE)
+                }
+
+                FileDetailsViewModel.ActionsInDetailsView.DOWNLOAD_FOR_METADATA -> {
                     fileDetailsViewModel.updateActionInDetailsView(NONE)
                 }
             }

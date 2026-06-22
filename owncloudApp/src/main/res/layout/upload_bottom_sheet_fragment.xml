@@ -52,4 +52,14 @@
         app:layout_constraintTop_toBottomOf="@id/upload_from_files_item_view"
         app:title="@string/upload_from_camera_title" />
 
+    <com.owncloud.android.presentation.common.BottomSheetFragmentItemView
+        android:id="@+id/upload_from_scan_item_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:itemIcon="@drawable/ic_pdf"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/upload_from_camera_item_view"
+        app:title="@string/homecloud_upload_scan_document_title" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

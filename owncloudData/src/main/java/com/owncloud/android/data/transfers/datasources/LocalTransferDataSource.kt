@@ -39,6 +39,7 @@ interface LocalTransferDataSource {
     )
 
     fun updateTransferLocalPath(id: Long, localPath: String)
+    fun updateTransferRemotePath(id: Long, remotePath: String)
     fun updateTransferSourcePath(id: Long, sourcePath: String)
     fun updateTransferStorageDirectoryInLocalPath(
         id: Long,
@@ -51,6 +52,7 @@ interface LocalTransferDataSource {
     fun getTransferById(id: Long): OCTransfer?
     fun getAllTransfers(): List<OCTransfer>
     fun getAllTransfersAsStream(): Flow<List<OCTransfer>>
+    fun getTransfersForUploadVirtualFilesAsStream(): Flow<List<OCTransfer>>
     fun getLastTransferFor(remotePath: String, accountName: String): OCTransfer?
     fun getCurrentAndPendingTransfers(): List<OCTransfer>
     fun getFailedTransfers(): List<OCTransfer>

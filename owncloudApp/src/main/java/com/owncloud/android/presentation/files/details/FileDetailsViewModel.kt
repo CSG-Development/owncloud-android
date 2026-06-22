@@ -32,15 +32,18 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.owncloud.android.R
+import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.model.AppRegistryMimeType
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetUrlToOpenInWebUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.extensions.isOneOf
 import com.owncloud.android.domain.files.model.FileMenuOption
+import com.owncloud.android.domain.files.model.ImageMetadata
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.usecases.GetFileWithSyncInfoByIdUseCase
+import com.owncloud.android.domain.files.usecases.GetImageMetadataUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
 import com.owncloud.android.extensions.getRunningWorkInfosByTags
@@ -53,6 +56,7 @@ import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.transfers.downloads.CancelDownloadForFileUseCase
+import com.owncloud.android.usecases.transfers.downloads.DownloadFileUseCase
 import com.owncloud.android.usecases.transfers.uploads.CancelUploadForFileUseCase
 import com.owncloud.android.workers.DownloadFileWorker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +65,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.UUID
 
 class FileDetailsViewModel(
@@ -70,6 +75,8 @@ class FileDetailsViewModel(
     private val cancelDownloadForFileUseCase: CancelDownloadForFileUseCase,
     private val cancelUploadForFileUseCase: CancelUploadForFileUseCase,
     private val filterFileMenuOptionsUseCase: FilterFileMenuOptionsUseCase,
+    private val getImageMetadataUseCase: GetImageMetadataUseCase,
+    private val downloadFileUseCase: DownloadFileUseCase,
     getFileWithSyncInfoByIdUseCase: GetFileWithSyncInfoByIdUseCase,
     val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
@@ -126,6 +133,9 @@ class FileDetailsViewModel(
     private val _menuOptions: MutableStateFlow<List<FileMenuOption>> = MutableStateFlow(emptyList())
     val menuOptions: StateFlow<List<FileMenuOption>> = _menuOptions
 
+    private val _imageMetadataState: MutableStateFlow<ImageMetadataUiState> = MutableStateFlow(ImageMetadataUiState.Initial)
+    val imageMetadataState: StateFlow<ImageMetadataUiState> = _imageMetadataState
+
     fun getCurrentFile(): OCFileWithSyncInfo? = currentFile.value
     fun getAccount() = account.value
 
@@ -175,6 +185,76 @@ class FileDetailsViewModel(
         )
     }
 
+    fun onCurrentFileChanged() {
+        val file = currentFile.value?.file ?: return
+        if (!file.isImage) {
+            _imageMetadataState.update { ImageMetadataUiState.Hidden }
+            return
+        }
+        if (file.isAvailableLocally) {
+            loadImageMetadata(file)
+        } else if (ongoingTransfer.value == null && _imageMetadataState.value == ImageMetadataUiState.Initial) {
+            requestMetadataDownload(file)
+        } else {
+            Timber.d("Image metadata sync is suspended")
+        }
+    }
+
+    private fun loadImageMetadata(file: OCFile) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            Timber.d("Loading metadata, current state: ${_imageMetadataState.value}")
+            if (_imageMetadataState.value == ImageMetadataUiState.Loading) {
+                Timber.d("Another metadata loading task is in progess, skip")
+                return@launch
+            }
+            _imageMetadataState.update { ImageMetadataUiState.Loading }
+            val storagePath = file.storagePath
+            if (storagePath.isNullOrBlank() || !file.isAvailableLocally) {
+                _imageMetadataState.update { ImageMetadataUiState.Hidden }
+                return@launch
+            }
+
+            val metadata = when (val result = getImageMetadataUseCase(GetImageMetadataUseCase.Params(storagePath))) {
+                is UseCaseResult.Success -> result.data
+                is UseCaseResult.Error -> ImageMetadata(sections = emptyList())
+            }
+
+            val sections = metadata.sections.map { section ->
+                MetadataSectionUi(
+                    properties = section.properties.map { property ->
+                        MetadataPropertyUi(label = property.label, value = property.value)
+                    },
+                )
+            }
+
+            _imageMetadataState.update {
+                if (sections.isEmpty()) {
+                    ImageMetadataUiState.Hidden
+                } else {
+                    ImageMetadataUiState.Success(sections)
+                }
+            }
+        }
+    }
+
+    private fun requestMetadataDownload(file: OCFile) {
+        if (_imageMetadataState.value == ImageMetadataUiState.WaitingForDownload) {
+            Timber.d("File is already being downloaded for getting metadata, skip")
+            return
+        }
+        _imageMetadataState.update { ImageMetadataUiState.WaitingForDownload }
+        _actionsInDetailsView.update { ActionsInDetailsView.DOWNLOAD_FOR_METADATA }
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val workerId = downloadFileUseCase(
+                DownloadFileUseCase.Params(
+                    accountName = getAccount().name,
+                    file = file,
+                )
+            )
+            workerId?.let { startListeningToWorkInfo(it) } ?: checkOnGoingTransfersWhenOpening()
+        }
+    }
+
     fun filterMenuOptions(file: OCFile) {
         val shareViaLinkAllowed = contextProvider.getBoolean(R.bool.share_via_link_feature)
         val shareWithUsersAllowed = contextProvider.getBoolean(R.bool.share_with_users_feature)
@@ -205,7 +285,7 @@ class FileDetailsViewModel(
 
 
     enum class ActionsInDetailsView {
-        NONE, SYNC, SYNC_AND_OPEN, SYNC_AND_OPEN_WITH, SYNC_AND_SEND;
+        NONE, SYNC, SYNC_AND_OPEN, SYNC_AND_OPEN_WITH, SYNC_AND_SEND, DOWNLOAD_FOR_METADATA;
 
         fun requiresSync(): Boolean = this.isOneOf(SYNC, SYNC_AND_OPEN, SYNC_AND_OPEN_WITH, SYNC_AND_SEND)
     }

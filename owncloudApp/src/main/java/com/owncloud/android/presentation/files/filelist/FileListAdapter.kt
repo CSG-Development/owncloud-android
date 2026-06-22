@@ -32,11 +32,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GridItemBinding
 import com.owncloud.android.databinding.ItemFileListBinding
@@ -45,6 +47,7 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.OCFooterFile
+import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
@@ -132,7 +135,7 @@ class FileListAdapter(
 
     override fun getItemId(position: Int): Long = position.toLong()
 
-    private fun isFooter(position: Int) = position == files.size.minus(1)
+    private fun isFooter(position: Int) = files[position] is OCFooterFile
 
     override fun getItemViewType(position: Int): Int =
 
@@ -178,6 +181,14 @@ class FileListAdapter(
         toggleSelectionInBulk(totalItems = files.size - 1)
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty() && payloads[0] is Int) {
+            bindUploadProgress(holder, payloads[0] as Int)
+            return
+        }
+        onBindViewHolder(holder, position)
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
 
         val viewType = getItemViewType(position)
@@ -187,10 +198,13 @@ class FileListAdapter(
             val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
             val file = fileWithSyncInfo.file
             val name = file.fileName
+            val isVirtual = file.isUploadVirtualFile()
             val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
                 tag = file.id
             }
-            val thumbnail: Bitmap? = file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
+            val thumbnail: Bitmap? = if (!isVirtual) {
+                file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
+            } else null
 
             holder.itemView.findViewById<LinearLayout>(R.id.ListItemLayout)?.apply {
                 contentDescription = "LinearLayout-$name"
@@ -200,31 +214,57 @@ class FileListAdapter(
             }
 
             holder.itemView.findViewById<LinearLayout>(R.id.share_icons_layout).isVisible =
-                file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe
-            holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible = file.sharedByLink
+                !isVirtual && (file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe)
+            holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible =
+                !isVirtual && file.sharedByLink
             holder.itemView.findViewById<ImageView>(R.id.shared_via_users_icon).isVisible =
-                file.sharedWithSharee == true || file.isSharedWithMe
+                !isVirtual && (file.sharedWithSharee == true || file.isSharedWithMe)
+            holder.itemView.findViewById<ImageView>(R.id.thumbnail).alpha = if (isVirtual) 0.5f else 1f
+            holder.itemView.findViewById<TextView>(R.id.Filename).alpha = if (isVirtual) 0.5f else 1f
 
             setSpecificViewHolder(viewType, holder, fileWithSyncInfo, thumbnail)
 
             setIconPinAccordingToFilesLocalState(holder.itemView.findViewById(R.id.localFileIndicator), fileWithSyncInfo)
 
-            holder.itemView.setOnClickListener {
-                listener.onItemClick(
-                    ocFileWithSyncInfo = fileWithSyncInfo,
-                    position = position
-                )
+            // Show/hide upload progress indicator and three_dot_menu
+            val progressIndicator = holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)
+            val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
+            val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
+            if (isVirtual) {
+                threeDotMenu?.isVisible = false
+                bindUploadProgress(holder, uploadProgress)
+            } else {
+                progressIndicator?.isVisible = false
+                // three_dot_menu visibility is managed in setSpecificViewHolder for list items
             }
 
-            holder.itemView.setOnLongClickListener {
-                listener.onLongItemClick(
-                    position = position
-                )
+            if (!isVirtual) {
+                holder.itemView.setOnClickListener {
+                    listener.onItemClick(
+                        ocFileWithSyncInfo = fileWithSyncInfo,
+                        position = position
+                    )
+                }
+
+                holder.itemView.setOnLongClickListener {
+                    listener.onLongItemClick(
+                        position = position
+                    )
+                }
+            } else {
+                holder.itemView.apply {
+                    isClickable = true
+                    isLongClickable = false
+                    setOnClickListener {
+                        listener.onVirtualFileClick(fileWithSyncInfo, this)
+                    }
+                    setOnLongClickListener(null)
+                }
             }
             //holder.itemView.setBackgroundColor(Color.WHITE)
 
             val checkBoxV = holder.itemView.findViewById<ImageView>(R.id.custom_checkbox).apply {
-                isVisible = getCheckedItems().isNotEmpty()
+                isVisible = !isVirtual && getCheckedItems().isNotEmpty()
             }
 
             if (isSelected(position)) {
@@ -245,7 +285,7 @@ class FileListAdapter(
                 if (thumbnail != null) {
                     fileIcon.setImageBitmap(thumbnail)
                 }
-                if (file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
+                if (!isVirtual && file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
                     // generate new Thumbnail
                     val task = ThumbnailsCacheManager.ThumbnailGenerationTask(fileIcon, account)
                     val asyncDrawable = ThumbnailsCacheManager.AsyncThumbnailDrawable(context.resources, thumbnail, task)
@@ -274,6 +314,13 @@ class FileListAdapter(
         }
     }
 
+    private fun bindUploadProgress(holder: RecyclerView.ViewHolder, progress: Int) {
+        holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)?.apply {
+            isVisible = true
+            this.progress = progress.coerceIn(0, 100)
+        }
+    }
+
     private fun setSpecificViewHolder(viewType: Int, holder: RecyclerView.ViewHolder, fileWithSyncInfo: OCFileWithSyncInfo, thumbnail: Bitmap?) {
         val file = fileWithSyncInfo.file
 
@@ -286,9 +333,10 @@ class FileListAdapter(
                     val isFolderInKw = isMultiPersonal && file.isFolder
                     it.fileListSize.text = if (isFolderInKw) "" else DisplayUtils.bytesToHumanReadable(file.length, context, true)
                     it.fileListSeparator.visibility = if (isFolderInKw) View.GONE else View.VISIBLE
-                    it.fileListLastMod.layoutParams = (it.fileListLastMod.layoutParams as ViewGroup.MarginLayoutParams).also {
-                            params -> params.marginStart = if (isFolderInKw) 0 else
-                        context.resources.getDimensionPixelSize(R.dimen.standard_quarter_margin) }
+                    it.fileListLastMod.layoutParams = (it.fileListLastMod.layoutParams as ViewGroup.MarginLayoutParams).also { params ->
+                        params.marginStart = if (isFolderInKw) 0 else
+                            context.resources.getDimensionPixelSize(R.dimen.standard_quarter_margin)
+                    }
                     it.fileListLastMod.text = DisplayUtils.getRelativeTimestamp(context, file.modificationTimestamp)
                     it.threeDotMenu.isVisible = getCheckedItems().isEmpty() && !fileListOption.isFavorites()
                     it.threeDotMenu.contentDescription = context.getString(R.string.content_description_file_operations, file.fileName)
@@ -414,7 +462,7 @@ class FileListAdapter(
             }
 
             filesCount == 1 -> {
-                 when {
+                when {
                     foldersCount <= 0 -> {
                         context.getString(R.string.file_list__footer__file)
                     }
@@ -452,6 +500,7 @@ class FileListAdapter(
         fun onItemClick(ocFileWithSyncInfo: OCFileWithSyncInfo, position: Int)
         fun onLongItemClick(position: Int): Boolean = true
         fun onThreeDotButtonClick(fileWithSyncInfo: OCFileWithSyncInfo)
+        fun onVirtualFileClick(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {}
     }
 
     inner class GridViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)

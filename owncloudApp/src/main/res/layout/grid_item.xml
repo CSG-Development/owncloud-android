@@ -88,6 +88,13 @@
             android:elevation="30dp"
             android:src="@android:drawable/checkbox_off_background" />
 
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/uploadProgressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginHorizontal="@dimen/item_file_grid_margin" />
+
     </FrameLayout>
 
     <TextView

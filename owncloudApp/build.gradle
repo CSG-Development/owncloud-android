@@ -66,6 +66,9 @@ dependencies {
     implementation libs.koin.androidx.workmanager
     implementation libs.koin.core
 
+    // ML Kit Document Scanner
+    implementation libs.play.services.mlkit.document.scanner
+
     // Miscellaneous
     implementation libs.disklrucache
     implementation libs.media3.exoplayer
@@ -127,8 +130,8 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_26_00_0
-        versionName = "1.26.0"
+        versionCode = 1_27_00_0
+        versionName = "1.27.0"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""
