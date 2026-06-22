@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import static org.koin.java.KoinJavaComponent.inject;
 
@@ -170,6 +171,7 @@ public class CopyAndUploadContentUrisTask extends AsyncTask<Object, Void, Result
                         account.name,
                         filesToUpload,
                         uploadPath,
+                        Collections.emptyList(),
                         spaceId
                 );
                 uploadFilesFromSystemUseCase.invoke(useCaseParams);

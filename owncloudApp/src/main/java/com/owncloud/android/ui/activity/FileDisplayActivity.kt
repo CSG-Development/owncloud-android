@@ -770,7 +770,10 @@ open class FileDisplayActivity : FileActivity(),
         }
     }
 
-    private fun requestUploadOfFilesFromFileSystem(filePaths: Array<String>?) {
+    private fun requestUploadOfFilesFromFileSystem(
+        filePaths: Array<String>?,
+        remoteNames: List<String> = emptyList(),
+    ) {
         if (filePaths != null) {
             val remotePaths = arrayOfNulls<String>(filePaths.size)
             val remotePathBase = currentDir?.remotePath
@@ -783,6 +786,7 @@ open class FileDisplayActivity : FileActivity(),
                 listOfLocalPaths = filePaths.toList(),
                 uploadFolderPath = remotePathBase!!,
                 spaceId = currentDir.spaceId,
+                listOfRemoteNames = remoteNames,
             )
 
         } else {
@@ -805,7 +809,7 @@ open class FileDisplayActivity : FileActivity(),
         requestUploadOfContentUris(streamsToUpload)
     }
 
-    private fun requestUploadOfContentUris(streamsToUpload: List<Uri>) {
+    private fun requestUploadOfContentUris(streamsToUpload: List<Uri>, remoteNames: List<String> = emptyList(),) {
         val currentDir = currentDir
         val remotePath = currentDir?.remotePath ?: OCFile.ROOT_PATH
 
@@ -823,6 +827,7 @@ open class FileDisplayActivity : FileActivity(),
             listOfContentUris = streamsToUpload,
             uploadFolderPath = remotePath,
             spaceId = currentDir.spaceId,
+            listOfRemoteNames = remoteNames,
         )
     }
 
@@ -837,10 +842,11 @@ open class FileDisplayActivity : FileActivity(),
             return
         }
         if (scanResult.filePaths.isNotEmpty()) {
-            requestUploadOfFilesFromFileSystem(scanResult.filePaths.toTypedArray())
+            requestUploadOfFilesFromFileSystem(scanResult.filePaths.map { it.first }.toTypedArray(),
+                scanResult.filePaths.map { it.second })
         }
         if (scanResult.contentUris.isNotEmpty()) {
-            requestUploadOfContentUris(scanResult.contentUris)
+            requestUploadOfContentUris(scanResult.contentUris.map { it.first }, scanResult.contentUris.map { it.second })
         }
     }
 
