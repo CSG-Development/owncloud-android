@@ -2,6 +2,7 @@ package com.owncloud.android.data.connectivity
 
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.owncloud.android.data.connectivity.Connectivity.Companion.HANDLE_UNKNOWN
 
 /**
  * Snapshot of the device's network connectivity.
@@ -48,6 +49,8 @@ data class Connectivity(
      * should prefer trying local discovery anyway").
      */
     fun isWifiStateUnknown(): Boolean = type.isEmpty() || type == setOf(ConnectionType.NONE)
+
+    fun allowsLocalPathProbe(): Boolean = isLanLikely() || isWifiStateUnknown()
 
     enum class ConnectionType {
         NONE,

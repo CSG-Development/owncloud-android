@@ -2,120 +2,52 @@ package com.owncloud.android.presentation.network
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.owncloud.android.data.connectivity.NetworkStateObserver
-import com.owncloud.android.data.lifecycle.AppLifecycleObserver
-import com.owncloud.android.data.lifecycle.AppState
-import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
-import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
-import com.owncloud.android.providers.CoroutinesDispatcherProvider
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.combine
+import com.owncloud.android.domain.device.DeviceConnectionMonitor
+import com.owncloud.android.domain.device.DeviceConnectionState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-sealed class NetworkMonitorState {
-    object Hidden : NetworkMonitorState()
-    object NoInternet : NetworkMonitorState()
-    object FindingNetwork : NetworkMonitorState()
-}
-
 class NetworkMonitorViewModel(
-    private val deviceUrlResolver: DeviceUrlResolver,
-    private val getCurrentDevicePathsUseCase: GetCurrentDevicePathsUseCase,
-    private val networkStateObserver: NetworkStateObserver,
-    private val appLifecycleObserver: AppLifecycleObserver,
-    private val dispatchers: CoroutinesDispatcherProvider,
+    private val deviceConnectionMonitor: DeviceConnectionMonitor,
 ) : ViewModel() {
 
-    private val _networkMonitorState = MutableSharedFlow<NetworkMonitorState>(replay = 1)
-    val networkMonitorState: SharedFlow<NetworkMonitorState> = _networkMonitorState.asSharedFlow()
-
-    private var probeJob: Job? = null
-
-    init {
-        viewModelScope.launch {
-            var lastAppState: AppState? = null
-            combine(
-                networkStateObserver.observeNetworkState(),
-                appLifecycleObserver.appState
-            ) { connectivity, appState ->
-                Pair(connectivity.hasAnyNetwork(), appState)
-            }.collect { (hasNetwork, appState) ->
-                Timber.d("NetworkMonitor: has network $hasNetwork state $appState")
-                val isForeground = appState == AppState.FOREGROUND
-                val justCameToForeground = isForeground && lastAppState != AppState.FOREGROUND
-                lastAppState = appState
-
-                when {
-                    isForeground && hasNetwork -> {
-                        if (justCameToForeground) {
-                            // fresh foreground entry — wait 30s before first probe
-                            restartProbeLoop(immediate = false)
-                        } else {
-                            // network changed while already in foreground — hide snackbar and probe now
-                            _networkMonitorState.emit(NetworkMonitorState.Hidden)
-                            restartProbeLoop(immediate = true)
-                        }
-                    }
-                    isForeground && !hasNetwork -> {
-                        stopProbeLoop()
-                        _networkMonitorState.emit(NetworkMonitorState.NoInternet)
-                    }
-                    else -> { // backgrounded
-                        stopProbeLoop()
-                        _networkMonitorState.emit(NetworkMonitorState.Hidden)
+    val connectionState: Flow<DeviceConnectionState> = deviceConnectionMonitor.state
+        .scan(DeviceConnectionState.Connected) { previous: DeviceConnectionState, new ->
+            // Keep ConnectionLost until it's restored or Retry clicked
+            val newAdjusted = when (previous) {
+                DeviceConnectionState.Connected -> new
+                DeviceConnectionState.ConnectionLost -> {
+                    if (new is DeviceConnectionState.FindingNetwork && !new.isForced) {
+                        previous
+                    } else {
+                        new
                     }
                 }
+                is DeviceConnectionState.FindingNetwork -> {
+                    if (new is DeviceConnectionState.FindingNetwork) {
+                        new.copy(isForced = new.isForced || previous.isForced)
+                    } else {
+                        new
+                    }
+                }
+                DeviceConnectionState.NoInternet -> new
             }
+            Timber.d("UI connection state raw: $new, adjusted: $newAdjusted")
+            return@scan newAdjusted
         }
-    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = DeviceConnectionState.Connected,
+        )
 
-    private fun restartProbeLoop(immediate: Boolean = false) {
-        stopProbeLoop()
-        probeJob = viewModelScope.launch(dispatchers.io) {
-            if (!immediate) delay(PROBE_INTERVAL_MS)
-            while (true) {
-                runProbe()
-                delay(PROBE_INTERVAL_MS)
-            }
+    fun onRetryClicked() {
+        viewModelScope.launch {
+            deviceConnectionMonitor.retryConnection()
         }
-    }
-
-    private suspend fun runProbe() {
-        val paths = getCurrentDevicePathsUseCase()
-        if (paths.isEmpty()) {
-            _networkMonitorState.emit(NetworkMonitorState.Hidden)
-            return
-        }
-        try {
-            val result = deviceUrlResolver.resolveAvailableBaseUrl(paths)
-            currentCoroutineContext().ensureActive() // discard result if job was cancelled during blocking call
-            Timber.d("NetworkMonitor: probe result=$result")
-            _networkMonitorState.emit(
-                if (result == null) NetworkMonitorState.FindingNetwork else NetworkMonitorState.Hidden
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            currentCoroutineContext().ensureActive() // don't emit FindingNetwork if we were cancelled mid-exception
-            Timber.e(e, "NetworkMonitor: probe failed with exception")
-            _networkMonitorState.emit(NetworkMonitorState.FindingNetwork)
-        }
-    }
-
-    private fun stopProbeLoop() {
-        probeJob?.cancel()
-        probeJob = null
-    }
-
-    companion object {
-        const val PROBE_INTERVAL_MS = 30_000L
     }
 }

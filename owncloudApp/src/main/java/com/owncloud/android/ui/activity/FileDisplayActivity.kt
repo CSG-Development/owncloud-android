@@ -66,6 +66,7 @@ import com.owncloud.android.R
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.databinding.ActivityMainBinding
 import com.owncloud.android.domain.capabilities.model.OCCapability
+import com.owncloud.android.domain.device.DeviceConnectionState
 import com.owncloud.android.domain.exceptions.AccountNotFoundException
 import com.owncloud.android.domain.exceptions.DeepLinkException
 import com.owncloud.android.domain.exceptions.FileNotFoundException
@@ -108,7 +109,6 @@ import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
-import com.owncloud.android.presentation.network.NetworkMonitorState
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
@@ -333,16 +333,29 @@ open class FileDisplayActivity : FileActivity(),
         snackbarBinding.networkMonitorCloseButton.setOnClickListener {
             snackbarBinding.networkMonitorSnackbar.isVisible = false
         }
-        collectLatestLifecycleFlow(networkMonitorViewModel.networkMonitorState) { state ->
+        snackbarBinding.networkMonitorRetryButton.setOnClickListener {
+            networkMonitorViewModel.onRetryClicked()
+        }
+        collectLatestLifecycleFlow(networkMonitorViewModel.connectionState) { state ->
             when (state) {
-                NetworkMonitorState.Hidden -> snackbarBinding.networkMonitorSnackbar.isVisible = false
-                NetworkMonitorState.NoInternet -> {
+                DeviceConnectionState.Connected -> snackbarBinding.networkMonitorSnackbar.isVisible = false
+                DeviceConnectionState.NoInternet -> {
                     snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_no_internet)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = false
                     snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = true
                 }
-                NetworkMonitorState.FindingNetwork -> {
+                is DeviceConnectionState.FindingNetwork -> {
                     snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_finding_network)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = false
                     snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = true
+                }
+                DeviceConnectionState.ConnectionLost -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_connection_lost_message)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = true
+                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = false
                 }
             }
         }

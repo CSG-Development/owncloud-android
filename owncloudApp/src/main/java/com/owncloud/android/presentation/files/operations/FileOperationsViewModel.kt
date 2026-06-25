@@ -33,7 +33,7 @@ import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
-import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
+import com.owncloud.android.domain.device.DeviceConnectionMonitor
 import com.owncloud.android.domain.exceptions.NoConnectionWithServerException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.ServerConnectionTimeoutException
@@ -80,7 +80,7 @@ class FileOperationsViewModel(
     private val manageDeepLinkUseCase: ManageDeepLinkUseCase,
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
-    private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
+    private val deviceConnectionMonitor: DeviceConnectionMonitor,
     private val contextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
 ) : ViewModel() {
@@ -123,28 +123,19 @@ class FileOperationsViewModel(
     private val _disableSelectionModeEvent = MutableSharedFlow<Unit>()
     val disableSelectionModeEvent: SharedFlow<Unit> = _disableSelectionModeEvent
 
-    private val _updateBaseUrlDialog = MutableSharedFlow<Unit>()
-    val updateBaseUrlDialog: SharedFlow<Unit> = _updateBaseUrlDialog
-
-
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
     private val networkErrorHandler: (Throwable) -> Unit = { throwable ->
-        val throwableTypes = listOf(
-            NoNetworkConnectionException::class.java,
-            ServerResponseTimeoutException::class.java,
-            ServerConnectionTimeoutException::class.java,
-            NoConnectionWithServerException::class.java,
-            ServerNotReachableException::class.java
-        )
-
-        if (throwableTypes.any { it.isInstance(throwable) }) {
-                viewModelScope.launch {
-                    _updateBaseUrlDialog.emit(Unit)
-                }
-            }
+        when (throwable) {
+            is NoNetworkConnectionException -> deviceConnectionMonitor.reportNoNetwork()
+            is ServerResponseTimeoutException,
+            is ServerConnectionTimeoutException,
+            is NoConnectionWithServerException,
+            is ServerNotReachableException,
+            -> deviceConnectionMonitor.reportUnreachable()
         }
+    }
 
     fun performOperation(fileOperation: FileOperation) {
         when (fileOperation) {
@@ -160,12 +151,6 @@ class FileOperationsViewModel(
             is FileOperation.RefreshFolderOperation -> refreshFolderOperation(fileOperation)
             is FileOperation.CreateFileWithAppProviderOperation -> createFileWithAppProvider(fileOperation)
             is FileOperation.SetFileFavoriteStatus -> setFileFavoriteStatus(fileOperation)
-        }
-    }
-
-    fun handleBaseUrlUpdate() {
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            updateBaseUrlUseCase.execute()
         }
     }
 
@@ -376,6 +361,7 @@ class FileOperationsViewModel(
             liveData.postValue(Event(UIResult.Loading()))
 
             if (!contextProvider.isConnected() && requiresConnection) {
+                deviceConnectionMonitor.reportNoNetwork()
                 liveData.postValue(Event(UIResult.Error(error = NoNetworkConnectionException())))
                 Timber.w("${useCase.javaClass.simpleName} will not be executed due to lack of network connection")
                 return@launch
