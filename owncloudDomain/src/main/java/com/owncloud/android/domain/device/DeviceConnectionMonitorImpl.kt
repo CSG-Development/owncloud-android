@@ -1,5 +1,6 @@
 package com.owncloud.android.domain.device
 
+import com.owncloud.android.domain.device.usecases.ProbeCurrentBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class DeviceConnectionMonitorImpl(
     private val switchToBestAvailableBaseUrlUseCase: SwitchToBestAvailableBaseUrlUseCase,
+    private val probeCurrentBaseUrlUseCase: ProbeCurrentBaseUrlUseCase,
     private val updateBaseUrlUseCase: UpdateBaseUrlUseCase,
     private val accountBaseUrlManager: AccountBaseUrlManager,
     private val networkConnectivity: NetworkConnectivityGateway,
@@ -51,7 +53,7 @@ class DeviceConnectionMonitorImpl(
         if (!accountBaseUrlManager.hasActiveAccount()) return
         coroutineScope.launch {
             _state.emit(DeviceConnectionState.FindingNetwork(isForced = false))
-            evaluateConnection()
+            findBestAvailablePath()
         }
     }
 
@@ -69,38 +71,72 @@ class DeviceConnectionMonitorImpl(
         _state.emit(DeviceConnectionState.FindingNetwork(isForced = true))
         val wifiAvailable = networkConnectivity.allowsLocalPathProbe()
         updateBaseUrlUseCase.execute(wifiAvailable = wifiAvailable)
-        evaluateConnection()
+        findBestAvailablePath()
     }
 
     override suspend fun evaluateConnection() {
+        findBestAvailablePath()
+    }
+
+    private suspend fun periodicConnectionCheck() {
         evaluateMutex.withLock {
-            if (!accountBaseUrlManager.hasActiveAccount()) {
+            if (!passConnectionGuards()) return
+
+            val wifiAvailable = networkConnectivity.allowsLocalPathProbe()
+            val currentReachable = probeCurrentBaseUrlUseCase.execute(wifiAvailable)
+            Timber.d(
+                "DeviceConnectionMonitor: current path reachable=$currentReachable wifiAvailable=$wifiAvailable"
+            )
+
+            if (currentReachable) {
                 _state.emit(DeviceConnectionState.Connected)
                 return
             }
 
-            if (!networkConnectivity.hasNetwork()) {
-                _state.emit(DeviceConnectionState.NoInternet)
-                return
-            }
-
-            if (baseUrlUpdateStatus.isInProgress()) {
-                _state.emit(DeviceConnectionState.FindingNetwork(isForced = false))
-                return
-            }
-
             _state.emit(DeviceConnectionState.FindingNetwork(isForced = false))
+            val reachable = switchToBestAvailableBaseUrlUseCase.execute(wifiAvailable)
+            emitPathSearchResult(reachable)
+        }
+    }
+
+    private suspend fun findBestAvailablePath() {
+        evaluateMutex.withLock {
+            if (!passConnectionGuards()) return
+
             val wifiAvailable = networkConnectivity.allowsLocalPathProbe()
             val reachable = switchToBestAvailableBaseUrlUseCase.execute(wifiAvailable)
             Timber.d("DeviceConnectionMonitor: path reachable=$reachable wifiAvailable=$wifiAvailable")
-            _state.emit(
-                if (reachable) {
-                    DeviceConnectionState.Connected
-                } else {
-                    DeviceConnectionState.ConnectionLost
-                }
-            )
+            emitPathSearchResult(reachable)
         }
+    }
+
+    private suspend fun passConnectionGuards(): Boolean {
+        if (!accountBaseUrlManager.hasActiveAccount()) {
+            _state.emit(DeviceConnectionState.Connected)
+            return false
+        }
+
+        if (!networkConnectivity.hasNetwork()) {
+            _state.emit(DeviceConnectionState.NoInternet)
+            return false
+        }
+
+        if (baseUrlUpdateStatus.isInProgress()) {
+            _state.emit(DeviceConnectionState.FindingNetwork(isForced = false))
+            return false
+        }
+
+        return true
+    }
+
+    private suspend fun emitPathSearchResult(reachable: Boolean) {
+        _state.emit(
+            if (reachable) {
+                DeviceConnectionState.Connected
+            } else {
+                DeviceConnectionState.ConnectionLost
+            }
+        )
     }
 
     private fun startObservers() {
@@ -110,7 +146,7 @@ class DeviceConnectionMonitorImpl(
                     if (inProgress) {
                         _state.emit(DeviceConnectionState.FindingNetwork(isForced = false))
                     } else if (canProbe()) {
-                        evaluateConnection()
+                        periodicConnectionCheck()
                     }
                 }
             }
@@ -167,7 +203,7 @@ class DeviceConnectionMonitorImpl(
         probeJob = coroutineScope.launch {
             if (!immediate) delay(PROBE_INTERVAL)
             while (true) {
-                evaluateConnection()
+                periodicConnectionCheck()
                 delay(PROBE_INTERVAL)
             }
         }

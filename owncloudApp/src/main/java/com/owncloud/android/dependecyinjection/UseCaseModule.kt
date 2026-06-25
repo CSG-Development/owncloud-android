@@ -55,6 +55,7 @@ import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFrom
 import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
+import com.owncloud.android.domain.device.usecases.ProbeCurrentBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
@@ -360,6 +361,7 @@ val useCaseModule = module {
     single<UpdateBaseUrlUseCase>{ UpdateBaseUrlUseCase(get()) }
 
     factoryOf(::GetAvailableServerInfoUseCase)
+    factoryOf(::ProbeCurrentBaseUrlUseCase)
     factoryOf(::SwitchToBestAvailableBaseUrlUseCase)
 
     // Accounts

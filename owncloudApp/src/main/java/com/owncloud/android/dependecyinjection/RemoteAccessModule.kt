@@ -103,6 +103,7 @@ val remoteAccessModule = module {
     single<DeviceConnectionMonitor> {
         DeviceConnectionMonitorImpl(
             switchToBestAvailableBaseUrlUseCase = get(),
+            probeCurrentBaseUrlUseCase = get(),
             updateBaseUrlUseCase = get(),
             accountBaseUrlManager = get(),
             networkConnectivity = get(),
