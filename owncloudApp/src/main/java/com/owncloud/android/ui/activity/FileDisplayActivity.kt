@@ -338,7 +338,9 @@ open class FileDisplayActivity : FileActivity(),
         }
         collectLatestLifecycleFlow(networkMonitorViewModel.connectionState) { state ->
             when (state) {
-                DeviceConnectionState.Connected -> snackbarBinding.networkMonitorSnackbar.isVisible = false
+                DeviceConnectionState.Connected, DeviceConnectionState.Initial -> {
+                    snackbarBinding.networkMonitorSnackbar.isVisible = false
+                }
                 DeviceConnectionState.NoInternet -> {
                     snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_no_internet)
                     snackbarBinding.networkMonitorRetryButton.isVisible = false

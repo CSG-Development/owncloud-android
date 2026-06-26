@@ -16,11 +16,11 @@ class NetworkMonitorViewModel(
 ) : ViewModel() {
 
     val connectionState: Flow<DeviceConnectionState> = deviceConnectionMonitor.state
-        .scan(DeviceConnectionState.Connected) { previous: DeviceConnectionState, new ->
-            // Keep ConnectionLost until it's restored or Retry clicked
+        .scan(DeviceConnectionState.Initial) { previous: DeviceConnectionState, new ->
             val newAdjusted = when (previous) {
                 DeviceConnectionState.Connected -> new
                 DeviceConnectionState.ConnectionLost -> {
+                    // If connection is lost, don't show automatic finding network unless Retry is clicked
                     if (new is DeviceConnectionState.FindingNetwork && !new.isForced) {
                         previous
                     } else {
@@ -28,6 +28,7 @@ class NetworkMonitorViewModel(
                     }
                 }
                 is DeviceConnectionState.FindingNetwork -> {
+                    // If Retry is clicked then keep isForced = true
                     if (new is DeviceConnectionState.FindingNetwork) {
                         new.copy(isForced = new.isForced || previous.isForced)
                     } else {
@@ -35,6 +36,14 @@ class NetworkMonitorViewModel(
                     }
                 }
                 DeviceConnectionState.NoInternet -> new
+                DeviceConnectionState.Initial -> {
+                    // Skip initial "FindingNetwork" event after the app launch
+                    if (new is DeviceConnectionState.FindingNetwork) {
+                        previous
+                    } else {
+                        new
+                    }
+                }
             }
             Timber.d("UI connection state raw: $new, adjusted: $newAdjusted")
             return@scan newAdjusted
