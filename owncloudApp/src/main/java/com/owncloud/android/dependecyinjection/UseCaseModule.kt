@@ -140,6 +140,10 @@ import com.owncloud.android.domain.transfers.usecases.ClearSuccessfulTransfersUs
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersAsStreamUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersUseCase
 import com.owncloud.android.domain.transfers.usecases.UpdatePendingUploadsPathUseCase
+import com.owncloud.android.domain.trash.usecases.DeleteTrashItemUseCase
+import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
+import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
+import com.owncloud.android.domain.trash.usecases.RestoreTrashItemUseCase
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaAsStreamUseCase
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaUseCase
 import com.owncloud.android.domain.user.usecases.GetUserAvatarAsyncUseCase
@@ -366,6 +370,12 @@ val useCaseModule = module {
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
+
+    // Trash
+    factoryOf(::ListTrashUseCase)
+    factoryOf(::RestoreTrashItemUseCase)
+    factoryOf(::DeleteTrashItemUseCase)
+    factoryOf(::IsTrashEnabledUseCase)
 
     factoryOf(::GetFirebaseInstallationIdUseCase)
 }
