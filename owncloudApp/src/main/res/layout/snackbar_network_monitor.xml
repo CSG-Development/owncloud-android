@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/network_monitor_snackbar"
@@ -23,6 +23,7 @@
             android:text="@string/homecloud_finding_network"
             android:textColor="@color/homecloud_reconnecting_snackbar_text"
             android:textSize="14sp"
+            android:layout_marginEnd="@dimen/standard_margin"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/network_monitor_retry_button"
             app:layout_constraintStart_toStartOf="parent"
@@ -38,7 +39,7 @@
             android:paddingHorizontal="8dp"
             android:paddingVertical="0dp"
             android:text="@string/homecloud_retry"
-            android:textColor="@color/selector_borderless_button_color"
+            android:textColor="@color/homecloud_reconnecting_snackbar_retry_button"
             android:visibility="gone"
             android:textAllCaps="false"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -60,4 +61,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</com.google.android.material.card.MaterialCardView>
+</androidx.cardview.widget.CardView>
