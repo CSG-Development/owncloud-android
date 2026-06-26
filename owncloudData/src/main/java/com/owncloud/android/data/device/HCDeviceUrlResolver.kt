@@ -32,6 +32,8 @@ class HCDeviceUrlResolver(
         if (paths.isEmpty()) {
             Timber.d("DeviceUrlResolver: no paths provided")
             return null
+        } else {
+            Timber.d("DeviceUrlResolver: paths: $paths")
         }
 
         val localUrls = if (wifiAvailable) listOfNotNull(paths[DevicePathType.LOCAL]) else emptyList()

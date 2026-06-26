@@ -248,12 +248,12 @@ class MainApp : Application() {
             }
         })
 
-        initDynamicUrlSwitcher()
+        initDynamicUrlSwitching()
     }
 
-    private fun initDynamicUrlSwitcher() {
-        val dynamicUrlSwitchingUseCase: DynamicUrlSwitchingController by inject<DynamicUrlSwitchingController>()
-        dynamicUrlSwitchingUseCase.initDynamicUrlSwitching()
+    private fun initDynamicUrlSwitching() {
+        val dynamicUrlSwitchingController: DynamicUrlSwitchingController by inject()
+        dynamicUrlSwitchingController.initDynamicUrlSwitching()
     }
 
     private fun startLogsIfEnabled() {

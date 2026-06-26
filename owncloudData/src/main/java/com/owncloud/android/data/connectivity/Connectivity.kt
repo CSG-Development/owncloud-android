@@ -2,6 +2,7 @@ package com.owncloud.android.data.connectivity
 
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.owncloud.android.data.connectivity.Connectivity.Companion.HANDLE_UNKNOWN
 
 /**
  * Snapshot of the device's network connectivity.
@@ -37,8 +38,8 @@ data class Connectivity(
     fun isLanLikely(): Boolean =
         type.any {
             it == ConnectionType.WIFI ||
-                it == ConnectionType.ETHERNET ||
-                it == ConnectionType.VPN
+                    it == ConnectionType.ETHERNET ||
+                    it == ConnectionType.VPN
         }
 
     /**
@@ -48,6 +49,8 @@ data class Connectivity(
      * should prefer trying local discovery anyway").
      */
     fun isWifiStateUnknown(): Boolean = type.isEmpty() || type == setOf(ConnectionType.NONE)
+
+    fun allowsLocalPathProbe(): Boolean = isLanLikely() || isWifiStateUnknown()
 
     enum class ConnectionType {
         NONE,
@@ -90,13 +93,19 @@ data class Connectivity(
         }
 
         private fun addCapabilities(networkCapabilities: NetworkCapabilities, networkTypes: MutableSet<ConnectionType>) {
-            networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }?.run { networkTypes.add(ConnectionType.CELLULAR) }
+            networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && it.hasInternet() }
+                ?.run { networkTypes.add(ConnectionType.CELLULAR) }
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_VPN) }?.run { networkTypes.add(ConnectionType.VPN) }
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) }?.run { networkTypes.add(ConnectionType.WIFI) }
             networkCapabilities.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) }?.run { networkTypes.add(ConnectionType.ETHERNET) }
         }
 
         fun unavailable(): Connectivity = Connectivity()
+
+        private fun NetworkCapabilities.hasInternet(): Boolean {
+            return hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        }
 
     }
 }
