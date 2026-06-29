@@ -231,6 +231,7 @@ class OCFileRepository(
             FileListOption.GLOBAL_SEARCH -> emptyList()
             FileListOption.FAVORITES -> emptyList()
             FileListOption.TAG_FILES -> emptyList()
+            FileListOption.TRASH -> emptyList()
         }
 
     override fun getFolderContent(folderId: Long): List<OCFile> =

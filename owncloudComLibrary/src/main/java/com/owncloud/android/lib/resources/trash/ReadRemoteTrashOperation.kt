@@ -7,6 +7,7 @@ import at.bitfire.dav4jvm.Response
 import at.bitfire.dav4jvm.property.GetContentLength
 import at.bitfire.dav4jvm.property.GetContentType
 import at.bitfire.dav4jvm.property.GetLastModified
+import at.bitfire.dav4jvm.property.ResourceType
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.accounts.AccountUtils
 import com.owncloud.android.lib.common.http.HttpConstants
@@ -23,6 +24,7 @@ import com.owncloud.android.lib.common.operations.RemoteOperation
 import com.owncloud.android.lib.common.operations.RemoteOperationResult
 import com.owncloud.android.lib.common.operations.RemoteOperationResult.ResultCode
 import com.owncloud.android.lib.common.utils.isOneOf
+import com.owncloud.android.lib.resources.files.FileUtils.MIME_DIR
 import timber.log.Timber
 
 class ReadRemoteTrashOperation : RemoteOperation<List<RemoteTrashItem>>() {
@@ -84,6 +86,7 @@ class ReadRemoteTrashOperation : RemoteOperation<List<RemoteTrashItem>>() {
                 return null
             }
 
+            var isFolder: Boolean = false
             var originalFilename: String? = null
             var originalLocation: String? = null
             var deletedAt: String? = null
@@ -94,6 +97,7 @@ class ReadRemoteTrashOperation : RemoteOperation<List<RemoteTrashItem>>() {
 
             for (property in getProperties(resource)) {
                 when (property) {
+                    is ResourceType -> isFolder = property.types.contains(ResourceType.COLLECTION)
                     is HCTrashbinOriginalFilename -> originalFilename = property.value
                     is HCTrashbinOriginalLocation -> originalLocation = property.value
                     is HCTrashbinDeleteDatetime -> deletedAt = property.value
@@ -115,7 +119,7 @@ class ReadRemoteTrashOperation : RemoteOperation<List<RemoteTrashItem>>() {
                 deletedAt = deletedAt,
                 deletedTimestamp = deletedTimestamp,
                 contentLength = contentLength,
-                mimeType = mimeType,
+                mimeType = if (isFolder) MIME_DIR else mimeType,
                 lastModified = lastModified,
             )
         }

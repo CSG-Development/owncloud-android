@@ -65,6 +65,7 @@ import com.owncloud.android.presentation.tags.ManageTagsViewModel
 import com.owncloud.android.presentation.tags.TagFilesViewModel
 import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.transfers.TransfersViewModel
+import com.owncloud.android.presentation.trash.TrashViewModel
 import com.owncloud.android.ui.ReceiveExternalFilesViewModel
 import com.owncloud.android.ui.preview.PreviewImageViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -96,6 +97,7 @@ val viewModelModule = module {
     viewModelOf(::SettingsVideoUploadsViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::FavoritesViewModel)
+    viewModelOf(::TrashViewModel)
     viewModelOf(::GlobalSearchViewModel)
     viewModelOf(::NetworkMonitorViewModel)
     viewModelOf(::TagsViewModel)

@@ -162,6 +162,17 @@
     <string name="homecloud_finding_network">Finding network…</string>
     <string name="homecloud_no_internet">No internet</string>
 
+    <!-- Trash -->
+    <string name="homecloud_drawer_menu_trash">Trash</string>
+    <string name="trash_title_with_count">Trash (%d)</string>
+    <string name="trash_info_banner">Trashed items will be permanently deleted after 30 days</string>
+    <string name="trash_all_items">All items</string>
+    <string name="trash_item_days_left">%d days left</string>
+    <string name="trash_empty_title">Trash is empty</string>
+    <string name="trash_empty_subtitle">Deleted files will appear here.</string>
+    <string name="trash_not_supported_message">Trash is not supported on this server.</string>
+    <string name="trash_toggle_view">Toggle view</string>
+
     <!-- App Update Dialog -->
     <string name="homecloud_app_update_dialog_title">Update Available</string>
     <string name="homecloud_app_update_dialog_message">A new version %1$s (%2$s) is available. We recommend updating to get the latest features and

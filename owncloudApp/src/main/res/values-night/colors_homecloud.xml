@@ -4,6 +4,7 @@
     <color name="homecloud_primary_dark">@color/homecloud_bar_background</color>
     <color name="homecloud_primary_inverted">#DD000000</color>
     <color name="homecloud_secondary">#DDFFFFFF</color>
+    <color name="homecloud_secondary_transparent_pressed">#1FEEEEEE</color>
     <color name="homecloud_color_accent">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_color_outline">#616161</color>
     <color name="homecloud_color_on_secondary_container">@color/homecloud_blue_lighten_2</color>
