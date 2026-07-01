@@ -71,6 +71,17 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
             trashViewModel.loadTrash()
         }
 
+        binding.trashActionRestore.setOnClickListener {
+            if (binding.trashActionRestore.isEnabled) {
+                // TODO: restore action
+            }
+        }
+        binding.trashActionDelete.setOnClickListener {
+            if (binding.trashActionDelete.isEnabled) {
+                // TODO: delete action
+            }
+        }
+
         collectLatestLifecycleFlow(trashViewModel.trashUiState) { state ->
             when (state) {
                 is TrashViewModel.TrashUiState.Loading -> showLoading()
@@ -130,6 +141,18 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         )
         toolbarListener?.onSelectionChanged(itemCount, selectedCount)
         trashListAdapter.notifyDataSetChanged()
+        updateBottomActionBar(selectedCount)
+    }
+
+    private fun updateBottomActionBar(selectedCount: Int) {
+        val hasItems = trashViewModel.itemCount > 0
+        val isSuccessState = trashViewModel.trashUiState.value is TrashViewModel.TrashUiState.Success
+        val visible = hasItems && isSuccessState
+        val enabled = selectedCount > 0
+
+        binding.trashBottomActionBar.isVisible = visible
+        binding.trashActionRestore.isEnabled = enabled
+        binding.trashActionDelete.isEnabled = enabled
     }
 
     private fun showLoading() {
@@ -139,6 +162,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashNotSupported.isVisible = false
         binding.trashSelectAllRow.isVisible = false
         binding.trashInfoBanner.isVisible = true
+        updateBottomActionBar(selectedCount = 0)
     }
 
     private fun showResults(items: List<HCTrashItem>) {
@@ -167,6 +191,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.trash_empty_title)
         binding.trashListEmpty.listEmptyDatasetSubTitle.setText(R.string.trash_empty_subtitle)
         updateSelectionUi(trashViewModel.selectedPositions.value)
+        updateBottomActionBar(selectedCount = 0)
     }
 
     private fun showNotSupported() {
@@ -177,6 +202,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashInfoBanner.isVisible = false
         binding.trashSelectAllRow.isVisible = false
         updateSelectionUi(trashViewModel.selectedPositions.value)
+        updateBottomActionBar(selectedCount = 0)
     }
 
     interface TrashToolbarListener {

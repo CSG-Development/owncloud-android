@@ -172,6 +172,8 @@
     <string name="trash_empty_subtitle">Deleted files will appear here.</string>
     <string name="trash_not_supported_message">Trash is not supported on this server.</string>
     <string name="trash_toggle_view">Toggle view</string>
+    <string name="trash_action_restore">Restore</string>
+    <string name="trash_action_delete">Delete</string>
 
     <!-- App Update Dialog -->
     <string name="homecloud_app_update_dialog_title">Update Available</string>

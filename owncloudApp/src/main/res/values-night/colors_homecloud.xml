@@ -26,7 +26,9 @@
     <color name="homecloud_button_primary_background">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_button_primary_background_disabled">@color/homecloud_content_disabled_bg</color>
     <color name="homecloud_button_secondary_text">@color/homecloud_blue_lighten_2</color>
+    <color name="homecloud_button_secondary_text_disabled">@color/homecloud_gray_label</color>
     <color name="homecloud_button_secondary_stroke">@color/homecloud_blue_lighten_2</color>
+    <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_disabled_bg</color>
     <color name="homecloud_button_borderless_text">@color/homecloud_blue_lighten_2</color>
 
     <color name="homecloud_dialog_background">#262729</color>

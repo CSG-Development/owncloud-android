@@ -69,7 +69,7 @@
         android:id="@+id/swipe_refresh_trash"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/trash_bottom_action_bar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/trash_select_all_row">
@@ -82,6 +82,7 @@
                 android:id="@+id/recycler_view_trash"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:clipToPadding="false"
                 android:scrollbars="vertical"
                 tools:listitem="@layout/item_file_list" />
 
@@ -112,5 +113,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/trash_info_banner"
         tools:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/trash_bottom_action_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/standard_margin"
+        android:paddingTop="@dimen/standard_half_padding"
+        android:paddingBottom="@dimen/standard_half_padding"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/trash_action_restore"
+            style="@style/Button.Secondary.TrashAction"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/standard_half_margin"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:text="@string/trash_action_restore"
+            app:icon="@drawable/ic_trash_restore"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/trash_action_delete"
+            style="@style/Button.Primary.TrashAction"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:text="@string/trash_action_delete"
+            app:icon="@drawable/ic_trash_delete_forever"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
