@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.domain.UseCaseResult
-import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
 import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
 import com.owncloud.android.presentation.authentication.AccountUtils
@@ -28,17 +27,17 @@ class TrashViewModel(
     private val _trashUiState = MutableStateFlow<TrashUiState>(TrashUiState.Loading)
     val trashUiState: StateFlow<TrashUiState> = _trashUiState
 
-    private val _selectedPositions = MutableStateFlow<Set<Int>>(emptySet())
-    val selectedPositions: StateFlow<Set<Int>> = _selectedPositions
-
     val itemCount: Int
         get() = when (val state = _trashUiState.value) {
             is TrashUiState.Success -> state.items.size
             else -> 0
         }
 
-    val isAllSelected: Boolean
-        get() = itemCount > 0 && _selectedPositions.value.size == itemCount
+    val selectedCount: Int
+        get() = when (val state = _trashUiState.value) {
+            is TrashUiState.Success -> state.items.count { it.isSelected }
+            else -> 0
+        }
 
     init {
         loadTrash()
@@ -48,6 +47,7 @@ class TrashViewModel(
         val currentAccount = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())
         val accountName = currentAccount?.name ?: return
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val selectedFileIds = getSelectedFileIds()
             updateTrashUiState(TrashUiState.Loading)
 
             val isEnabled = isTrashEnabledUseCase(IsTrashEnabledUseCase.Params(accountName))
@@ -58,7 +58,9 @@ class TrashViewModel(
 
             when (val result = listTrashUseCase(ListTrashUseCase.Params(accountName))) {
                 is UseCaseResult.Success -> {
-                    val sortedItems = result.data.sortedByDescending { it.deletedTimestamp ?: 0L }
+                    val sortedItems = result.data
+                        .sortedByDescending { it.deletedTimestamp ?: 0L }
+                        .map { it.toTrashItemUi(isSelected = it.fileId in selectedFileIds) }
                     updateTrashUiState(
                         if (sortedItems.isEmpty()) {
                             TrashUiState.Empty
@@ -75,43 +77,43 @@ class TrashViewModel(
     }
 
     fun toggleSelection(position: Int) {
-        _selectedPositions.update { selected ->
-            if (position in selected) {
-                selected - position
-            } else {
-                selected + position
+        updateSuccessItems { items ->
+            items.mapIndexed { index, item ->
+                if (index == position) item.copy(isSelected = !item.isSelected) else item
             }
         }
     }
 
     fun clearSelection() {
-        _selectedPositions.update { emptySet() }
-    }
-
-    fun toggleSelectAll() {
-        val count = itemCount
-        if (count == 0) return
-
-        _selectedPositions.update { selected ->
-            if (selected.size == count) {
-                emptySet()
-            } else {
-                (0 until count).toSet()
-            }
+        updateSuccessItems { items ->
+            items.map { it.copy(isSelected = false) }
         }
     }
 
-    fun hasSelection(): Boolean = _selectedPositions.value.isNotEmpty()
+    fun toggleSelectAll() {
+        updateSuccessItems { items ->
+            val selectAll = items.any { !it.isSelected }
+            items.map { it.copy(isSelected = selectAll) }
+        }
+    }
 
-    fun isSelected(position: Int): Boolean = position in _selectedPositions.value
+    fun hasSelection(): Boolean = selectedCount > 0
+
+    private fun getSelectedFileIds(): Set<String> =
+        when (val state = _trashUiState.value) {
+            is TrashUiState.Success -> state.items.filter { it.isSelected }.map { it.item.fileId }.toSet()
+            else -> emptySet()
+        }
 
     private fun updateTrashUiState(newState: TrashUiState) {
         _trashUiState.update { newState }
-        _selectedPositions.update { selected ->
-            when (newState) {
-                is TrashUiState.Success -> selected.filter { it < newState.items.size }.toSet()
-                is TrashUiState.Loading -> selected
-                else -> emptySet()
+    }
+
+    private inline fun updateSuccessItems(transform: (List<TrashItemUi>) -> List<TrashItemUi>) {
+        _trashUiState.update { state ->
+            when (state) {
+                is TrashUiState.Success -> TrashUiState.Success(transform(state.items))
+                else -> state
             }
         }
     }
@@ -132,7 +134,7 @@ class TrashViewModel(
 
     sealed class TrashUiState {
         data object Loading : TrashUiState()
-        data class Success(val items: List<HCTrashItem>) : TrashUiState()
+        data class Success(val items: List<TrashItemUi>) : TrashUiState()
         data object Empty : TrashUiState()
         data object NotSupported : TrashUiState()
         data class Error(val message: String) : TrashUiState()

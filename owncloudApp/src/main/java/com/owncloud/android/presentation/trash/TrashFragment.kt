@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.owncloud.android.R
 import com.owncloud.android.databinding.TrashFragmentBinding
-import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
@@ -42,7 +41,6 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
             context = requireContext(),
             layoutManager = layoutManager,
             listener = this,
-            isSelected = trashViewModel::isSelected,
         )
     }
 
@@ -92,10 +90,6 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
             }
         }
 
-        collectLatestLifecycleFlow(trashViewModel.selectedPositions) {
-            updateSelectionUi(it)
-        }
-
         toolbarListener?.onViewTypeChanged(trashViewModel.getCurrentViewType())
     }
 
@@ -133,11 +127,15 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         trashViewModel.toggleSelectAll()
     }
 
-    private fun updateSelectionUi(selectedPositions: Set<Int>) {
-        val itemCount = trashViewModel.itemCount
-        val selectedCount = selectedPositions.size
+    private fun updateSelectionUi(items: List<TrashItemUi>) {
+        val itemCount = items.size
+        val selectedCount = items.count { it.isSelected }
         binding.trashSelectAllCheckbox.setImageResource(
-            if (trashViewModel.isAllSelected) R.drawable.ic_checkbox_marked else R.drawable.ic_checkbox_blank_outline,
+            if (itemCount > 0 && selectedCount == itemCount) {
+                R.drawable.ic_checkbox_marked
+            } else {
+                R.drawable.ic_checkbox_blank_outline
+            },
         )
         toolbarListener?.onSelectionChanged(itemCount, selectedCount)
         trashListAdapter.notifyDataSetChanged()
@@ -165,7 +163,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         updateBottomActionBar(selectedCount = 0)
     }
 
-    private fun showResults(items: List<HCTrashItem>) {
+    private fun showResults(items: List<TrashItemUi>) {
         binding.swipeRefreshTrash.isRefreshing = false
         binding.swipeRefreshTrash.isVisible = true
         binding.recyclerViewTrash.isVisible = true
@@ -174,7 +172,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashInfoBanner.isVisible = true
         binding.trashSelectAllRow.isVisible = true
         trashListAdapter.updateItems(items)
-        updateSelectionUi(trashViewModel.selectedPositions.value)
+        updateSelectionUi(items)
     }
 
     private fun showEmptyState() {
@@ -190,7 +188,6 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashListEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
         binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.trash_empty_title)
         binding.trashListEmpty.listEmptyDatasetSubTitle.setText(R.string.trash_empty_subtitle)
-        updateSelectionUi(trashViewModel.selectedPositions.value)
         updateBottomActionBar(selectedCount = 0)
     }
 
@@ -201,7 +198,6 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashNotSupported.isVisible = true
         binding.trashInfoBanner.isVisible = false
         binding.trashSelectAllRow.isVisible = false
-        updateSelectionUi(trashViewModel.selectedPositions.value)
         updateBottomActionBar(selectedCount = 0)
     }
 

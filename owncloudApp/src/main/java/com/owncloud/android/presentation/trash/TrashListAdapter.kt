@@ -28,25 +28,24 @@ class TrashListAdapter(
     private val context: Context,
     private val layoutManager: StaggeredGridLayoutManager,
     private val listener: TrashListAdapterListener,
-    private val isSelected: (Int) -> Boolean,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private var items: List<HCTrashItem> = emptyList()
+    private var items: List<TrashItemUi> = emptyList()
     private val gridThumbnailSizePx = context.resources.getDimension(R.dimen.file_icon_size_grid).roundToInt()
 
-    fun updateItems(newItems: List<HCTrashItem>) {
+    fun updateItems(newItems: List<TrashItemUi>) {
         items = newItems
         notifyDataSetChanged()
     }
 
-    fun getItemAt(position: Int): HCTrashItem = items[position]
+    fun getItemAt(position: Int): TrashItemUi = items[position]
 
     override fun getItemCount(): Int = items.size
 
     override fun getItemViewType(position: Int): Int =
         when {
             layoutManager.spanCount == 1 -> VIEW_TYPE_LIST
-            items[position].isImage -> VIEW_TYPE_GRID_IMAGE
+            items[position].item.isImage -> VIEW_TYPE_GRID_IMAGE
             else -> VIEW_TYPE_GRID
         }
 
@@ -75,18 +74,20 @@ class TrashListAdapter(
         }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
+        val uiItem = items[position]
+        val item = uiItem.item
         val daysLeft = TrashDateUtils.daysLeft(item.deletedTimestamp)
 
         when (holder) {
-            is ListViewHolder -> bindListItem(holder, item, position, daysLeft)
-            is GridImageViewHolder -> bindGridImageItem(holder, item, position)
-            is GridViewHolder -> bindGridItem(holder, item, position)
+            is ListViewHolder -> bindListItem(holder, uiItem, item, position, daysLeft)
+            is GridImageViewHolder -> bindGridImageItem(holder, uiItem, item, position)
+            is GridViewHolder -> bindGridItem(holder, uiItem, item, position)
         }
     }
 
     private fun bindListItem(
         holder: ListViewHolder,
+        uiItem: TrashItemUi,
         item: HCTrashItem,
         position: Int,
         daysLeft: Int?,
@@ -109,15 +110,16 @@ class TrashListAdapter(
                 fileListLastMod.isVisible = false
             }
 
-            bindSelectionState(customCheckbox, position)
+            bindSelectionState(customCheckbox, uiItem.isSelected)
             fileListConstraintLayout.setOnClickListener { listener.onItemClick(position) }
             customCheckbox.setOnClickListener { listener.onItemClick(position) }
-            updateSelectedBackground(fileListConstraintLayout, position)
+            updateSelectedBackground(fileListConstraintLayout, uiItem.isSelected)
         }
     }
 
     private fun bindGridItem(
         holder: GridViewHolder,
+        uiItem: TrashItemUi,
         item: HCTrashItem,
         position: Int,
     ) {
@@ -129,15 +131,16 @@ class TrashListAdapter(
             uploadProgressIndicator.isVisible = false
             Filename.text = item.originalFilename
 
-            bindSelectionState(customCheckbox, position)
+            bindSelectionState(customCheckbox, uiItem.isSelected)
             ListItemLayout.setOnClickListener { listener.onItemClick(position) }
             customCheckbox.setOnClickListener { listener.onItemClick(position) }
-            updateSelectedBackground(ListItemLayout, position)
+            updateSelectedBackground(ListItemLayout, uiItem.isSelected)
         }
     }
 
     private fun bindGridImageItem(
         holder: GridImageViewHolder,
+        uiItem: TrashItemUi,
         item: HCTrashItem,
         position: Int,
     ) {
@@ -149,10 +152,10 @@ class TrashListAdapter(
             localFileIndicator.isVisible = false
             uploadProgressIndicator.isVisible = false
 
-            bindSelectionState(customCheckbox, position)
+            bindSelectionState(customCheckbox, uiItem.isSelected)
             ListItemLayout.setOnClickListener { listener.onItemClick(position) }
             customCheckbox.setOnClickListener { listener.onItemClick(position) }
-            updateSelectedBackground(ListItemLayout, position)
+            updateSelectedBackground(ListItemLayout, uiItem.isSelected)
         }
     }
 
@@ -247,15 +250,15 @@ class TrashListAdapter(
         layoutParams.width = width
     }
 
-    private fun bindSelectionState(checkbox: ImageView, position: Int) {
+    private fun bindSelectionState(checkbox: ImageView, isSelected: Boolean) {
         checkbox.isVisible = true
         checkbox.setImageResource(
-            if (isSelected(position)) R.drawable.ic_checkbox_marked else R.drawable.ic_checkbox_blank_outline,
+            if (isSelected) R.drawable.ic_checkbox_marked else R.drawable.ic_checkbox_blank_outline,
         )
     }
 
-    private fun updateSelectedBackground(view: View, position: Int) {
-        view.isSelected = isSelected(position)
+    private fun updateSelectedBackground(view: View, isSelected: Boolean) {
+        view.isSelected = isSelected
         view.setBackgroundResource(R.drawable.list_selector)
     }
 
