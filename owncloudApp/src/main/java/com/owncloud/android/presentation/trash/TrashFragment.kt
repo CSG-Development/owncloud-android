@@ -5,13 +5,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.R
 import com.owncloud.android.databinding.TrashFragmentBinding
+import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
+import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -76,7 +82,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         }
         binding.trashActionDelete.setOnClickListener {
             if (binding.trashActionDelete.isEnabled) {
-                // TODO: delete action
+                showDeleteConfirmationDialog()
             }
         }
 
@@ -87,6 +93,23 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
                 is TrashViewModel.TrashUiState.Empty -> showEmptyState()
                 is TrashViewModel.TrashUiState.NotSupported -> showNotSupported()
                 is TrashViewModel.TrashUiState.Error -> showEmptyState()
+            }
+        }
+
+        collectLatestLifecycleFlow(trashViewModel.deleteEvent) { event ->
+            when (event) {
+                is TrashViewModel.TrashDeleteEvent.Success -> {
+                    showMessageInSnackbar(
+                        resources.getQuantityString(
+                            R.plurals.homecloud_trash_delete_success,
+                            event.deletedCount,
+                            event.deletedCount,
+                        ),
+                    )
+                }
+                is TrashViewModel.TrashDeleteEvent.Error -> {
+                    showErrorInSnackbar(R.string.homecloud_trash_delete_error, event.throwable)
+                }
             }
         }
 
@@ -200,6 +223,30 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashSelectAllRow.isVisible = false
         updateBottomActionBar(selectedCount = 0)
     }
+
+    private fun showDeleteConfirmationDialog() {
+        val selectedItems = trashViewModel.getSelectedItems()
+        if (selectedItems.isEmpty()) return
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getDeleteConfirmTitle(selectedItems))
+            .setMessage(R.string.homecloud_trash_delete_confirm_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.trash_action_delete) { _, _ ->
+                trashViewModel.deleteSelectedItems()
+            }
+            .show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            ?.setTextColor(ContextCompat.getColor(requireContext(), R.color.homecloud_error))
+    }
+
+    private fun getDeleteConfirmTitle(selectedItems: List<HCTrashItem>): String =
+        resources.getQuantityString(
+            R.plurals.homecloud_trash_delete_confirm_title_files,
+            selectedItems.size,
+            selectedItems.size,
+        )
 
     interface TrashToolbarListener {
         fun onSelectionChanged(itemCount: Int, selectedCount: Int)

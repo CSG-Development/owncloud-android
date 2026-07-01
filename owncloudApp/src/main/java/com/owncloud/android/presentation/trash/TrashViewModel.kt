@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.domain.UseCaseResult
+import com.owncloud.android.domain.trash.model.HCTrashItem
+import com.owncloud.android.domain.trash.usecases.DeleteTrashItemUseCase
 import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
 import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
 import com.owncloud.android.presentation.authentication.AccountUtils
@@ -11,13 +13,17 @@ import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TrashViewModel(
     private val listTrashUseCase: ListTrashUseCase,
+    private val deleteTrashItemUseCase: DeleteTrashItemUseCase,
     private val isTrashEnabledUseCase: IsTrashEnabledUseCase,
     private val sharedPreferencesProvider: SharedPreferencesProvider,
     private val appContextProvider: ContextProvider,
@@ -26,6 +32,9 @@ class TrashViewModel(
 
     private val _trashUiState = MutableStateFlow<TrashUiState>(TrashUiState.Loading)
     val trashUiState: StateFlow<TrashUiState> = _trashUiState
+
+    private val _deleteEvent = MutableSharedFlow<TrashDeleteEvent>()
+    val deleteEvent: SharedFlow<TrashDeleteEvent> = _deleteEvent.asSharedFlow()
 
     val itemCount: Int
         get() = when (val state = _trashUiState.value) {
@@ -99,6 +108,39 @@ class TrashViewModel(
 
     fun hasSelection(): Boolean = selectedCount > 0
 
+    fun getSelectedItems(): List<HCTrashItem> =
+        when (val state = _trashUiState.value) {
+            is TrashUiState.Success -> state.items.filter { it.isSelected }.map { it.item }
+            else -> emptyList()
+        }
+
+    fun deleteSelectedItems() {
+        val itemsToDelete = getSelectedItems()
+        if (itemsToDelete.isEmpty()) return
+
+        val accountName = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())?.name ?: return
+
+        updateTrashUiState(TrashUiState.Loading)
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            for (item in itemsToDelete) {
+                when (val result = deleteTrashItemUseCase(DeleteTrashItemUseCase.Params(accountName, item.fileId))) {
+                    is UseCaseResult.Success -> {
+                        // do nothing
+                    }
+                    is UseCaseResult.Error -> {
+                        clearSelection()
+                        loadTrash()
+                        _deleteEvent.emit(TrashDeleteEvent.Error(result.throwable))
+                        return@launch
+                    }
+                }
+            }
+            clearSelection()
+            _deleteEvent.emit(TrashDeleteEvent.Success(itemsToDelete.size))
+            loadTrash()
+        }
+    }
+
     private fun getSelectedFileIds(): Set<String> =
         when (val state = _trashUiState.value) {
             is TrashUiState.Success -> state.items.filter { it.isSelected }.map { it.item.fileId }.toSet()
@@ -138,5 +180,10 @@ class TrashViewModel(
         data object Empty : TrashUiState()
         data object NotSupported : TrashUiState()
         data class Error(val message: String) : TrashUiState()
+    }
+
+    sealed class TrashDeleteEvent {
+        data class Success(val deletedCount: Int) : TrashDeleteEvent()
+        data class Error(val throwable: Throwable) : TrashDeleteEvent()
     }
 }
