@@ -42,6 +42,9 @@ object HCTrashUtils {
         }
     }
 
+    fun remotePathToOriginalLocation(remotePath: String): String =
+        if (remotePath.startsWith(File.separator)) remotePath.removePrefix(File.separator) else remotePath
+
     fun getTrashPreviewFileParam(originalFilename: String, deletedTimestampSeconds: Long): String? {
         if (deletedTimestampSeconds <= 0) {
             return null

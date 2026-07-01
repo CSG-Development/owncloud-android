@@ -77,7 +77,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
 
         binding.trashActionRestore.setOnClickListener {
             if (binding.trashActionRestore.isEnabled) {
-                // TODO: restore action
+                trashViewModel.restoreSelectedItems()
             }
         }
         binding.trashActionDelete.setOnClickListener {
@@ -109,6 +109,23 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
                 }
                 is TrashViewModel.TrashDeleteEvent.Error -> {
                     showErrorInSnackbar(R.string.homecloud_trash_delete_error, event.throwable)
+                }
+            }
+        }
+
+        collectLatestLifecycleFlow(trashViewModel.restoreEvent) { event ->
+            when (event) {
+                is TrashViewModel.TrashRestoreEvent.Success -> {
+                    showMessageInSnackbar(
+                        resources.getQuantityString(
+                            R.plurals.homecloud_trash_restore_success,
+                            event.restoredCount,
+                            event.restoredCount,
+                        ),
+                    )
+                }
+                is TrashViewModel.TrashRestoreEvent.Error -> {
+                    showErrorInSnackbar(R.string.homecloud_trash_restore_error, event.throwable)
                 }
             }
         }
@@ -206,7 +223,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashNotSupported.isVisible = false
         binding.trashInfoBanner.isVisible = true
         binding.trashSelectAllRow.isVisible = false
-        binding.trashListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_action_delete_grey)
+        binding.trashListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_menu_trash)
         binding.trashListEmpty.listEmptyDatasetTitle.textSize = 20f
         binding.trashListEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
         binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.trash_empty_title)

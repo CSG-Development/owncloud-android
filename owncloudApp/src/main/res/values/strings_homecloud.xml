@@ -184,6 +184,11 @@
         <item quantity="other">%d items permanently deleted</item>
     </plurals>
     <string name="homecloud_trash_delete_error">Could not permanently delete selected items</string>
+    <plurals name="homecloud_trash_restore_success">
+        <item quantity="one">%d item restored</item>
+        <item quantity="other">%d items restored</item>
+    </plurals>
+    <string name="homecloud_trash_restore_error">Could not restore selected items</string>
 
     <!-- App Update Dialog -->
     <string name="homecloud_app_update_dialog_title">Update Available</string>

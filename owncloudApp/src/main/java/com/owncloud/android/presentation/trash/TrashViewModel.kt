@@ -8,6 +8,7 @@ import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.domain.trash.usecases.DeleteTrashItemUseCase
 import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
 import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
+import com.owncloud.android.domain.trash.usecases.RestoreTrashItemUseCase
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 class TrashViewModel(
     private val listTrashUseCase: ListTrashUseCase,
     private val deleteTrashItemUseCase: DeleteTrashItemUseCase,
+    private val restoreTrashItemUseCase: RestoreTrashItemUseCase,
     private val isTrashEnabledUseCase: IsTrashEnabledUseCase,
     private val sharedPreferencesProvider: SharedPreferencesProvider,
     private val appContextProvider: ContextProvider,
@@ -35,6 +37,9 @@ class TrashViewModel(
 
     private val _deleteEvent = MutableSharedFlow<TrashDeleteEvent>()
     val deleteEvent: SharedFlow<TrashDeleteEvent> = _deleteEvent.asSharedFlow()
+
+    private val _restoreEvent = MutableSharedFlow<TrashRestoreEvent>()
+    val restoreEvent: SharedFlow<TrashRestoreEvent> = _restoreEvent.asSharedFlow()
 
     val itemCount: Int
         get() = when (val state = _trashUiState.value) {
@@ -141,6 +146,41 @@ class TrashViewModel(
         }
     }
 
+    fun restoreSelectedItems() {
+        val itemsToRestore = getSelectedItems()
+        if (itemsToRestore.isEmpty()) return
+
+        val accountName = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())?.name ?: return
+
+        updateTrashUiState(TrashUiState.Loading)
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            for (item in itemsToRestore) {
+                when (
+                    val result = restoreTrashItemUseCase(
+                        RestoreTrashItemUseCase.Params(
+                            accountName = accountName,
+                            fileId = item.fileId,
+                            originalLocation = item.originalLocation,
+                        ),
+                    )
+                ) {
+                    is UseCaseResult.Success -> {
+                        // do nothing
+                    }
+                    is UseCaseResult.Error -> {
+                        clearSelection()
+                        loadTrash()
+                        _restoreEvent.emit(TrashRestoreEvent.Error(result.throwable))
+                        return@launch
+                    }
+                }
+            }
+            clearSelection()
+            _restoreEvent.emit(TrashRestoreEvent.Success(itemsToRestore.size))
+            loadTrash()
+        }
+    }
+
     private fun getSelectedFileIds(): Set<String> =
         when (val state = _trashUiState.value) {
             is TrashUiState.Success -> state.items.filter { it.isSelected }.map { it.item.fileId }.toSet()
@@ -185,5 +225,10 @@ class TrashViewModel(
     sealed class TrashDeleteEvent {
         data class Success(val deletedCount: Int) : TrashDeleteEvent()
         data class Error(val throwable: Throwable) : TrashDeleteEvent()
+    }
+
+    sealed class TrashRestoreEvent {
+        data class Success(val restoredCount: Int) : TrashRestoreEvent()
+        data class Error(val throwable: Throwable) : TrashRestoreEvent()
     }
 }
