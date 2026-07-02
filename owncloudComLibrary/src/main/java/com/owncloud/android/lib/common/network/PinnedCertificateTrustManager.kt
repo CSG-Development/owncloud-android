@@ -61,6 +61,7 @@ class PinnedCertificateTrustManager(
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        return // TODO Disabled pinning in scope of https://jira.seagate.com/jira/browse/HCNOVEO-1735
         val exceptions = mutableListOf<CertificateException>()
         for (trustManager in trustManagers) {
             try {
@@ -75,6 +76,7 @@ class PinnedCertificateTrustManager(
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate?>?, authType: String) {
+        return // TODO Disabled pinning in scope of https://jira.seagate.com/jira/browse/HCNOVEO-1735
         val exceptions = mutableListOf<CertificateException>()
         for (trustManager in trustManagers) {
             try {

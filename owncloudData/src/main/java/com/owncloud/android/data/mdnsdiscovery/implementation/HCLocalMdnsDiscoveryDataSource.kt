@@ -19,8 +19,6 @@ class HCLocalMdnsDiscoveryDataSource(
 ) : LocalMdnsDiscoveryDataSource {
 
     override fun discoverDevices(
-        serviceType: String,
-        serviceName: String,
         duration: Duration
     ): Flow<String> = callbackFlow {
         if (nsdManager == null) {
@@ -30,17 +28,12 @@ class HCLocalMdnsDiscoveryDataSource(
         }
 
         val onServiceFound: (NsdServiceInfo) -> Unit = { service ->
-            // Filter by service name if provided
-            if (serviceName.isNotEmpty() && !service.serviceName.contains(serviceName, ignoreCase = true)) {
-                Timber.d("Service name doesn't match filter, skipping: ${service.serviceName}")
-            } else {
-                nsdManager.resolveService(
-                    service = service,
-                    onServiceResolved = { serviceUrl ->
-                        trySend(serviceUrl)
-                    }
-                )
-            }
+            nsdManager.resolveService(
+                service = service,
+                onServiceResolved = { serviceUrl ->
+                    trySend(serviceUrl)
+                }
+            )
         }
 
         var discoveryListener: NsdManager.DiscoveryListener? = null
@@ -50,7 +43,7 @@ class HCLocalMdnsDiscoveryDataSource(
                 discoveryListener = getDiscoveryListener(
                     doOnServiceFound = onServiceFound,
                 )
-                nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+                nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
                 delay(duration)
                 nsdManager.stopServiceDiscovery(discoveryListener)
             } catch (e: Exception) {
@@ -71,30 +64,23 @@ class HCLocalMdnsDiscoveryDataSource(
     }
 
     override suspend fun discoverDevicesOneShot(
-        serviceType: String,
-        serviceName: String,
         timeout: Duration,
     ): String? {
         return withTimeoutOrNull(timeout) {
-            getDeviceBaseUrl(serviceName, serviceType)
+            getDeviceBaseUrl()
         }
     }
 
-    private suspend fun getDeviceBaseUrl(serviceName: String, serviceType: String): String = suspendCancellableCoroutine { continuation ->
+    private suspend fun getDeviceBaseUrl(): String = suspendCancellableCoroutine { continuation ->
         var discoveryListener: NsdManager.DiscoveryListener? = null
         val onServiceFound: (NsdServiceInfo) -> Unit = { service ->
-            // Filter by service name if provided
-            if (serviceName.isNotEmpty() && !service.serviceName.contains(serviceName, ignoreCase = true)) {
-                Timber.d("Service name doesn't match filter, skipping: ${service.serviceName}")
-            } else {
-                nsdManager?.resolveService(
-                    service = service,
-                    onServiceResolved = { serviceUrl ->
-                        discoveryListener?.let { nsdManager.stopServiceDiscovery(it) }
-                        continuation.resume(serviceUrl)
-                    }
-                )
-            }
+            nsdManager?.resolveService(
+                service = service,
+                onServiceResolved = { serviceUrl ->
+                    discoveryListener?.let { nsdManager.stopServiceDiscovery(it) }
+                    continuation.resume(serviceUrl)
+                }
+            )
         }
 
         discoveryListener = getDiscoveryListener(
@@ -109,7 +95,7 @@ class HCLocalMdnsDiscoveryDataSource(
             }
         }
 
-        nsdManager?.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+        nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
     }
 
     private fun getDiscoveryListener(
@@ -151,6 +137,11 @@ class HCLocalMdnsDiscoveryDataSource(
             }
 
             override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
+                if (!serviceInfo.hasAttr(SEAGATE_ATTR_NAME, SEAGATE_ATTR_VALUE)) {
+                    Timber.d("mDNS service ${serviceInfo.serviceName} doesn't have `$SEAGATE_ATTR_NAME=$SEAGATE_ATTR_VALUE`, so ignore it")
+                    return
+                }
+
                 // Some Android NSD implementations return the resolved hostname (with the
                 // canonical trailing dot) instead of the raw IP address. The trailing dot
                 // breaks downstream URL parsing / certificate validation, so strip it
@@ -167,5 +158,17 @@ class HCLocalMdnsDiscoveryDataSource(
                 }
             }
         })
+    }
+
+    private fun NsdServiceInfo.hasAttr(name: String, value: String): Boolean {
+        return attributes.let {
+            it.contains(name) && String(it[name] ?: ByteArray(0)) == value
+        }
+    }
+
+    companion object {
+        private const val SERVICE_TYPE = "_https._tcp"
+        private const val SEAGATE_ATTR_NAME = "seagate"
+        private const val SEAGATE_ATTR_VALUE = "homecloud"
     }
 }
