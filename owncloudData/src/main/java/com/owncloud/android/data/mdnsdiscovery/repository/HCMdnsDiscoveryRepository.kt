@@ -22,15 +22,11 @@ class HCMdnsDiscoveryRepository(
 ) : MdnsDiscoveryRepository {
 
     override fun discoverAndVerifyDevices(
-        serviceType: String,
-        serviceName: String,
         duration: Duration
     ): Flow<Device> {
-        Timber.d("Starting mDNS discovery with verification - serviceType: $serviceType, serviceName: $serviceName, duration: $duration")
+        Timber.d("Starting mDNS discovery with verification - duration: $duration")
 
         return localMdnsDiscoveryDataSource.discoverDevices(
-            serviceType = serviceType,
-            serviceName = serviceName,
             duration = duration
         ).mapNotNull { baseUrl ->
             verifyDeviceBaseUrl(baseUrl)
@@ -38,13 +34,9 @@ class HCMdnsDiscoveryRepository(
     }
 
     override suspend fun discoverAndVerifyDevice(
-        serviceType: String,
-        serviceName: String,
         duration: Duration
     ): Device? {
         return localMdnsDiscoveryDataSource.discoverDevicesOneShot(
-            serviceType = serviceType,
-            serviceName = serviceName,
             timeout = duration
         )?.let {
             verifyDeviceBaseUrl(it)
