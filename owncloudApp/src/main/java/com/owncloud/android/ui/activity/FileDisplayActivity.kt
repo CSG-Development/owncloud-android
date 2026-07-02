@@ -666,7 +666,7 @@ open class FileDisplayActivity : FileActivity(),
         leftFragmentContainer?.isVisible = !existsSecondFragment
         rightFragmentContainer?.isVisible = existsSecondFragment
 
-        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles() && !fileListOption.isFavorites())
+        showBottomNavBar(show = !existsSecondFragment && !fileListOption.isSharedByLink() && !fileListOption.isTagFiles() && !fileListOption.isFavorites() && !fileListOption.isTrash())
     }
 
     private fun cleanSecondFragment() {
@@ -1174,9 +1174,10 @@ open class FileDisplayActivity : FileActivity(),
                     FileListOption.GLOBAL_SEARCH -> ""
                     FileListOption.FAVORITES -> getString(R.string.drawer_menu_favorites)
                     FileListOption.TAG_FILES -> getAppName()
+                    FileListOption.TRASH -> getString(R.string.homecloud_drawer_menu_trash)
                 }
             setTitle(title)
-            val showBackArrow = fileListOption.isSharedByLink() || fileListOption.isFavorites()
+            val showBackArrow = fileListOption.isSharedByLink() || fileListOption.isFavorites() || fileListOption.isTrash()
             updateStandardToolbar(title = title, homeButtonDisplayed = true, showBackArrow = showBackArrow)
         } else if ((space?.isProject == true || (space?.isPersonal == true && isMultiPersonal)) && chosenFile.remotePath == OCFile.ROOT_PATH) {
             updateStandardToolbar(title = space.name, homeButtonDisplayed = true, showBackArrow = false)
@@ -2077,6 +2078,10 @@ open class FileDisplayActivity : FileActivity(),
             FileListOption.TAG_FILES -> {
 
             }
+
+            FileListOption.TRASH -> {
+                // Trash is handled by a separate activity, nothing to do here
+            }
         }
     }
 
@@ -2093,6 +2098,7 @@ open class FileDisplayActivity : FileActivity(),
         FileListOption.GLOBAL_SEARCH -> R.id.nav_global_search
         FileListOption.FAVORITES -> 0
         FileListOption.TAG_FILES -> 0
+        FileListOption.TRASH -> 0
         null -> R.id.nav_all_files
     }
 

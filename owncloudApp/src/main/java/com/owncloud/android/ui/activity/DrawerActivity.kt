@@ -57,6 +57,7 @@ import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationView
 import com.owncloud.android.R
+import com.owncloud.android.domain.capabilities.model.CapabilityBooleanType
 import com.owncloud.android.domain.capabilities.model.OCCapability
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.user.model.UserQuota
@@ -79,6 +80,7 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.favorites.FavoritesActivity
 import com.owncloud.android.presentation.settings.SettingsActivity
 import com.owncloud.android.presentation.tags.TagsActivity
+import com.owncloud.android.presentation.trash.TrashActivity
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -246,6 +248,9 @@ abstract class DrawerActivity : ToolbarActivity() {
                     val tagsIntent = Intent(applicationContext, TagsActivity::class.java)
                     startActivity(tagsIntent)
                 }
+                R.id.drawer_menu_trash -> {
+                    startActivity(Intent(applicationContext, TrashActivity::class.java))
+                }
                 else -> { Timber.i("Unknown drawer menu item clicked: %s", menuItem.title) }
             }
             true
@@ -292,6 +297,8 @@ abstract class DrawerActivity : ToolbarActivity() {
                 bottomMenu.findItem(R.id.nav_all_files)?.title = getString(R.string.bottom_nav_files)
                 bottomMenu.findItem(R.id.nav_spaces)?.isVisible = false
             }
+            drawerMenu.findItem(R.id.drawer_menu_trash)?.isVisible =
+                capabilities?.filesUndelete == CapabilityBooleanType.TRUE
         }
     }
 

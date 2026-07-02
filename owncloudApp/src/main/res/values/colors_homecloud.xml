@@ -5,6 +5,7 @@
     <color name="homecloud_primary_dark">@color/homecloud_bar_background</color>
     <color name="homecloud_primary_inverted">#DDFFFFFF</color>
     <color name="homecloud_secondary">#CC000000</color>
+    <color name="homecloud_secondary_transparent_pressed">#1F424242</color>
     <color name="homecloud_color_accent">@color/homecloud_blue_lighten_2</color>
     <color name="homecloud_color_outline">#E0E0E0</color>
     <color name="homecloud_color_on_secondary_container">@color/homecloud_blue_darken_2</color>
@@ -31,7 +32,9 @@
     <color name="homecloud_button_primary_background_loading">#145CA4</color>
     <color name="homecloud_button_primary_background_disabled">#EEEEEE</color>
     <color name="homecloud_button_secondary_text">@color/homecloud_blue_darken_2</color>
+    <color name="homecloud_button_secondary_text_disabled">@color/homecloud_content_grey</color>
     <color name="homecloud_button_secondary_stroke">@color/homecloud_blue_darken_2</color>
+    <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_grey</color>
     <color name="homecloud_button_borderless_text">@color/homecloud_blue_darken_2</color>
 
     <color name="homecloud_dialog_background">@color/white</color>

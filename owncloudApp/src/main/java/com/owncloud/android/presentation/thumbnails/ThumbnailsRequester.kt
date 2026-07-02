@@ -31,6 +31,7 @@ import com.owncloud.android.R
 import com.owncloud.android.data.ClientManager
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.spaces.model.SpaceSpecial
+import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.http.HttpConstants.ACCEPT_ENCODING_HEADER
 import com.owncloud.android.lib.common.http.HttpConstants.ACCEPT_ENCODING_IDENTITY
@@ -38,6 +39,7 @@ import com.owncloud.android.lib.common.http.HttpConstants.AUTHORIZATION_HEADER
 import com.owncloud.android.lib.common.http.HttpConstants.OC_X_REQUEST_ID
 import com.owncloud.android.lib.common.http.HttpConstants.USER_AGENT_HEADER
 import com.owncloud.android.lib.common.utils.RandomUtils
+import com.owncloud.android.lib.resources.trash.HCTrashUtils
 import com.owncloud.android.presentation.authentication.AccountUtils
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
@@ -56,7 +58,15 @@ object ThumbnailsRequester : KoinComponent {
 
     private const val DISK_CACHE_SIZE: Long = 1024 * 1024 * 10 // 10MB
 
-    fun getCoilImageLoader(): ImageLoader {
+    @Volatile
+    private var coilImageLoader: ImageLoader? = null
+
+    fun getCoilImageLoader(): ImageLoader =
+        coilImageLoader ?: synchronized(this) {
+            coilImageLoader ?: buildCoilImageLoader().also { coilImageLoader = it }
+        }
+
+    private fun buildCoilImageLoader(): ImageLoader {
         val ownCloudClient = getOwnCloudClient()
 
         val coilRequestHeaderInterceptor = CoilRequestHeaderInterceptor(
@@ -119,6 +129,15 @@ object ThumbnailsRequester : KoinComponent {
             "${ocFile.file.remoteId}${ocFile.file.modificationTimestamp}",
         )
     }
+
+    fun getPreviewUriForTrashItem(item: HCTrashItem, thumbnailSizePx: Int): String? =
+        HCTrashUtils.getTrashPreviewUrl(
+            baseUri = getOwnCloudClient().baseUri.toString(),
+            originalFilename = item.originalFilename,
+            deletedTimestamp = item.deletedTimestamp,
+            widthPx = thumbnailSizePx,
+            heightPx = thumbnailSizePx,
+        )
 
     private fun getOwnCloudClient() = clientManager.getClientForCoilThumbnails(
         accountName = AccountUtils.getCurrentOwnCloudAccount(appContext).name

@@ -15,7 +15,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
       standard menu
@@ -57,14 +58,21 @@
             android:orderInCategory="5"
             android:title="@string/bottom_nav_links" />
         <item
+            android:id="@+id/drawer_menu_trash"
+            android:icon="@drawable/ic_menu_trash"
+            android:orderInCategory="6"
+            android:title="@string/homecloud_drawer_menu_trash"
+            android:visible="false"
+            tools:visible="true"/>
+        <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_drawer_settings"
-            android:orderInCategory="6"
+            android:orderInCategory="7"
             android:title="@string/actionbar_settings" />
         <item
             android:id="@+id/drawer_menu_sign_out"
             android:icon="@drawable/ic_drawer_sign_out"
-            android:orderInCategory="7"
+            android:orderInCategory="8"
             android:title="@string/drawer_menu_sign_out" />
     </group>
 

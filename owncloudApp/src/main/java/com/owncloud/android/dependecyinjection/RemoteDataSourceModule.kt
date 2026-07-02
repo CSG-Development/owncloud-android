@@ -48,6 +48,8 @@ import com.owncloud.android.data.spaces.datasources.RemoteSpacesDataSource
 import com.owncloud.android.data.spaces.datasources.implementation.OCRemoteSpacesDataSource
 import com.owncloud.android.data.tags.datasources.RemoteTagDataSource
 import com.owncloud.android.data.tags.datasources.implementation.OCRemoteTagDataSource
+import com.owncloud.android.data.trash.datasources.RemoteTrashDataSource
+import com.owncloud.android.data.trash.datasources.implementation.HCRemoteTrashDataSource
 import com.owncloud.android.data.user.CurrentUserStorage
 import com.owncloud.android.data.user.datasources.RemoteUserDataSource
 import com.owncloud.android.data.user.datasources.implementation.OCRemoteUserDataSource
@@ -84,6 +86,7 @@ val remoteDataSourceModule = module {
     singleOf(::OCRemoteShareeDataSource) bind RemoteShareeDataSource::class
     singleOf(::OCRemoteSpacesDataSource) bind RemoteSpacesDataSource::class
     singleOf(::OCRemoteTagDataSource) bind RemoteTagDataSource::class
+    singleOf(::HCRemoteTrashDataSource) bind RemoteTrashDataSource::class
     singleOf(::OCRemoteWebFingerDataSource) bind RemoteWebFingerDataSource::class
     single<RemoteUserDataSource> { OCRemoteUserDataSource(get(), androidContext().resources.getDimension(R.dimen.file_avatar_size).toInt()) }
     single<NsdManager?>{ androidContext().getSystemService(NsdManager::class.java) }
