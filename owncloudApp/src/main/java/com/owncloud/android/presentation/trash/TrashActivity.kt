@@ -93,7 +93,7 @@ class TrashActivity : FileDisplayActivity(), TrashFragment.TrashToolbarListener 
             )
         } else {
             updateStandardToolbar(
-                title = getString(R.string.trash_title_with_count, itemCount),
+                title = getString(R.string.homecloud_trash_title_with_count, itemCount),
                 homeButtonDisplayed = true,
                 showBackArrow = true,
             )

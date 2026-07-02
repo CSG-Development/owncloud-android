@@ -33,7 +33,7 @@ fun FileListOption.toTitleStringRes(): Int = when (this) {
     FileListOption.GLOBAL_SEARCH -> R.string.homecloud_global_search_empty_title
     FileListOption.FAVORITES -> R.string.favorites_empty_title
     FileListOption.TAG_FILES -> R.string.tag_files_empty_title
-    FileListOption.TRASH -> R.string.trash_empty_title
+    FileListOption.TRASH -> R.string.homecloud_trash_empty_title
 }
 
 @StringRes
@@ -46,7 +46,7 @@ fun FileListOption.toSubtitleStringRes(): Int = when (this) {
     FileListOption.GLOBAL_SEARCH -> R.string.homecloud_global_search_empty_subtitle
     FileListOption.FAVORITES -> R.string.favorites_empty_subtitle
     FileListOption.TAG_FILES -> R.string.tag_files_empty_title
-    FileListOption.TRASH -> R.string.trash_empty_subtitle
+    FileListOption.TRASH -> R.string.homecloud_trash_empty_subtitle
 }
 
 @DrawableRes

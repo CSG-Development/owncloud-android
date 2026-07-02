@@ -226,8 +226,8 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_menu_trash)
         binding.trashListEmpty.listEmptyDatasetTitle.textSize = 20f
         binding.trashListEmpty.listEmptyDatasetTitle.setTypeface(null, Typeface.NORMAL)
-        binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.trash_empty_title)
-        binding.trashListEmpty.listEmptyDatasetSubTitle.setText(R.string.trash_empty_subtitle)
+        binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_trash_empty_title)
+        binding.trashListEmpty.listEmptyDatasetSubTitle.setText(R.string.homecloud_trash_empty_subtitle)
         updateBottomActionBar(selectedCount = 0)
     }
 
@@ -249,7 +249,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
             .setTitle(getDeleteConfirmTitle(selectedItems))
             .setMessage(R.string.homecloud_trash_delete_confirm_message)
             .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.trash_action_delete) { _, _ ->
+            .setPositiveButton(R.string.homecloud_trash_action_delete) { _, _ ->
                 trashViewModel.deleteSelectedItems()
             }
             .show()

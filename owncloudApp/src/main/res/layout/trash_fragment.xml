@@ -12,7 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:padding="@dimen/standard_margin"
-        android:text="@string/trash_info_banner"
+        android:text="@string/homecloud_trash_info_banner"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         android:lineSpacingMultiplier="1.5"
         android:textColor="@color/homecloud_secondary"
@@ -45,7 +45,7 @@
             android:id="@+id/trash_all_items_label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/trash_all_items"
+            android:text="@string/homecloud_trash_all_items"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/trash_select_all_checkbox"
@@ -104,7 +104,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="@dimen/standard_margin"
-        android:text="@string/trash_not_supported_message"
+        android:text="@string/homecloud_trash_not_supported_message"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         android:textColor="@color/homecloud_gray_label"
         android:visibility="gone"
@@ -137,7 +137,7 @@
             android:layout_marginEnd="@dimen/standard_half_margin"
             android:layout_weight="1"
             android:enabled="false"
-            android:text="@string/trash_action_restore"
+            android:text="@string/homecloud_trash_action_restore"
             app:icon="@drawable/ic_trash_restore"
             app:iconGravity="textStart" />
 
@@ -148,7 +148,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:enabled="false"
-            android:text="@string/trash_action_delete"
+            android:text="@string/homecloud_trash_action_delete"
             app:icon="@drawable/ic_trash_delete_forever"
             app:iconGravity="textStart" />
 

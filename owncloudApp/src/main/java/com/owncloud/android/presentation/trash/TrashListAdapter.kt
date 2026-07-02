@@ -105,7 +105,7 @@ class TrashListAdapter(
 
             if (daysLeft != null) {
                 fileListLastMod.isVisible = true
-                fileListLastMod.text = context.getString(R.string.trash_item_days_left, daysLeft)
+                fileListLastMod.text = context.getString(R.string.homecloud_trash_item_days_left, daysLeft)
             } else {
                 fileListLastMod.isVisible = false
             }

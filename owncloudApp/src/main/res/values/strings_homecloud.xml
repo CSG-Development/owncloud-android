@@ -164,16 +164,16 @@
 
     <!-- Trash -->
     <string name="homecloud_drawer_menu_trash">Trash</string>
-    <string name="trash_title_with_count">Trash (%d)</string>
-    <string name="trash_info_banner">Trashed items will be permanently deleted after 30 days</string>
-    <string name="trash_all_items">All items</string>
-    <string name="trash_item_days_left">%d days left</string>
-    <string name="trash_empty_title">Trash is empty</string>
-    <string name="trash_empty_subtitle">Deleted files will appear here.</string>
-    <string name="trash_not_supported_message">Trash is not supported on this server.</string>
-    <string name="trash_toggle_view">Toggle view</string>
-    <string name="trash_action_restore">Restore</string>
-    <string name="trash_action_delete">Delete</string>
+    <string name="homecloud_trash_title_with_count">Trash (%d)</string>
+    <string name="homecloud_trash_info_banner">Trashed items will be permanently deleted after 30 days</string>
+    <string name="homecloud_trash_all_items">All items</string>
+    <string name="homecloud_trash_item_days_left">%d days left</string>
+    <string name="homecloud_trash_empty_title">Trash is empty</string>
+    <string name="homecloud_trash_empty_subtitle">Deleted files will appear here.</string>
+    <string name="homecloud_trash_not_supported_message">Trash is not supported on this server.</string>
+    <string name="homecloud_trash_toggle_view">Toggle view</string>
+    <string name="homecloud_trash_action_restore">Restore</string>
+    <string name="homecloud_trash_action_delete">Delete</string>
     <string name="homecloud_trash_delete_confirm_message">This will also remove them from their album(s).\n\nYou can\'t undo this action.</string>
     <plurals name="homecloud_trash_delete_confirm_title_files">
         <item quantity="one">Permanently delete %d file?</item>
