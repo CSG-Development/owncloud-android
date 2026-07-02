@@ -81,9 +81,6 @@
     <string name="homecloud_unable_to_connect_support_link">Support team</string>
     <string name="homecloud_unable_to_connect_support_suffix">for further assistance.</string>
     <string name="homecloud_retry">Retry</string>
-    <string name="homecloud_device_update">Device update</string>
-    <string name="homecloud_device_sync_error">Your device may be disconnected or address has changed. Do you want to try to sync device?</string>
-
     <string name="homecloud_bottom_nav_search">Search</string>
 
     <string name="homecloud_global_search_view_title">Search files</string>
@@ -161,6 +158,7 @@
     <string name="homecloud_set_menu_button_visible">Set menu button visible</string>
 
     <string name="homecloud_close">Close</string>
+    <string name="homecloud_connection_lost_message">Connection lost with Home Cloud. Please check the device is powered on and connected to the network.</string>
     <string name="homecloud_finding_network">Finding network…</string>
     <string name="homecloud_no_internet">No internet</string>
 

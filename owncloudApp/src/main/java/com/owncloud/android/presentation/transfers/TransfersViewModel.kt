@@ -101,7 +101,8 @@ class TransfersViewModel(
         accountName: String,
         listOfContentUris: List<Uri>,
         uploadFolderPath: String,
-        spaceId: String?
+        spaceId: String?,
+        listOfRemoteNames: List<String> = emptyList(),
     ) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             uploadFilesFromContentUriUseCase(
@@ -110,6 +111,7 @@ class TransfersViewModel(
                     listOfContentUris = listOfContentUris,
                     uploadFolderPath = uploadFolderPath,
                     spaceId = spaceId,
+                    listOfRemoteNames = listOfRemoteNames,
                 )
             )
         }
@@ -120,6 +122,7 @@ class TransfersViewModel(
         listOfLocalPaths: List<String>,
         uploadFolderPath: String,
         spaceId: String?,
+        listOfRemoteNames: List<String> = emptyList(),
     ) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
             uploadFilesFromSystemUseCase(
@@ -128,6 +131,7 @@ class TransfersViewModel(
                     listOfLocalPaths = listOfLocalPaths,
                     uploadFolderPath = uploadFolderPath,
                     spaceId = spaceId,
+                    listOfRemoteNames = listOfRemoteNames,
                 )
             )
         }

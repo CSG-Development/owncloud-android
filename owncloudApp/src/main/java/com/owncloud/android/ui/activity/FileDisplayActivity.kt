@@ -66,6 +66,7 @@ import com.owncloud.android.R
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.databinding.ActivityMainBinding
 import com.owncloud.android.domain.capabilities.model.OCCapability
+import com.owncloud.android.domain.device.DeviceConnectionState
 import com.owncloud.android.domain.exceptions.AccountNotFoundException
 import com.owncloud.android.domain.exceptions.DeepLinkException
 import com.owncloud.android.domain.exceptions.FileNotFoundException
@@ -108,7 +109,6 @@ import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
-import com.owncloud.android.presentation.network.NetworkMonitorState
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
 import com.owncloud.android.presentation.security.LockType
 import com.owncloud.android.presentation.security.SecurityEnforced
@@ -333,16 +333,31 @@ open class FileDisplayActivity : FileActivity(),
         snackbarBinding.networkMonitorCloseButton.setOnClickListener {
             snackbarBinding.networkMonitorSnackbar.isVisible = false
         }
-        collectLatestLifecycleFlow(networkMonitorViewModel.networkMonitorState) { state ->
+        snackbarBinding.networkMonitorRetryButton.setOnClickListener {
+            networkMonitorViewModel.onRetryClicked()
+        }
+        collectLatestLifecycleFlow(networkMonitorViewModel.connectionState) { state ->
             when (state) {
-                NetworkMonitorState.Hidden -> snackbarBinding.networkMonitorSnackbar.isVisible = false
-                NetworkMonitorState.NoInternet -> {
-                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_no_internet)
-                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                DeviceConnectionState.Connected, DeviceConnectionState.Initial -> {
+                    snackbarBinding.networkMonitorSnackbar.isVisible = false
                 }
-                NetworkMonitorState.FindingNetwork -> {
-                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_finding_network)
+                DeviceConnectionState.NoInternet -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_no_internet)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = false
                     snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = true
+                }
+                is DeviceConnectionState.FindingNetwork -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_finding_network)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = false
+                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = true
+                }
+                DeviceConnectionState.ConnectionLost -> {
+                    snackbarBinding.networkMonitorTitle.text = getString(R.string.homecloud_connection_lost_message)
+                    snackbarBinding.networkMonitorRetryButton.isVisible = true
+                    snackbarBinding.networkMonitorSnackbar.isVisible = true
+                    snackbarBinding.networkMonitorCloseButton.isVisible = false
                 }
             }
         }
@@ -770,7 +785,10 @@ open class FileDisplayActivity : FileActivity(),
         }
     }
 
-    private fun requestUploadOfFilesFromFileSystem(filePaths: Array<String>?) {
+    private fun requestUploadOfFilesFromFileSystem(
+        filePaths: Array<String>?,
+        remoteNames: List<String> = emptyList(),
+    ) {
         if (filePaths != null) {
             val remotePaths = arrayOfNulls<String>(filePaths.size)
             val remotePathBase = currentDir?.remotePath
@@ -783,6 +801,7 @@ open class FileDisplayActivity : FileActivity(),
                 listOfLocalPaths = filePaths.toList(),
                 uploadFolderPath = remotePathBase!!,
                 spaceId = currentDir.spaceId,
+                listOfRemoteNames = remoteNames,
             )
 
         } else {
@@ -805,7 +824,7 @@ open class FileDisplayActivity : FileActivity(),
         requestUploadOfContentUris(streamsToUpload)
     }
 
-    private fun requestUploadOfContentUris(streamsToUpload: List<Uri>) {
+    private fun requestUploadOfContentUris(streamsToUpload: List<Uri>, remoteNames: List<String> = emptyList(),) {
         val currentDir = currentDir
         val remotePath = currentDir?.remotePath ?: OCFile.ROOT_PATH
 
@@ -823,6 +842,7 @@ open class FileDisplayActivity : FileActivity(),
             listOfContentUris = streamsToUpload,
             uploadFolderPath = remotePath,
             spaceId = currentDir.spaceId,
+            listOfRemoteNames = remoteNames,
         )
     }
 
@@ -837,10 +857,11 @@ open class FileDisplayActivity : FileActivity(),
             return
         }
         if (scanResult.filePaths.isNotEmpty()) {
-            requestUploadOfFilesFromFileSystem(scanResult.filePaths.toTypedArray())
+            requestUploadOfFilesFromFileSystem(scanResult.filePaths.map { it.first }.toTypedArray(),
+                scanResult.filePaths.map { it.second })
         }
         if (scanResult.contentUris.isNotEmpty()) {
-            requestUploadOfContentUris(scanResult.contentUris)
+            requestUploadOfContentUris(scanResult.contentUris.map { it.first }, scanResult.contentUris.map { it.second })
         }
     }
 
@@ -1550,7 +1571,8 @@ open class FileDisplayActivity : FileActivity(),
                     }
 
                     SynchronizeFileUseCase.SyncType.FileNotFound -> {
-                        /** Nothing to do atm. If we are in details view, go back to file list */
+                        fileWaitingToPreview = null
+                        showSnackMessage(getString(R.string.sync_file_not_found_msg))
                     }
 
                     is SynchronizeFileUseCase.SyncType.UploadEnqueued -> {

@@ -10,12 +10,17 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.SCANNER_MODE_FULL
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DocumentScannerUploadHelper {
 
+    private val formatter = SimpleDateFormat("'Scan_'yyyy-MM-dd_HHmmss", Locale.US)
+
     data class ScanUploadResult(
-        val filePaths: List<String>,
-        val contentUris: List<Uri>,
+        val filePaths: List<Pair<String, String>>,
+        val contentUris: List<Pair<Uri, String>>,
     ) {
         fun isEmpty(): Boolean = filePaths.isEmpty() && contentUris.isEmpty()
     }
@@ -42,8 +47,8 @@ class DocumentScannerUploadHelper {
     fun parseResult(data: Intent?): ScanUploadResult {
         val result = GmsDocumentScanningResult.fromActivityResultIntent(data)
             ?: return ScanUploadResult(emptyList(), emptyList())
-        val filePaths = mutableListOf<String>()
-        val contentUris = mutableListOf<Uri>()
+        val filePaths = mutableListOf<Pair<String, String >>()
+        val contentUris = mutableListOf<Pair<Uri, String>>()
         result.pages?.forEach { page ->
             page.imageUri?.let { addUri(it, filePaths, contentUris) }
         }
@@ -51,10 +56,12 @@ class DocumentScannerUploadHelper {
         return ScanUploadResult(filePaths, contentUris)
     }
 
-    private fun addUri(uri: Uri, filePaths: MutableList<String>, contentUris: MutableList<Uri>) {
+    private fun addUri(uri: Uri, filePaths: MutableList<Pair<String, String>>, contentUris: MutableList<Pair<Uri, String>>) {
+        val extension = uri.path?.substringAfterLast(".") ?: ""
+        val remoteFileName = formatter.format(Date()) + "." + extension
         when (uri.scheme) {
-            ContentResolver.SCHEME_FILE -> uri.path?.let { filePaths.add(it) }
-            ContentResolver.SCHEME_CONTENT -> contentUris.add(uri)
+            ContentResolver.SCHEME_FILE -> uri.path?.let { filePaths.add(it to remoteFileName) }
+            ContentResolver.SCHEME_CONTENT -> contentUris.add(uri to remoteFileName)
         }
     }
 

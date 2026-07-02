@@ -4,6 +4,8 @@ import android.accounts.Account
 import android.os.SystemClock
 import com.owncloud.android.data.connectivity.Connectivity
 import com.owncloud.android.data.connectivity.NetworkStateObserver
+import com.owncloud.android.data.device.DynamicBaseUrlSwitcher.Companion.COOLDOWN_MS
+import com.owncloud.android.data.device.DynamicBaseUrlSwitcher.Companion.DEBOUNCE_MS
 import com.owncloud.android.data.lifecycle.AppLifecycleObserver
 import com.owncloud.android.data.lifecycle.AppState
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
@@ -174,7 +176,7 @@ class DynamicBaseUrlSwitcher(
 
         // Gating rule (reference): try local discovery only when we have a LAN-capable
         // transport, OR when connectivity is unknown. Cellular-only ⇒ skip local.
-        val wifiAvailable = connectivity.isLanLikely() || connectivity.isWifiStateUnknown()
+        val wifiAvailable = connectivity.allowsLocalPathProbe()
         Timber.d(
             "DynamicBaseUrlSwitcher: triggering update (fromBackground=$fromBackground, wifiAvailable=$wifiAvailable)"
         )

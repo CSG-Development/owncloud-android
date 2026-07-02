@@ -45,24 +45,24 @@ class UploadFilesFromContentUriUseCase(
 ) : BaseUseCase<Unit, UploadFilesFromContentUriUseCase.Params>() {
 
     override fun run(params: Params) {
-        params.listOfContentUris.forEach { contentUri ->
+        params.listOfContentUris.forEachIndexed { index, contentUri ->
             val documentFile = DocumentFile.fromSingleUri(MainApp.appContext.applicationContext, contentUri)
 
             if (documentFile == null) {
                 Timber.w("Upload of $contentUri won't be enqueued. We were not able to find it in the local storage")
-                return@forEach
+                return@forEachIndexed
             }
 
             val uploadId = storeInUploadsDatabase(
                 documentFile = documentFile,
-                uploadPath = params.uploadFolderPath.plus(documentFile.name),
+                uploadPath = params.uploadFolderPath.plus(params.listOfRemoteNames.getOrNull(index) ?: documentFile.name),
                 accountName = params.accountName,
                 spaceId = params.spaceId,
             )
 
             enqueueSingleUpload(
                 contentUri = documentFile.uri,
-                uploadPath = params.uploadFolderPath.plus(documentFile.name),
+                uploadPath = params.uploadFolderPath.plus(params.listOfRemoteNames.getOrNull(index) ?:documentFile.name),
                 lastModifiedInSeconds = documentFile.lastModified().div(1_000).toString(),
                 accountName = params.accountName,
                 uploadIdInStorageManager = uploadId,
@@ -117,6 +117,7 @@ class UploadFilesFromContentUriUseCase(
         val accountName: String,
         val listOfContentUris: List<Uri>,
         val uploadFolderPath: String,
+        val listOfRemoteNames: List<String> = emptyList(),
         val spaceId: String?,
     )
 }

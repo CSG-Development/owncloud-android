@@ -30,11 +30,6 @@
 
 package com.owncloud.android.ui.activity;
 
-import static com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.PREF_SHOW_HIDDEN_FILES;
-import static org.koin.core.parameter.ParametersHolderKt.parametersOf;
-import static org.koin.java.KoinJavaComponent.get;
-import static org.koin.java.KoinJavaComponent.inject;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Dialog;
@@ -68,7 +63,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -105,23 +99,27 @@ import com.owncloud.android.ui.helpers.UriUploader;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.FileStorageUtils;
 import com.owncloud.android.utils.SortFilesUtils;
-
+import kotlin.Lazy;
+import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
+import timber.log.Timber;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import kotlin.Lazy;
-import kotlin.Unit;
-import timber.log.Timber;
+import static com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.PREF_SHOW_HIDDEN_FILES;
+import static org.koin.core.parameter.ParametersHolderKt.parametersOf;
+import static org.koin.java.KoinJavaComponent.get;
+import static org.koin.java.KoinJavaComponent.inject;
 
 /**
  * This can be used to upload things to an ownCloud instance.
@@ -996,7 +994,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
                 fileToUpload.add(filePath);
                 @NotNull Lazy<TransfersViewModel> transfersViewModelLazy = inject(TransfersViewModel.class);
                 TransfersViewModel transfersViewModel = transfersViewModelLazy.getValue();
-                transfersViewModel.uploadFilesFromSystem(getAccount().name, fileToUpload, mUploadPath, currentSpaceId);
+                transfersViewModel.uploadFilesFromSystem(getAccount().name, fileToUpload, mUploadPath, currentSpaceId, Collections.emptyList());
                 finish();
 
                 inputLayout.setErrorEnabled(error != null);

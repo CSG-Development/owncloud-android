@@ -88,7 +88,11 @@ class HCLocalMdnsDiscoveryDataSource(
         )
 
         continuation.invokeOnCancellation {
-            nsdManager?.stopServiceDiscovery(discoveryListener)
+            try {
+                nsdManager?.stopServiceDiscovery(discoveryListener)
+            } catch (e: IllegalArgumentException) {
+                Timber.d("Failed to stop service discovery, ${e.message}")
+            }
         }
 
         nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)

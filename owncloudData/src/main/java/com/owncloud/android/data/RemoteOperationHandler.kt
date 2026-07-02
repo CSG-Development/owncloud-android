@@ -21,6 +21,7 @@
 
 package com.owncloud.android.data
 
+import com.owncloud.android.data.device.DeviceConnectionMonitorBridge
 import com.owncloud.android.domain.exceptions.AccountException
 import com.owncloud.android.domain.exceptions.AccountNotFoundException
 import com.owncloud.android.domain.exceptions.AccountNotNewException
@@ -86,8 +87,11 @@ private fun <T> handleRemoteOperationResult(
     remoteOperationResult: RemoteOperationResult<T>
 ): T {
     if (remoteOperationResult.isSuccess) {
+        DeviceConnectionMonitorBridge.reportConnected()
         return remoteOperationResult.data
     }
+
+    reportConnectionFailure(remoteOperationResult.code)
 
     when (remoteOperationResult.code) {
         RemoteOperationResult.ResultCode.WRONG_CONNECTION -> throw NoConnectionWithServerException()
@@ -144,5 +148,18 @@ private fun <T> handleRemoteOperationResult(
         RemoteOperationResult.ResultCode.NETWORK_ERROR -> throw NetworkErrorException()
         RemoteOperationResult.ResultCode.RESOURCE_LOCKED -> throw ResourceLockedException()
         else -> throw Exception("An unknown error has occurred")
+    }
+}
+
+private fun reportConnectionFailure(resultCode: RemoteOperationResult.ResultCode) {
+    when (resultCode) {
+        RemoteOperationResult.ResultCode.NO_NETWORK_CONNECTION ->
+            DeviceConnectionMonitorBridge.reportNoNetwork()
+        RemoteOperationResult.ResultCode.WRONG_CONNECTION,
+        RemoteOperationResult.ResultCode.TIMEOUT,
+        RemoteOperationResult.ResultCode.HOST_NOT_AVAILABLE,
+        RemoteOperationResult.ResultCode.NETWORK_ERROR,
+        -> DeviceConnectionMonitorBridge.reportUnreachable()
+        else -> Unit
     }
 }
