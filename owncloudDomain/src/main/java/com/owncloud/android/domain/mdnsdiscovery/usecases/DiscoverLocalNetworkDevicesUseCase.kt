@@ -15,21 +15,15 @@ class DiscoverLocalNetworkDevicesUseCase(
     
     fun execute(params: Params = DEFAULT_MDNS_PARAMS): Flow<Device> =
         mdnsDiscoveryRepository.discoverAndVerifyDevices(
-            serviceType = params.serviceType,
-            serviceName = params.serviceName,
             duration = params.duration
         )
 
     suspend fun oneShot(params: Params = DEFAULT_MDNS_PARAMS): Device? =
         mdnsDiscoveryRepository.discoverAndVerifyDevice(
-            serviceType = params.serviceType,
-            serviceName = params.serviceName,
             duration = params.duration
         )
 
     data class Params(
-        val serviceType: String,
-        val serviceName: String,
         val duration: Duration
     )
 
@@ -37,8 +31,6 @@ class DiscoverLocalNetworkDevicesUseCase(
 
         // 5 seconds matches the reference algorithm "local discovery window".
         val DEFAULT_MDNS_PARAMS = Params(
-            serviceType = "_https._tcp",
-            serviceName = "HomeCloud",
             duration = 5.seconds
         )
     }
