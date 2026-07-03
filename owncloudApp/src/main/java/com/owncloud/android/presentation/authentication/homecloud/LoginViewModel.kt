@@ -143,13 +143,13 @@ class LoginViewModel(
     private fun checkMdns() {
         viewModelScope.launch {
             _state.update { currentState -> currentState.copyGeneralState(isActionButtonLoading = true) }
-            val device = withContext(coroutinesDispatcherProvider.io) {
+            val devices = withContext(coroutinesDispatcherProvider.io) {
                 discoverLocalNetworkDevicesUseCase.oneShot()
             }
-            if (device == null) {
+            if (devices.isEmpty()) {
                 showRemoteAccessCodeDialog()
             } else {
-                switchToLoginState(device)
+                switchToLoginState(devices)
                 startObserveServers()
             }
             _state.update { currentState -> currentState.copyGeneralState(isActionButtonLoading = false) }
@@ -183,13 +183,13 @@ class LoginViewModel(
         }
     }
 
-    private fun switchToLoginState(device: Device? = null) {
+    private fun switchToLoginState(devices: List<Device> = emptyList()) {
         val currentState = _state.value
         _state.update {
             LoginScreenState.LoginState(
                 username = currentState.username,
-                devices = if (device == null) currentState.devices else listOf(device),
-                selectedDevice = device ?: currentState.selectedDevice,
+                devices = if (devices.isEmpty()) currentState.devices else devices,
+                selectedDevice = currentState.selectedDevice ?: devices.firstOrNull(),
                 isSettingsVisible = currentState.isSettingsVisible
             )
         }
