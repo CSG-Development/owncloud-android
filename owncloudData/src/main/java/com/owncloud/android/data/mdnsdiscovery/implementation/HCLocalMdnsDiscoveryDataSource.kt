@@ -8,10 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
-import kotlin.coroutines.resume
 import kotlin.time.Duration
 
 class HCLocalMdnsDiscoveryDataSource(
@@ -61,41 +58,6 @@ class HCLocalMdnsDiscoveryDataSource(
                 }
             }
         }
-    }
-
-    override suspend fun discoverDevicesOneShot(
-        timeout: Duration,
-    ): String? {
-        return withTimeoutOrNull(timeout) {
-            getDeviceBaseUrl()
-        }
-    }
-
-    private suspend fun getDeviceBaseUrl(): String = suspendCancellableCoroutine { continuation ->
-        var discoveryListener: NsdManager.DiscoveryListener? = null
-        val onServiceFound: (NsdServiceInfo) -> Unit = { service ->
-            nsdManager?.resolveService(
-                service = service,
-                onServiceResolved = { serviceUrl ->
-                    discoveryListener?.let { nsdManager.stopServiceDiscovery(it) }
-                    continuation.resume(serviceUrl)
-                }
-            )
-        }
-
-        discoveryListener = getDiscoveryListener(
-            doOnServiceFound = onServiceFound,
-        )
-
-        continuation.invokeOnCancellation {
-            try {
-                nsdManager?.stopServiceDiscovery(discoveryListener)
-            } catch (e: IllegalArgumentException) {
-                Timber.d("Failed to stop service discovery, ${e.message}")
-            }
-        }
-
-        nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
     }
 
     private fun getDiscoveryListener(
