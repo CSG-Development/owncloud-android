@@ -1,19 +1,30 @@
 package com.owncloud.android.dependecyinjection
 
 import com.owncloud.android.BuildConfig
+import com.owncloud.android.data.device.AppLifecycleGatewayImpl
 import com.owncloud.android.data.device.CurrentDeviceStorage
+import com.owncloud.android.data.device.DeviceConnectionMonitorBridge
 import com.owncloud.android.data.device.DynamicBaseUrlSwitcher
 import com.owncloud.android.data.device.HCAccountBaseUrlManager
 import com.owncloud.android.data.device.HCBaseUrlChooser
 import com.owncloud.android.data.device.HCDeviceUrlResolver
+import com.owncloud.android.data.device.NetworkConnectivityGatewayImpl
 import com.owncloud.android.data.remoteaccess.RemoteAccessAuthEvents
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessAuthInterceptor
 import com.owncloud.android.data.remoteaccess.interceptor.RemoteAccessTokenRefreshInterceptor
 import com.owncloud.android.domain.device.AccountBaseUrlManager
+import com.owncloud.android.domain.device.AppLifecycleGateway
 import com.owncloud.android.domain.device.BaseUrlChooser
+import com.owncloud.android.domain.device.BaseUrlUpdateStatus
+import com.owncloud.android.domain.device.DeviceConnectionMonitor
+import com.owncloud.android.domain.device.DeviceConnectionMonitorImpl
+import com.owncloud.android.domain.device.NetworkConnectivityGateway
+import com.owncloud.android.domain.device.UrlSwitchingTrigger
 import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
+import com.owncloud.android.usecases.device.BaseUrlUpdateStatusImpl
+import com.owncloud.android.usecases.device.UrlSwitchingTriggerImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -68,6 +79,39 @@ val remoteAccessModule = module {
         HCDeviceUrlResolver(
             deviceVerificationClient = get()
         )
+    }
+
+    single<NetworkConnectivityGateway> {
+        NetworkConnectivityGatewayImpl(networkStateObserver = get())
+    }
+
+    single<AppLifecycleGateway> {
+        AppLifecycleGatewayImpl(appLifecycleObserver = get())
+    }
+
+    single<BaseUrlUpdateStatus> {
+        BaseUrlUpdateStatusImpl(workManager = get())
+    }
+
+    single<UrlSwitchingTrigger> {
+        UrlSwitchingTriggerImpl(
+            appContext = androidContext(),
+            dynamicBaseUrlSwitcher = get(),
+        )
+    }
+
+    single<DeviceConnectionMonitor> {
+        DeviceConnectionMonitorImpl(
+            switchToBestAvailableBaseUrlUseCase = get(),
+            probeCurrentBaseUrlUseCase = get(),
+            updateBaseUrlUseCase = get(),
+            accountBaseUrlManager = get(),
+            networkConnectivity = get(),
+            appLifecycle = get(),
+            baseUrlUpdateStatus = get(),
+            urlSwitchingTrigger = get(),
+            coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        ).also { DeviceConnectionMonitorBridge.install(it) }
     }
 
     // Base URL Chooser - selects best available base URL

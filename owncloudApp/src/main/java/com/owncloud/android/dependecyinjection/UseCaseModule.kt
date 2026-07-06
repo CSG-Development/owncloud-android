@@ -55,6 +55,7 @@ import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFrom
 import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
+import com.owncloud.android.domain.device.usecases.ProbeCurrentBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
@@ -139,6 +140,10 @@ import com.owncloud.android.domain.transfers.usecases.ClearSuccessfulTransfersUs
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersAsStreamUseCase
 import com.owncloud.android.domain.transfers.usecases.GetAllTransfersUseCase
 import com.owncloud.android.domain.transfers.usecases.UpdatePendingUploadsPathUseCase
+import com.owncloud.android.domain.trash.usecases.DeleteTrashItemUseCase
+import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
+import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
+import com.owncloud.android.domain.trash.usecases.RestoreTrashItemUseCase
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaAsStreamUseCase
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaUseCase
 import com.owncloud.android.domain.user.usecases.GetUserAvatarAsyncUseCase
@@ -360,10 +365,17 @@ val useCaseModule = module {
     single<UpdateBaseUrlUseCase>{ UpdateBaseUrlUseCase(get()) }
 
     factoryOf(::GetAvailableServerInfoUseCase)
+    factoryOf(::ProbeCurrentBaseUrlUseCase)
     factoryOf(::SwitchToBestAvailableBaseUrlUseCase)
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)
+
+    // Trash
+    factoryOf(::ListTrashUseCase)
+    factoryOf(::RestoreTrashItemUseCase)
+    factoryOf(::DeleteTrashItemUseCase)
+    factoryOf(::IsTrashEnabledUseCase)
 
     factoryOf(::GetFirebaseInstallationIdUseCase)
 }

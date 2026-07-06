@@ -81,9 +81,6 @@
     <string name="homecloud_unable_to_connect_support_link">Support team</string>
     <string name="homecloud_unable_to_connect_support_suffix">for further assistance.</string>
     <string name="homecloud_retry">Retry</string>
-    <string name="homecloud_device_update">Device update</string>
-    <string name="homecloud_device_sync_error">Your device may be disconnected or address has changed. Do you want to try to sync device?</string>
-
     <string name="homecloud_bottom_nav_search">Search</string>
 
     <string name="homecloud_global_search_view_title">Search files</string>
@@ -161,8 +158,37 @@
     <string name="homecloud_set_menu_button_visible">Set menu button visible</string>
 
     <string name="homecloud_close">Close</string>
+    <string name="homecloud_connection_lost_message">Connection lost with Home Cloud. Please check the device is powered on and connected to the network.</string>
     <string name="homecloud_finding_network">Finding network…</string>
     <string name="homecloud_no_internet">No internet</string>
+
+    <!-- Trash -->
+    <string name="homecloud_drawer_menu_trash">Trash</string>
+    <string name="homecloud_trash_title_with_count">Trash (%d)</string>
+    <string name="homecloud_trash_info_banner">Trashed items will be permanently deleted after 30 days</string>
+    <string name="homecloud_trash_all_items">All items</string>
+    <string name="homecloud_trash_item_days_left">%d days left</string>
+    <string name="homecloud_trash_empty_title">Trash is empty</string>
+    <string name="homecloud_trash_empty_subtitle">Deleted files will appear here.</string>
+    <string name="homecloud_trash_not_supported_message">Trash is not supported on this server.</string>
+    <string name="homecloud_trash_toggle_view">Toggle view</string>
+    <string name="homecloud_trash_action_restore">Restore</string>
+    <string name="homecloud_trash_action_delete">Delete</string>
+    <string name="homecloud_trash_delete_confirm_message">This will also remove them from their album(s).\n\nYou can\'t undo this action.</string>
+    <plurals name="homecloud_trash_delete_confirm_title_files">
+        <item quantity="one">Permanently delete %d file?</item>
+        <item quantity="other">Permanently delete %d files?</item>
+    </plurals>
+    <plurals name="homecloud_trash_delete_success">
+        <item quantity="one">%d item permanently deleted</item>
+        <item quantity="other">%d items permanently deleted</item>
+    </plurals>
+    <string name="homecloud_trash_delete_error">Could not permanently delete selected items</string>
+    <plurals name="homecloud_trash_restore_success">
+        <item quantity="one">%d item restored</item>
+        <item quantity="other">%d items restored</item>
+    </plurals>
+    <string name="homecloud_trash_restore_error">Could not restore selected items</string>
 
     <!-- App Update Dialog -->
     <string name="homecloud_app_update_dialog_title">Update Available</string>

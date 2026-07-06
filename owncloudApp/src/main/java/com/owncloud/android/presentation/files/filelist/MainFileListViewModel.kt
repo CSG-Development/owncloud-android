@@ -290,6 +290,10 @@ class MainFileListViewModel(
                     FileListOption.TAG_FILES -> {
                         parentDir = null
                     }
+
+                    FileListOption.TRASH -> {
+                        parentDir = null
+                    }
                 }
             } else if (parentId == ROOT_PARENT_ID) {
                 // Browsing to parent folder. Root
@@ -435,6 +439,7 @@ class MainFileListViewModel(
             FileListOption.GLOBAL_SEARCH -> flowOf()
             FileListOption.FAVORITES -> flowOf()
             FileListOption.TAG_FILES -> flowOf()
+            FileListOption.TRASH -> flowOf()
         }.toFileListUiState(
             currentFolderDisplayed,
             fileListOption,

@@ -117,7 +117,7 @@ class BaseUrlUpdateWorker(
 
         val localDevice = if (wifiAvailable) {
             try {
-                discoverLocalNetworkDevicesUseCase.oneShot(DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS)
+                discoverLocalNetworkDevicesUseCase.oneShot(DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS).firstOrNull()
             } catch (e: Exception) {
                 Timber.w(e, "BaseUrlUpdateWorker: mDNS discovery failed")
                 null

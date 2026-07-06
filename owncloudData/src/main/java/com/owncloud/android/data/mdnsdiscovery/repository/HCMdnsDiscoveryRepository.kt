@@ -33,16 +33,6 @@ class HCMdnsDiscoveryRepository(
         }
     }
 
-    override suspend fun discoverAndVerifyDevice(
-        duration: Duration
-    ): Device? {
-        return localMdnsDiscoveryDataSource.discoverDevicesOneShot(
-            timeout = duration
-        )?.let {
-            verifyDeviceBaseUrl(it)
-        }
-    }
-
     private suspend fun verifyDeviceBaseUrl(baseUrl: String): Device? {
         // Verify each discovered device independently
         Timber.d("Device discovered via mDNS: $baseUrl - verifying...")

@@ -16,8 +16,4 @@ interface LocalMdnsDiscoveryDataSource {
     fun discoverDevices(
         duration: Duration,
     ): Flow<String>
-
-    suspend fun discoverDevicesOneShot(
-        timeout: Duration,
-    ): String?
 }

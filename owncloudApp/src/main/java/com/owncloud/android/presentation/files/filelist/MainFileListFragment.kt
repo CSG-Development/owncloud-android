@@ -199,8 +199,6 @@ class MainFileListFragment : FileFragment(),
     private var succeededTransfers: List<OCTransfer>? = null
     private var numberOfUploadsRefreshed: Int = 0
 
-    private var baseUrlsUpdateDialog: AlertDialog? = null
-
     private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
 
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
@@ -333,12 +331,6 @@ class MainFileListFragment : FileFragment(),
         isMultiPersonal = capabilityViewModel.checkMultiPersonal()
         initViews()
         subscribeToViewModels()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        baseUrlsUpdateDialog?.dismiss()
-        baseUrlsUpdateDialog = null
     }
 
     override fun onResume() {
@@ -515,31 +507,6 @@ class MainFileListFragment : FileFragment(),
         observeTransfers()
 
         observeClearSelectionEvents()
-
-        observeBaseUrlUpdate()
-    }
-
-    private fun observeBaseUrlUpdate() {
-        collectLatestLifecycleFlow(fileOperationsViewModel.updateBaseUrlDialog) {
-            showBaseUrlUpdateDialog()
-        }
-    }
-
-    private fun showBaseUrlUpdateDialog() {
-        if (baseUrlsUpdateDialog == null) {
-            baseUrlsUpdateDialog = MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.homecloud_device_update))
-                .setMessage(getString(R.string.homecloud_device_sync_error))
-                .setNegativeButton(R.string.common_no) { dialog, _ ->
-                    dialog.dismiss()
-                }
-                .setPositiveButton(R.string.common_yes) { dialog, _ ->
-                    fileOperationsViewModel.handleBaseUrlUpdate()
-                    dialog.dismiss()
-                }
-                .create()
-        }
-        baseUrlsUpdateDialog?.show()
     }
 
     private fun observeCurrentFolderDisplayed() {

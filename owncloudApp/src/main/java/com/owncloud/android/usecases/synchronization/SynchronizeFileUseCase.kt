@@ -58,9 +58,9 @@ class SynchronizeFileUseCase(
                 val localFile = fileToSynchronize.id?.let { fileRepository.getFileById(it) }
                 // If it still exists locally, but file has different path, another operation could have been done simultaneously
                 // Do not remove the file in that case, it may be synced later
-                // Remove locally (storage) in any other case
+                // Remove locally (database and storage) when the remote file is gone
                 if (localFile != null && (localFile.remotePath == fileToSynchronize.remotePath && localFile.spaceId == fileToSynchronize.spaceId)) {
-                    fileRepository.deleteFiles(listOf(fileToSynchronize), true)
+                    fileRepository.deleteFiles(listOf(fileToSynchronize), removeOnlyLocalCopy = false)
                 }
                 return SyncType.FileNotFound
             }
