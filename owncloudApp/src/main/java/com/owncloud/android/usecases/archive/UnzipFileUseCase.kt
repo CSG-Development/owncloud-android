@@ -23,9 +23,17 @@ class UnzipFileUseCase(
             return null
         }
 
+        val parentFolderId = params.zipFile.parentId ?: return null
+        val extractFolderName = params.zipFile.fileName
+            .substringBeforeLast('.')
+            .ifBlank { params.zipFile.fileName }
+
         val inputData = workDataOf(
             UnzipFileWorker.KEY_PARAM_ACCOUNT to params.accountName,
             UnzipFileWorker.KEY_PARAM_ZIP_FILE_ID to zipFileId,
+            UnzipFileWorker.KEY_PARAM_PARENT_FOLDER_ID to parentFolderId,
+            UnzipFileWorker.KEY_PARAM_EXTRACT_FOLDER_NAME to extractFolderName,
+            UnzipFileWorker.KEY_PARAM_SPACE_ID to params.zipFile.spaceId,
         )
 
         val unzipWork = OneTimeWorkRequestBuilder<UnzipFileWorker>()
@@ -33,6 +41,7 @@ class UnzipFileUseCase(
             .addTag(params.accountName)
             .addTag(ARCHIVE_TAG_UNZIP)
             .addTag(zipFileId.toString())
+            .addTag(parentFolderId.toString())
             .build()
 
         workManager.enqueue(unzipWork)

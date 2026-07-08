@@ -374,13 +374,19 @@ class FileOperationsViewModel(
                 selectedFiles = fileOperation.files,
                 parentFolder = fileOperation.parentFolder,
             )
-            _archiveWorkEnqueued.emit(
-                ArchiveWorkEnqueued(
-                    workId = workId,
-                    displayName = displayName,
-                    isCompress = true,
+            val enqueued = ArchiveWorkEnqueued(
+                workId = workId,
+                displayName = displayName,
+                isCompress = true,
+                parentFolderId = fileOperation.parentFolder.id!!,
+                remotePath = ArchiveNameResolver.resolveRemoteZipPath(
+                    parentFolder = fileOperation.parentFolder,
+                    archiveFileName = displayName,
                 ),
+                spaceId = fileOperation.parentFolder.spaceId,
+                accountName = fileOperation.accountName,
             )
+            _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
         }
     }
@@ -394,13 +400,20 @@ class FileOperationsViewModel(
                 ),
             ) ?: return@launch
 
-            _archiveWorkEnqueued.emit(
-                ArchiveWorkEnqueued(
-                    workId = workId,
-                    displayName = fileOperation.zipFile.fileName,
-                    isCompress = false,
-                ),
+            val zipFile = fileOperation.zipFile
+            val extractFolderName = zipFile.fileName
+                .substringBeforeLast('.')
+                .ifBlank { zipFile.fileName }
+            val enqueued = ArchiveWorkEnqueued(
+                workId = workId,
+                displayName = extractFolderName,
+                isCompress = false,
+                parentFolderId = zipFile.parentId!!,
+                remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile),
+                spaceId = zipFile.spaceId,
+                accountName = fileOperation.accountName,
             )
+            _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
         }
     }

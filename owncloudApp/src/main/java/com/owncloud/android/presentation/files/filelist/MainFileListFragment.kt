@@ -77,6 +77,7 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isArchiveVirtualFile
 import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.transfers.model.OCTransfer
@@ -513,6 +514,7 @@ class MainFileListFragment : FileFragment(),
 
     private fun observeArchiveWorkEnqueued() {
         collectLatestLifecycleFlow(fileOperationsViewModel.archiveWorkEnqueued) { archiveWork ->
+            mainFileListViewModel.onArchiveWorkEnqueued(archiveWork)
             val messageResId = if (archiveWork.isCompress) {
                 R.string.homecloud_filelist_compress_enqueued
             } else {
@@ -1688,6 +1690,7 @@ class MainFileListFragment : FileFragment(),
     }
 
     override fun onVirtualFileClick(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {
+        if (fileWithSyncInfo.file.isArchiveVirtualFile()) return
         showVirtualFilePopupMenu(fileWithSyncInfo, anchorView)
     }
 

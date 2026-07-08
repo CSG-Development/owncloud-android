@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.archive.ArchiveMimeTypes
@@ -32,6 +33,9 @@ import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -51,6 +55,9 @@ class UnzipFileWorker(
     private var spaceWebDavUrl: String? = null
 
     private val tempPathsToCleanup = mutableListOf<File>()
+    private var totalFilesToUpload = 0
+    private var uploadedFilesCount = 0
+    private var lastUploadPercent = -1
 
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
@@ -77,6 +84,9 @@ class UnzipFileWorker(
             )
 
             createRemoteFolder(client, targetSubfolderPath)
+            totalFilesToUpload = countFilesRecursively(extractDirectory)
+            uploadedFilesCount = 0
+            lastUploadPercent = -1
             uploadDirectoryRecursively(
                 client = client,
                 localDirectory = extractDirectory,
@@ -202,6 +212,21 @@ class UnzipFileWorker(
         }
     }
 
+    private fun countFilesRecursively(directory: File): Int =
+        directory.listFiles().orEmpty().sumOf { child ->
+            if (child.isDirectory) countFilesRecursively(child) else 1
+        }
+
+    private fun reportUploadProgress() {
+        if (totalFilesToUpload <= 0) return
+        val percent = ((uploadedFilesCount * 100.0) / totalFilesToUpload.toDouble()).toInt().coerceIn(0, 100)
+        if (percent == lastUploadPercent) return
+        lastUploadPercent = percent
+        CoroutineScope(Dispatchers.IO).launch {
+            setProgress(workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to percent))
+        }
+    }
+
     private fun uploadDirectoryRecursively(
         client: OwnCloudClient,
         localDirectory: File,
@@ -240,6 +265,8 @@ class UnzipFileWorker(
         executeRemoteOperation {
             uploadOperation.execute(client)
         }
+        uploadedFilesCount++
+        reportUploadProgress()
     }
 
     private fun createTempDirectory(directoryName: String): File {
@@ -282,6 +309,9 @@ class UnzipFileWorker(
     companion object {
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_ZIP_FILE_ID = "KEY_PARAM_ZIP_FILE_ID"
+        const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
+        const val KEY_PARAM_EXTRACT_FOLDER_NAME = "KEY_PARAM_EXTRACT_FOLDER_NAME"
+        const val KEY_PARAM_SPACE_ID = "KEY_PARAM_SPACE_ID"
         private const val ARCHIVE_NOTIFICATION_ID = 15
     }
 }

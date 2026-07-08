@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.UseCaseResult
@@ -23,6 +24,7 @@ import com.owncloud.android.domain.files.usecases.GetWebDavUrlForSpaceUseCase
 import com.owncloud.android.lib.common.OwnCloudAccount
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.lib.common.network.OnDatatransferProgressListener
 import com.owncloud.android.lib.resources.files.DownloadRemoteFileOperation
 import com.owncloud.android.lib.resources.files.UploadFileFromFileSystemOperation
 import com.owncloud.android.presentation.authentication.AccountUtils
@@ -32,6 +34,9 @@ import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -53,6 +58,7 @@ class ZipFilesWorker(
     private var spaceWebDavUrl: String? = null
 
     private val tempPathsToCleanup = mutableListOf<File>()
+    private var lastUploadPercent = -1
 
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
@@ -216,8 +222,22 @@ class ZipFilesWorker(
             requiredEtag = null,
             spaceWebDavUrl = spaceWebDavUrl,
         )
-        executeRemoteOperation {
-            uploadOperation.execute(client)
+        val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
+            if (totalToTransfer <= 0L) return@OnDatatransferProgressListener
+            val percent = (100.0 * totalTransferredSoFar.toDouble() / totalToTransfer.toDouble()).toInt()
+            if (percent == lastUploadPercent) return@OnDatatransferProgressListener
+            lastUploadPercent = percent
+            CoroutineScope(Dispatchers.IO).launch {
+                setProgress(workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to percent.coerceIn(0, 100)))
+            }
+        }
+        uploadOperation.addDataTransferProgressListener(progressListener)
+        try {
+            executeRemoteOperation {
+                uploadOperation.execute(client)
+            }
+        } finally {
+            uploadOperation.removeDataTransferProgressListener(progressListener)
         }
     }
 
@@ -267,6 +287,8 @@ class ZipFilesWorker(
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
         const val KEY_PARAM_FILE_IDS = "KEY_PARAM_FILE_IDS"
+        const val KEY_PARAM_DISPLAY_NAME = "KEY_PARAM_DISPLAY_NAME"
+        const val KEY_PARAM_SPACE_ID = "KEY_PARAM_SPACE_ID"
         private const val ARCHIVE_NOTIFICATION_ID = 14
     }
 }

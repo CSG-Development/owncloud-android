@@ -6,4 +6,8 @@ data class ArchiveWorkEnqueued(
     val workId: UUID,
     val displayName: String,
     val isCompress: Boolean,
+    val parentFolderId: Long,
+    val remotePath: String,
+    val spaceId: String?,
+    val accountName: String,
 )
