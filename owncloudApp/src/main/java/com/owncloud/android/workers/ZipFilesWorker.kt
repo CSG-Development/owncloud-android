@@ -218,7 +218,7 @@ class ZipFilesWorker(
             localPath = zipFile.absolutePath,
             remotePath = remotePath,
             mimeType = ArchiveMimeTypes.ZIP,
-            lastModifiedTimestamp = zipFile.lastModified().toString(),
+            lastModifiedTimestamp = (zipFile.lastModified() / 1_000).toString(),
             requiredEtag = null,
             spaceWebDavUrl = spaceWebDavUrl,
         )

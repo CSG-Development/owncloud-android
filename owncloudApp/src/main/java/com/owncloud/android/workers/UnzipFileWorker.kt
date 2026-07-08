@@ -258,7 +258,7 @@ class UnzipFileWorker(
             localPath = localFile.absolutePath,
             remotePath = remotePath,
             mimeType = FileStorageUtils.getMimeTypeFromName(localFile.absolutePath),
-            lastModifiedTimestamp = localFile.lastModified().toString(),
+            lastModifiedTimestamp = (localFile.lastModified() / 1_000).toString(),
             requiredEtag = null,
             spaceWebDavUrl = spaceWebDavUrl,
         )
