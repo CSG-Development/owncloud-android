@@ -4,7 +4,6 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.UseCaseResult
@@ -34,9 +33,6 @@ import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -58,10 +54,17 @@ class ZipFilesWorker(
     private var spaceWebDavUrl: String? = null
 
     private val tempPathsToCleanup = mutableListOf<File>()
-    private var lastUploadPercent = -1
+    private lateinit var progress: ArchiveOperationProgress
+    private var downloadBytesTotal = 0L
+    private var completedDownloadBytes = 0L
+    private var filesToDownloadCount = 0
+    private var downloadedFilesCount = 0
 
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
+
+        progress = ArchiveOperationProgress.forWorker { data -> setProgress(data) }
+        progress.reportStart()
 
         spaceWebDavUrl = getWebDavUrlForSpaceUseCase(
             GetWebDavUrlForSpaceUseCase.Params(accountName = account.name, spaceId = parentFolder.spaceId),
@@ -87,11 +90,36 @@ class ZipFilesWorker(
             }
             ensureNotCancelled()
 
+            val needsDownload = collectionResult.fileEntries.any { !it.ocFile.isAvailableLocally }
+            progress.configurePhases(
+                if (needsDownload) {
+                    ZipPhase.DEFAULT_WEIGHTS
+                } else {
+                    ZipPhase.NO_DOWNLOAD_WEIGHTS
+                },
+            )
+            progress.completePhase(ZipPhase.COLLECT)
+
+            if (needsDownload) {
+                val remoteEntries = collectionResult.fileEntries.filter { !it.ocFile.isAvailableLocally }
+                filesToDownloadCount = remoteEntries.size
+                downloadBytesTotal = if (remoteEntries.all { it.ocFile.length > 0L }) {
+                    remoteEntries.sumOf { it.ocFile.length }
+                } else {
+                    0L
+                }
+                downloadedFilesCount = 0
+                completedDownloadBytes = 0L
+            }
+
             val localEntries = collectionResult.fileEntries.map { entry ->
                 ArchiveEntryWithLocalPath(
                     zipEntryPath = entry.zipEntryPath,
                     localFile = resolveLocalFile(entry.ocFile),
                 )
+            }
+            if (needsDownload) {
+                progress.completePhase(ZipPhase.DOWNLOAD)
             }
 
             val tempZipFile = createTempFile("zip_output", archiveFileName)
@@ -99,7 +127,16 @@ class ZipFilesWorker(
                 fileEntries = localEntries,
                 emptyDirectoryPaths = collectionResult.emptyDirectoryPaths,
                 outputZipFile = tempZipFile,
+                onBytesProcessed = { processed, total ->
+                    if (total > 0L) {
+                        progress.reportPhaseProgress(
+                            ZipPhase.BUILD,
+                            processed.toDouble() / total.toDouble(),
+                        )
+                    }
+                },
             )
+            progress.completePhase(ZipPhase.BUILD)
             ensureNotCancelled()
 
             val client = getClient()
@@ -111,6 +148,7 @@ class ZipFilesWorker(
             )
 
             uploadZip(client, tempZipFile, remoteZipPath)
+            progress.completePhase(ZipPhase.UPLOAD)
             ensureNotCancelled()
 
             fileRepository.refreshFolder(
@@ -119,6 +157,7 @@ class ZipFilesWorker(
                 spaceId = parentFolder.spaceId,
             )
 
+            progress.reportComplete()
             notifyZipResult(throwable = null, archiveFileName = archiveFileName)
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Zip operation failed")
@@ -197,8 +236,23 @@ class ZipFilesWorker(
             localFolderPath = temporalFolderPath + "/archive_zip_sources",
             spaceWebDavUrl = spaceWebDavUrl,
         )
-        executeRemoteOperation {
-            downloadOperation.execute(getClient())
+        val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
+            reportDownloadProgress(
+                ocFile = ocFile,
+                currentFileTransferred = totalTransferredSoFar,
+                currentFileTotal = resolveTransferTotal(
+                    reportedTotal = totalToTransfer,
+                    knownFileSize = ocFile.length,
+                ),
+            )
+        }
+        downloadOperation.addDatatransferProgressListener(progressListener)
+        try {
+            executeRemoteOperation {
+                downloadOperation.execute(getClient())
+            }
+        } finally {
+            downloadOperation.removeDatatransferProgressListener(progressListener)
         }
 
         if (!tempDownloadPath.exists()) {
@@ -206,8 +260,61 @@ class ZipFilesWorker(
                 IllegalStateException("Downloaded file not found at ${tempDownloadPath.absolutePath}"),
             )
         }
+        onDownloadFileComplete(ocFile, tempDownloadPath)
         return tempDownloadPath
     }
+
+    private fun reportDownloadProgress(
+        ocFile: OCFile,
+        currentFileTransferred: Long,
+        currentFileTotal: Long,
+    ) {
+        val fileTotal = currentFileTotal.coerceAtLeast(1L)
+        if (downloadBytesTotal > 0L) {
+            val aggregateTransferred = (completedDownloadBytes + currentFileTransferred.coerceAtMost(fileTotal))
+                .coerceAtMost(downloadBytesTotal)
+            progress.reportPhaseProgress(
+                ZipPhase.DOWNLOAD,
+                aggregateTransferred.toDouble() / downloadBytesTotal.toDouble(),
+            )
+        } else if (filesToDownloadCount > 0) {
+            val fileFraction = currentFileTransferred.toDouble() / fileTotal
+            progress.reportPhaseProgress(
+                ZipPhase.DOWNLOAD,
+                (downloadedFilesCount + fileFraction) / filesToDownloadCount.toDouble(),
+            )
+        }
+    }
+
+    private fun onDownloadFileComplete(ocFile: OCFile, downloadedFile: File) {
+        downloadedFilesCount++
+        completedDownloadBytes += when {
+            ocFile.length > 0L -> ocFile.length
+            else -> downloadedFile.length()
+        }
+        reportDownloadAggregateProgress()
+    }
+
+    private fun reportDownloadAggregateProgress() {
+        if (downloadBytesTotal > 0L) {
+            progress.reportPhaseProgress(
+                ZipPhase.DOWNLOAD,
+                completedDownloadBytes.toDouble() / downloadBytesTotal.toDouble(),
+            )
+        } else if (filesToDownloadCount > 0) {
+            progress.reportPhaseProgress(
+                ZipPhase.DOWNLOAD,
+                downloadedFilesCount.toDouble() / filesToDownloadCount.toDouble(),
+            )
+        }
+    }
+
+    private fun resolveTransferTotal(reportedTotal: Long, knownFileSize: Long): Long =
+        when {
+            reportedTotal > 0L -> reportedTotal
+            knownFileSize > 0L -> knownFileSize
+            else -> 1L
+        }
 
     private fun uploadZip(client: OwnCloudClient, zipFile: File, remotePath: String) {
         if (FileStorageUtils.getUsableSpace() < zipFile.length()) {
@@ -224,12 +331,10 @@ class ZipFilesWorker(
         )
         val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
             if (totalToTransfer <= 0L) return@OnDatatransferProgressListener
-            val percent = (100.0 * totalTransferredSoFar.toDouble() / totalToTransfer.toDouble()).toInt()
-            if (percent == lastUploadPercent) return@OnDatatransferProgressListener
-            lastUploadPercent = percent
-            CoroutineScope(Dispatchers.IO).launch {
-                setProgress(workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to percent.coerceIn(0, 100)))
-            }
+            progress.reportPhaseProgress(
+                ZipPhase.UPLOAD,
+                totalTransferredSoFar.toDouble() / totalToTransfer.toDouble(),
+            )
         }
         uploadOperation.addDataTransferProgressListener(progressListener)
         try {

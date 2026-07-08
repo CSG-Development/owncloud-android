@@ -4,7 +4,6 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.archive.ArchiveMimeTypes
@@ -21,6 +20,7 @@ import com.owncloud.android.domain.files.usecases.GetWebDavUrlForSpaceUseCase
 import com.owncloud.android.lib.common.OwnCloudAccount
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.lib.common.network.OnDatatransferProgressListener
 import com.owncloud.android.lib.common.operations.RemoteOperationResult.ResultCode
 import com.owncloud.android.lib.resources.files.CheckPathExistenceRemoteOperation
 import com.owncloud.android.lib.resources.files.CreateRemoteFolderOperation
@@ -33,9 +33,6 @@ import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -55,24 +52,53 @@ class UnzipFileWorker(
     private var spaceWebDavUrl: String? = null
 
     private val tempPathsToCleanup = mutableListOf<File>()
-    private var totalFilesToUpload = 0
+    private lateinit var progress: ArchiveOperationProgress
+    private var uploadBytesTotal = 0L
+    private var uploadedBytes = 0L
+    private var filesToUploadCount = 0
     private var uploadedFilesCount = 0
-    private var lastUploadPercent = -1
 
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
+
+        progress = ArchiveOperationProgress.forWorker { data -> setProgress(data) }
+        progress.reportStart()
 
         spaceWebDavUrl = getWebDavUrlForSpaceUseCase(
             GetWebDavUrlForSpaceUseCase.Params(accountName = account.name, spaceId = zipFile.spaceId),
         )
 
         val zipFileName = zipFile.fileName
+        val needsDownload = !zipFile.isAvailableLocally
+        progress.configurePhases(
+            if (needsDownload) {
+                UnzipPhase.DEFAULT_WEIGHTS
+            } else {
+                UnzipPhase.NO_DOWNLOAD_WEIGHTS
+            },
+        )
 
         return try {
             ensureNotCancelled()
             val localZipFile = resolveLocalZipFile()
+            if (needsDownload) {
+                progress.completePhase(UnzipPhase.DOWNLOAD)
+            }
+
             val extractDirectory = createTempDirectory("unzip_output")
-            ZipArchiveExtractor.extract(localZipFile, extractDirectory)
+            ZipArchiveExtractor.extract(
+                zipFile = localZipFile,
+                targetDirectory = extractDirectory,
+                onBytesProcessed = { processed, total ->
+                    if (total > 0L) {
+                        progress.reportPhaseProgress(
+                            UnzipPhase.EXTRACT,
+                            processed.toDouble() / total.toDouble(),
+                        )
+                    }
+                },
+            )
+            progress.completePhase(UnzipPhase.EXTRACT)
             ensureNotCancelled()
 
             val client = getClient()
@@ -84,14 +110,18 @@ class UnzipFileWorker(
             )
 
             createRemoteFolder(client, targetSubfolderPath)
-            totalFilesToUpload = countFilesRecursively(extractDirectory)
+            progress.completePhase(UnzipPhase.CREATE_FOLDER)
+
+            uploadBytesTotal = sumFileSizesRecursively(extractDirectory)
+            filesToUploadCount = countFilesRecursively(extractDirectory)
+            uploadedBytes = 0L
             uploadedFilesCount = 0
-            lastUploadPercent = -1
             uploadDirectoryRecursively(
                 client = client,
                 localDirectory = extractDirectory,
                 remoteBasePath = targetSubfolderPath,
             )
+            progress.completePhase(UnzipPhase.UPLOAD)
             ensureNotCancelled()
 
             fileRepository.refreshFolder(
@@ -100,6 +130,7 @@ class UnzipFileWorker(
                 spaceId = zipFile.spaceId,
             )
 
+            progress.reportComplete()
             notifyUnzipResult(throwable = null, zipFileName = zipFileName)
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Unzip operation failed")
@@ -170,8 +201,23 @@ class UnzipFileWorker(
             localFolderPath = "$temporalFolderPath/archive_unzip_source",
             spaceWebDavUrl = spaceWebDavUrl,
         )
-        executeRemoteOperation {
-            downloadOperation.execute(getClient())
+        val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
+            val fileTotal = resolveTransferTotal(
+                reportedTotal = totalToTransfer,
+                knownFileSize = zipFile.length,
+            )
+            progress.reportPhaseProgress(
+                UnzipPhase.DOWNLOAD,
+                totalTransferredSoFar.toDouble() / fileTotal.toDouble(),
+            )
+        }
+        downloadOperation.addDatatransferProgressListener(progressListener)
+        try {
+            executeRemoteOperation {
+                downloadOperation.execute(getClient())
+            }
+        } finally {
+            downloadOperation.removeDatatransferProgressListener(progressListener)
         }
 
         if (!tempDownloadPath.exists()) {
@@ -217,15 +263,10 @@ class UnzipFileWorker(
             if (child.isDirectory) countFilesRecursively(child) else 1
         }
 
-    private fun reportUploadProgress() {
-        if (totalFilesToUpload <= 0) return
-        val percent = ((uploadedFilesCount * 100.0) / totalFilesToUpload.toDouble()).toInt().coerceIn(0, 100)
-        if (percent == lastUploadPercent) return
-        lastUploadPercent = percent
-        CoroutineScope(Dispatchers.IO).launch {
-            setProgress(workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to percent))
+    private fun sumFileSizesRecursively(directory: File): Long =
+        directory.listFiles().orEmpty().sumOf { child ->
+            if (child.isDirectory) sumFileSizesRecursively(child) else child.length()
         }
-    }
 
     private fun uploadDirectoryRecursively(
         client: OwnCloudClient,
@@ -254,6 +295,7 @@ class UnzipFileWorker(
             throw LocalStorageFullException()
         }
 
+        val fileSize = localFile.length()
         val uploadOperation = UploadFileFromFileSystemOperation(
             localPath = localFile.absolutePath,
             remotePath = remotePath,
@@ -262,12 +304,73 @@ class UnzipFileWorker(
             requiredEtag = null,
             spaceWebDavUrl = spaceWebDavUrl,
         )
-        executeRemoteOperation {
-            uploadOperation.execute(client)
+        val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
+            reportUploadProgress(
+                currentFileTransferred = totalTransferredSoFar,
+                currentFileTotal = resolveTransferTotal(
+                    reportedTotal = totalToTransfer,
+                    knownFileSize = fileSize,
+                ),
+            )
         }
-        uploadedFilesCount++
-        reportUploadProgress()
+        uploadOperation.addDataTransferProgressListener(progressListener)
+        try {
+            executeRemoteOperation {
+                uploadOperation.execute(client)
+            }
+        } finally {
+            uploadOperation.removeDataTransferProgressListener(progressListener)
+        }
+        onUploadFileComplete(fileSize)
     }
+
+    private fun reportUploadProgress(
+        currentFileTransferred: Long,
+        currentFileTotal: Long,
+    ) {
+        val fileTotal = currentFileTotal.coerceAtLeast(1L)
+        if (uploadBytesTotal > 0L) {
+            val aggregateTransferred = (uploadedBytes + currentFileTransferred.coerceAtMost(fileTotal))
+                .coerceAtMost(uploadBytesTotal)
+            progress.reportPhaseProgress(
+                UnzipPhase.UPLOAD,
+                aggregateTransferred.toDouble() / uploadBytesTotal.toDouble(),
+            )
+        } else if (filesToUploadCount > 0) {
+            val fileFraction = currentFileTransferred.toDouble() / fileTotal
+            progress.reportPhaseProgress(
+                UnzipPhase.UPLOAD,
+                (uploadedFilesCount + fileFraction) / filesToUploadCount.toDouble(),
+            )
+        }
+    }
+
+    private fun onUploadFileComplete(fileSize: Long) {
+        uploadedFilesCount++
+        uploadedBytes += fileSize
+        reportUploadAggregateProgress()
+    }
+
+    private fun reportUploadAggregateProgress() {
+        if (uploadBytesTotal > 0L) {
+            progress.reportPhaseProgress(
+                UnzipPhase.UPLOAD,
+                uploadedBytes.toDouble() / uploadBytesTotal.toDouble(),
+            )
+        } else if (filesToUploadCount > 0) {
+            progress.reportPhaseProgress(
+                UnzipPhase.UPLOAD,
+                uploadedFilesCount.toDouble() / filesToUploadCount.toDouble(),
+            )
+        }
+    }
+
+    private fun resolveTransferTotal(reportedTotal: Long, knownFileSize: Long): Long =
+        when {
+            reportedTotal > 0L -> reportedTotal
+            knownFileSize > 0L -> knownFileSize
+            else -> 1L
+        }
 
     private fun createTempDirectory(directoryName: String): File {
         val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, zipFile.spaceId)

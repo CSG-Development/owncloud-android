@@ -30,7 +30,6 @@ import okio.Source
 import okio.source
 import timber.log.Timber
 import java.io.File
-import java.util.HashSet
 
 /**
  * A Request body that represents a file and include information about the progress when uploading it
@@ -67,6 +66,7 @@ open class FileRequestBody(
                     }
                 }
             }
+
             Timber.d("File with name ${file.name} and size ${file.length()} written in request body")
         } catch (e: Exception) {
             Timber.e(e)

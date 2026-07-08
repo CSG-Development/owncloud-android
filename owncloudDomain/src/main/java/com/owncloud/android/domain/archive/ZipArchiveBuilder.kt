@@ -15,10 +15,17 @@ object ZipArchiveBuilder {
         fileEntries: List<ArchiveEntryWithLocalPath>,
         emptyDirectoryPaths: Set<String>,
         outputZipFile: File,
+        onBytesProcessed: ((processed: Long, total: Long) -> Unit)? = null,
     ) {
         outputZipFile.parentFile?.mkdirs()
 
         val usedEntryPaths = mutableSetOf<String>()
+        val totalBytes = if (onBytesProcessed != null) {
+            fileEntries.sumOf { it.localFile.length() }
+        } else {
+            0L
+        }
+        var processedBytes = 0L
 
         FileOutputStream(outputZipFile).use { fileOutputStream ->
             ZipOutputStream(fileOutputStream).use { zipOutputStream ->
@@ -48,6 +55,11 @@ object ZipArchiveBuilder {
                         inputStream.copyTo(zipOutputStream)
                     }
                     zipOutputStream.closeEntry()
+
+                    if (onBytesProcessed != null) {
+                        processedBytes += localFile.length()
+                        onBytesProcessed(processedBytes, totalBytes)
+                    }
                 }
             }
         }

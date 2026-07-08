@@ -14,7 +14,11 @@ import java.util.zip.ZipInputStream
 
 object ZipArchiveExtractor {
 
-    fun extract(zipFile: File, targetDirectory: File) {
+    fun extract(
+        zipFile: File,
+        targetDirectory: File,
+        onBytesProcessed: ((processed: Long, total: Long) -> Unit)? = null,
+    ) {
         if (!zipFile.exists() || !zipFile.isFile) {
             throw InvalidArchiveException(
                 IllegalStateException("Zip file does not exist: ${zipFile.absolutePath}"),
@@ -23,18 +27,24 @@ object ZipArchiveExtractor {
 
         targetDirectory.mkdirs()
         val usedEntryPaths = mutableSetOf<String>()
+        val totalBytes = if (onBytesProcessed != null) zipFile.length() else 0L
+        var processedBytes = 0L
 
         try {
             BufferedInputStream(FileInputStream(zipFile)).use { inputStream ->
                 ZipInputStream(inputStream).use { zipInputStream ->
                     var entry: ZipEntry? = zipInputStream.nextEntry
                     while (entry != null) {
-                        extractEntry(
+                        val bytesRead = extractEntry(
                             zipInputStream = zipInputStream,
                             entry = entry,
                             targetDirectory = targetDirectory,
                             usedEntryPaths = usedEntryPaths,
                         )
+                        if (onBytesProcessed != null) {
+                            processedBytes += bytesRead
+                            onBytesProcessed(processedBytes.coerceAtMost(totalBytes), totalBytes)
+                        }
                         zipInputStream.closeEntry()
                         entry = zipInputStream.nextEntry
                     }
@@ -60,7 +70,7 @@ object ZipArchiveExtractor {
         entry: ZipEntry,
         targetDirectory: File,
         usedEntryPaths: MutableSet<String>,
-    ) {
+    ): Long {
         val sanitizedPath = sanitizeEntryPath(entry.name)
         if (!usedEntryPaths.add(sanitizedPath)) {
             throw DuplicateArchiveEntryException(sanitizedPath)
@@ -77,11 +87,11 @@ object ZipArchiveExtractor {
 
         if (entry.isDirectory || sanitizedPath.endsWith('/')) {
             outputFile.mkdirs()
-            return
+            return 0L
         }
 
         outputFile.parentFile?.mkdirs()
-        FileOutputStream(outputFile).use { outputStream ->
+        return FileOutputStream(outputFile).use { outputStream ->
             zipInputStream.copyTo(outputStream)
         }
     }
