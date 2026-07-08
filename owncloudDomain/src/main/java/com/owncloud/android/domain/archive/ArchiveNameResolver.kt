@@ -11,7 +11,8 @@ object ArchiveNameResolver {
         require(selectedFiles.isNotEmpty()) { "At least one file must be selected" }
 
         val baseName = if (selectedFiles.size == 1) {
-            selectedFiles.first().fileName
+            val fileName = selectedFiles.first().fileName
+            fileName.substringBeforeLast('.').ifBlank { fileName }
         } else {
             parentFolder.fileName.takeUnless { it == OCFile.ROOT_PATH } ?: DEFAULT_MULTI_SELECT_NAME
         }
