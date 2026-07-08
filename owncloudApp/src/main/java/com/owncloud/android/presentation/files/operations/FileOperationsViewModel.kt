@@ -31,6 +31,7 @@ import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
+import com.owncloud.android.domain.archive.ArchiveNameResolver
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.device.DeviceConnectionMonitor
@@ -55,6 +56,8 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
+import com.owncloud.android.usecases.archive.UnzipFileUseCase
+import com.owncloud.android.usecases.archive.ZipFilesUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -77,6 +80,8 @@ class FileOperationsViewModel(
     private val setFilesAsAvailableOfflineUseCase: SetFilesAsAvailableOfflineUseCase,
     private val unsetFilesAsAvailableOfflineUseCase: UnsetFilesAsAvailableOfflineUseCase,
     private val setFileFavoriteStatusUseCase: SetFileFavoriteStatusUseCase,
+    private val zipFilesUseCase: ZipFilesUseCase,
+    private val unzipFileUseCase: UnzipFileUseCase,
     private val manageDeepLinkUseCase: ManageDeepLinkUseCase,
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
@@ -123,6 +128,9 @@ class FileOperationsViewModel(
     private val _disableSelectionModeEvent = MutableSharedFlow<Unit>()
     val disableSelectionModeEvent: SharedFlow<Unit> = _disableSelectionModeEvent
 
+    private val _archiveWorkEnqueued = MutableSharedFlow<ArchiveWorkEnqueued>()
+    val archiveWorkEnqueued: SharedFlow<ArchiveWorkEnqueued> = _archiveWorkEnqueued
+
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
@@ -151,6 +159,8 @@ class FileOperationsViewModel(
             is FileOperation.RefreshFolderOperation -> refreshFolderOperation(fileOperation)
             is FileOperation.CreateFileWithAppProviderOperation -> createFileWithAppProvider(fileOperation)
             is FileOperation.SetFileFavoriteStatus -> setFileFavoriteStatus(fileOperation)
+            is FileOperation.CompressOperation -> compressOperation(fileOperation)
+            is FileOperation.ExtractOperation -> extractOperation(fileOperation)
         }
     }
 
@@ -347,6 +357,51 @@ class FileOperationsViewModel(
                     isFavorite = fileOperation.isFavorite,
                 )
             )
+        }
+    }
+
+    private fun compressOperation(fileOperation: FileOperation.CompressOperation) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val workId = zipFilesUseCase(
+                ZipFilesUseCase.Params(
+                    accountName = fileOperation.accountName,
+                    parentFolder = fileOperation.parentFolder,
+                    files = fileOperation.files,
+                ),
+            ) ?: return@launch
+
+            val displayName = ArchiveNameResolver.resolveArchiveBaseName(
+                selectedFiles = fileOperation.files,
+                parentFolder = fileOperation.parentFolder,
+            )
+            _archiveWorkEnqueued.emit(
+                ArchiveWorkEnqueued(
+                    workId = workId,
+                    displayName = displayName,
+                    isCompress = true,
+                ),
+            )
+            _disableSelectionModeEvent.emit(Unit)
+        }
+    }
+
+    private fun extractOperation(fileOperation: FileOperation.ExtractOperation) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val workId = unzipFileUseCase(
+                UnzipFileUseCase.Params(
+                    accountName = fileOperation.accountName,
+                    zipFile = fileOperation.zipFile,
+                ),
+            ) ?: return@launch
+
+            _archiveWorkEnqueued.emit(
+                ArchiveWorkEnqueued(
+                    workId = workId,
+                    displayName = fileOperation.zipFile.fileName,
+                    isCompress = false,
+                ),
+            )
+            _disableSelectionModeEvent.emit(Unit)
         }
     }
 

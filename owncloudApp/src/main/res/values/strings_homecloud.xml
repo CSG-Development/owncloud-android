@@ -201,4 +201,18 @@
     <string name="homecloud_upload_scan_unavailable">Document scanning is not available on this device</string>
     <string name="homecloud_upload_scan_failed">Could not process scanned document</string>
     <string name="homecloud_filelist_virtual_file_cancel_upload">Cancel upload</string>
+    <string name="homecloud_filelist_compress">Compress</string>
+    <string name="homecloud_filelist_extract">Extract</string>
+    <string name="homecloud_filelist_compress_enqueued">Compressing %1$s</string>
+    <string name="homecloud_filelist_extract_enqueued">Extracting %1$s</string>
+    <string name="homecloud_filelist_compress_succeeded_ticker">Compression succeeded</string>
+    <string name="homecloud_filelist_compress_succeeded_content">Created %1$s</string>
+    <string name="homecloud_filelist_compress_failed_ticker">Compression of %1$s failed</string>
+    <string name="homecloud_filelist_extract_succeeded_ticker">Extraction succeeded</string>
+    <string name="homecloud_filelist_extract_succeeded_content">Extracted %1$s</string>
+    <string name="homecloud_filelist_extract_failed_ticker">Extraction of %1$s failed</string>
+    <string name="homecloud_filelist_archive_invalid">The archive file is invalid or corrupted</string>
+    <string name="homecloud_filelist_archive_path_traversal">The archive contains an unsafe path: %1$s</string>
+    <string name="homecloud_filelist_archive_duplicate_entry">The archive contains duplicate entries</string>
+    <string name="homecloud_filelist_archive_unsupported_format">This archive format is not supported</string>
 </resources>

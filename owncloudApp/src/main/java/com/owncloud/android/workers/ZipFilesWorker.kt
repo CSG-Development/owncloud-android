@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.archive.ArchiveEntryWithLocalPath
@@ -25,7 +26,11 @@ import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.resources.files.DownloadRemoteFileOperation
 import com.owncloud.android.lib.resources.files.UploadFileFromFileSystemOperation
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.ui.errorhandling.ErrorMessageAdapter
+import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.FileStorageUtils
+import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
+import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -56,6 +61,11 @@ class ZipFilesWorker(
             GetWebDavUrlForSpaceUseCase.Params(accountName = account.name, spaceId = parentFolder.spaceId),
         )
 
+        val archiveFileName = ArchiveNameResolver.resolveArchiveBaseName(
+            selectedFiles = selectedFiles,
+            parentFolder = parentFolder,
+        )
+
         return try {
             ensureNotCancelled()
             val collectionResult = when (
@@ -78,10 +88,6 @@ class ZipFilesWorker(
                 )
             }
 
-            val archiveFileName = ArchiveNameResolver.resolveArchiveBaseName(
-                selectedFiles = selectedFiles,
-                parentFolder = parentFolder,
-            )
             val tempZipFile = createTempFile("zip_output", archiveFileName)
             ZipArchiveBuilder.build(
                 fileEntries = localEntries,
@@ -107,16 +113,47 @@ class ZipFilesWorker(
                 spaceId = parentFolder.spaceId,
             )
 
-            Result.success()
+            notifyZipResult(throwable = null, archiveFileName = archiveFileName)
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Zip operation failed")
-            when (throwable) {
-                is NoNetworkConnectionException -> Result.retry()
-                is CancelledException -> Result.failure()
-                else -> Result.failure()
-            }
+            notifyZipResult(throwable = throwable, archiveFileName = archiveFileName)
         } finally {
             cleanupTempFiles()
+        }
+    }
+
+    private fun notifyZipResult(throwable: Throwable?, archiveFileName: String): Result {
+        if (throwable !is CancelledException) {
+            val contentTitle = if (throwable == null) {
+                appContext.getString(R.string.homecloud_filelist_compress_succeeded_ticker)
+            } else {
+                appContext.getString(R.string.homecloud_filelist_compress_failed_ticker, archiveFileName)
+            }
+
+            val contentText = ErrorMessageAdapter.getMessageFromArchiveOperation(
+                isCompress = true,
+                displayName = archiveFileName,
+                throwable = throwable,
+                resources = appContext.resources,
+            )
+
+            val timeOut = if (throwable == null) NOTIFICATION_TIMEOUT_STANDARD else null
+
+            createBasicNotification(
+                context = appContext,
+                contentTitle = contentTitle,
+                notificationChannelId = DOWNLOAD_NOTIFICATION_CHANNEL_ID,
+                notificationId = ARCHIVE_NOTIFICATION_ID,
+                intent = null,
+                contentText = contentText,
+                timeOut = timeOut,
+            )
+        }
+
+        return when {
+            throwable == null -> Result.success()
+            throwable is NoNetworkConnectionException -> Result.retry()
+            else -> Result.failure()
         }
     }
 
@@ -230,5 +267,6 @@ class ZipFilesWorker(
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
         const val KEY_PARAM_FILE_IDS = "KEY_PARAM_FILE_IDS"
+        private const val ARCHIVE_NOTIFICATION_ID = 14
     }
 }

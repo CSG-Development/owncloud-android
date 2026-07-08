@@ -507,6 +507,19 @@ class MainFileListFragment : FileFragment(),
         observeTransfers()
 
         observeClearSelectionEvents()
+
+        observeArchiveWorkEnqueued()
+    }
+
+    private fun observeArchiveWorkEnqueued() {
+        collectLatestLifecycleFlow(fileOperationsViewModel.archiveWorkEnqueued) { archiveWork ->
+            val messageResId = if (archiveWork.isCompress) {
+                R.string.homecloud_filelist_compress_enqueued
+            } else {
+                R.string.homecloud_filelist_extract_enqueued
+            }
+            showMessageInSnackbar(getString(messageResId, archiveWork.displayName))
+        }
     }
 
     private fun observeCurrentFolderDisplayed() {
@@ -730,6 +743,14 @@ class MainFileListFragment : FileFragment(),
                         action.putParcelableArrayListExtra(FolderPickerActivity.EXTRA_FILES, arrayListOf(file))
                         action.putExtra(FolderPickerActivity.EXTRA_PICKER_MODE, FolderPickerActivity.PickerMode.COPY)
                         requireActivity().startActivityForResult(action, FileDisplayActivity.REQUEST_CODE__COPY_FILES)
+                    }
+
+                    FileMenuOption.COMPRESS -> {
+                        compressFiles(listOf(file))
+                    }
+
+                    FileMenuOption.EXTRACT -> {
+                        extractFile(file)
                     }
 
                     FileMenuOption.REMOVE -> {
@@ -1587,6 +1608,18 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_compress -> {
+                compressFiles(checkedFiles)
+                true
+            }
+
+            R.id.action_extract -> {
+                if (checkedFiles.size == 1) {
+                    extractFile(checkedFiles.first())
+                }
+                true
+            }
+
             else -> {
                 false
             }
@@ -1697,6 +1730,26 @@ class MainFileListFragment : FileFragment(),
                 fileOperationsViewModel.performOperation(FileOperation.SynchronizeFileOperation(fileToSync = file, accountName = file.owner))
             }
         }
+    }
+
+    private fun compressFiles(files: List<OCFile>) {
+        val parentFolder = mainFileListViewModel.currentFolderDisplayed.value
+        fileOperationsViewModel.performOperation(
+            FileOperation.CompressOperation(
+                accountName = parentFolder.owner,
+                parentFolder = parentFolder,
+                files = files,
+            ),
+        )
+    }
+
+    private fun extractFile(zipFile: OCFile) {
+        fileOperationsViewModel.performOperation(
+            FileOperation.ExtractOperation(
+                accountName = zipFile.owner,
+                zipFile = zipFile,
+            ),
+        )
     }
 
     private fun disableSelectionMode() {

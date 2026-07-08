@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.archive.ArchiveMimeTypes
 import com.owncloud.android.domain.archive.ArchiveNameResolver
@@ -25,7 +26,11 @@ import com.owncloud.android.lib.resources.files.CreateRemoteFolderOperation
 import com.owncloud.android.lib.resources.files.DownloadRemoteFileOperation
 import com.owncloud.android.lib.resources.files.UploadFileFromFileSystemOperation
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.ui.errorhandling.ErrorMessageAdapter
+import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.FileStorageUtils
+import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
+import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -53,6 +58,8 @@ class UnzipFileWorker(
         spaceWebDavUrl = getWebDavUrlForSpaceUseCase(
             GetWebDavUrlForSpaceUseCase.Params(accountName = account.name, spaceId = zipFile.spaceId),
         )
+
+        val zipFileName = zipFile.fileName
 
         return try {
             ensureNotCancelled()
@@ -83,16 +90,47 @@ class UnzipFileWorker(
                 spaceId = zipFile.spaceId,
             )
 
-            Result.success()
+            notifyUnzipResult(throwable = null, zipFileName = zipFileName)
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Unzip operation failed")
-            when (throwable) {
-                is NoNetworkConnectionException -> Result.retry()
-                is CancelledException -> Result.failure()
-                else -> Result.failure()
-            }
+            notifyUnzipResult(throwable = throwable, zipFileName = zipFileName)
         } finally {
             cleanupTempFiles()
+        }
+    }
+
+    private fun notifyUnzipResult(throwable: Throwable?, zipFileName: String): Result {
+        if (throwable !is CancelledException) {
+            val contentTitle = if (throwable == null) {
+                appContext.getString(R.string.homecloud_filelist_extract_succeeded_ticker)
+            } else {
+                appContext.getString(R.string.homecloud_filelist_extract_failed_ticker, zipFileName)
+            }
+
+            val contentText = ErrorMessageAdapter.getMessageFromArchiveOperation(
+                isCompress = false,
+                displayName = zipFileName,
+                throwable = throwable,
+                resources = appContext.resources,
+            )
+
+            val timeOut = if (throwable == null) NOTIFICATION_TIMEOUT_STANDARD else null
+
+            createBasicNotification(
+                context = appContext,
+                contentTitle = contentTitle,
+                notificationChannelId = DOWNLOAD_NOTIFICATION_CHANNEL_ID,
+                notificationId = ARCHIVE_NOTIFICATION_ID,
+                intent = null,
+                contentText = contentText,
+                timeOut = timeOut,
+            )
+        }
+
+        return when {
+            throwable == null -> Result.success()
+            throwable is NoNetworkConnectionException -> Result.retry()
+            else -> Result.failure()
         }
     }
 
@@ -244,5 +282,6 @@ class UnzipFileWorker(
     companion object {
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_ZIP_FILE_ID = "KEY_PARAM_ZIP_FILE_ID"
+        private const val ARCHIVE_NOTIFICATION_ID = 15
     }
 }

@@ -365,6 +365,7 @@ class MainFileListViewModel(
                     files = files,
                     filesSyncInfo = filesSyncInfo,
                     accountName = currentFolderDisplayed.value.owner,
+                    currentFolder = currentFolderDisplayed.value,
                     isAnyFileVideoPreviewing = false,
                     displaySelectAll = displaySelectAll,
                     displaySelectInverse = isMultiselection,

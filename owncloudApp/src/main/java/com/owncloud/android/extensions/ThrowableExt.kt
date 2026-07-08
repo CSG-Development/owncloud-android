@@ -23,15 +23,18 @@ import android.content.res.Resources
 import com.owncloud.android.R
 import com.owncloud.android.domain.exceptions.AccountNotNewException
 import com.owncloud.android.domain.exceptions.AccountNotTheSameException
+import com.owncloud.android.domain.exceptions.ArchivePathTraversalException
 import com.owncloud.android.domain.exceptions.BadOcVersionException
 import com.owncloud.android.domain.exceptions.ConflictException
 import com.owncloud.android.domain.exceptions.CopyIntoDescendantException
 import com.owncloud.android.domain.exceptions.CopyIntoSameFolderException
+import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
 import com.owncloud.android.domain.exceptions.FileAlreadyExistsException
 import com.owncloud.android.domain.exceptions.FileNotFoundException
 import com.owncloud.android.domain.exceptions.ForbiddenException
 import com.owncloud.android.domain.exceptions.IncorrectAddressException
 import com.owncloud.android.domain.exceptions.InstanceNotConfiguredException
+import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.exceptions.InvalidOverwriteException
 import com.owncloud.android.domain.exceptions.LocalFileNotFoundException
 import com.owncloud.android.domain.exceptions.MoveIntoDescendantException
@@ -52,6 +55,7 @@ import com.owncloud.android.domain.exceptions.ServerResponseTimeoutException
 import com.owncloud.android.domain.exceptions.ServiceUnavailableException
 import com.owncloud.android.domain.exceptions.SpecificForbiddenException
 import com.owncloud.android.domain.exceptions.UnauthorizedException
+import com.owncloud.android.domain.exceptions.UnsupportedArchiveFormatException
 import com.owncloud.android.domain.exceptions.validation.FileNameException
 import java.util.Locale
 
@@ -66,10 +70,15 @@ fun Throwable.parseError(
         val reason = when (this) {
             is AccountNotNewException -> resources.getString(R.string.auth_account_not_new)
             is AccountNotTheSameException -> resources.getString(R.string.auth_account_not_the_same)
+            is ArchivePathTraversalException -> resources.getString(
+                R.string.homecloud_filelist_archive_path_traversal,
+                entryName,
+            )
             is BadOcVersionException -> resources.getString(R.string.auth_bad_oc_version_title)
             is ConflictException -> resources.getString(R.string.error_conflict)
             is CopyIntoDescendantException -> resources.getString(R.string.copy_file_invalid_into_descendent)
             is CopyIntoSameFolderException -> resources.getString(R.string.copy_file_invalid_overwrite)
+            is DuplicateArchiveEntryException -> resources.getString(R.string.homecloud_filelist_archive_duplicate_entry)
             is FileAlreadyExistsException -> resources.getString(R.string.file_already_exists)
             is FileNameException -> resources.getString(when (this.type) {
                     FileNameException.FileNameExceptionType.FILE_NAME_EMPTY -> R.string.filename_empty
@@ -80,6 +89,7 @@ fun Throwable.parseError(
             is ForbiddenException -> resources.getString(R.string.uploads_view_upload_status_failed_permission_error)
             is IncorrectAddressException -> resources.getString(R.string.auth_incorrect_address_title)
             is InstanceNotConfiguredException -> resources.getString(R.string.auth_not_configured_title)
+            is InvalidArchiveException -> resources.getString(R.string.homecloud_filelist_archive_invalid)
             is InvalidOverwriteException -> resources.getString(R.string.file_already_exists)
             is LocalFileNotFoundException -> resources.getString(R.string.local_file_not_found_toast)
             is MoveIntoDescendantException -> resources.getString(R.string.move_file_invalid_into_descendent)
@@ -98,6 +108,7 @@ fun Throwable.parseError(
             is ServiceUnavailableException -> resources.getString(R.string.service_unavailable)
             is SpecificForbiddenException -> resources.getString(R.string.uploads_view_upload_status_failed_permission_error)
             is UnauthorizedException -> resources.getString(R.string.homecloud_login_auth_unauthorized)
+            is UnsupportedArchiveFormatException -> resources.getString(R.string.homecloud_filelist_archive_unsupported_format)
             is NetworkErrorException -> resources.getString(R.string.network_error_message)
             is ResourceLockedException -> resources.getString(R.string.resource_locked_error_message)
             else -> resources.getString(R.string.common_error_unknown)

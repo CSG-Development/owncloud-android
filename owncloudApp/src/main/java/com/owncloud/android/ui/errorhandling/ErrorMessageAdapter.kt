@@ -25,6 +25,7 @@ package com.owncloud.android.ui.errorhandling
 
 import android.content.res.Resources
 import com.owncloud.android.R
+import com.owncloud.android.domain.exceptions.CancelledException
 import com.owncloud.android.domain.exceptions.FileNotFoundException
 import com.owncloud.android.domain.exceptions.ForbiddenException
 import com.owncloud.android.domain.exceptions.InvalidCharacterException
@@ -127,6 +128,53 @@ class ErrorMessageAdapter {
                 )
 
             }
+
+        fun getMessageFromArchiveOperation(
+            isCompress: Boolean,
+            displayName: String,
+            throwable: Throwable?,
+            resources: Resources,
+        ): String {
+            val formatter = Formatter(resources)
+
+            if (throwable == null) {
+                return formatter.format(
+                    if (isCompress) {
+                        R.string.homecloud_filelist_compress_succeeded_content
+                    } else {
+                        R.string.homecloud_filelist_extract_succeeded_content
+                    },
+                    displayName,
+                )
+            }
+
+            if (throwable is CancelledException) {
+                return ""
+            }
+
+            val genericMessage = formatter.format(
+                if (isCompress) {
+                    R.string.homecloud_filelist_compress_failed_ticker
+                } else {
+                    R.string.homecloud_filelist_extract_failed_ticker
+                },
+                displayName,
+            )
+
+            return when (throwable) {
+                is LocalStorageFullException -> formatter.format(
+                    R.string.error__upload__local_file_not_copied,
+                    displayName,
+                    R.string.app_name,
+                )
+                is LocalStorageNotCopiedException -> formatter.format(
+                    R.string.error__upload__local_file_not_copied,
+                    displayName,
+                    R.string.app_name,
+                )
+                else -> throwable.parseError(genericMessage, resources, true).toString()
+            }
+        }
 
         /**
          * Return an internationalized user message corresponding to an operation result
