@@ -122,7 +122,7 @@ class ZipFilesWorker(
                 progress.completePhase(ZipPhase.DOWNLOAD)
             }
 
-            val tempZipFile = createTempFile("zip_output", archiveFileName)
+            val tempZipFile = createTempZipFile(archiveFileName)
             ZipArchiveBuilder.build(
                 fileEntries = localEntries,
                 emptyDirectoryPaths = collectionResult.emptyDirectoryPaths,
@@ -223,17 +223,18 @@ class ZipFilesWorker(
             return File(ocFile.storagePath!!)
         }
 
+        val downloadFolderName = archiveZipSourcesFolderName()
         val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, ocFile.spaceId)
         val tempDownloadPath = File(
             temporalFolderPath,
-            "archive_zip_sources${ocFile.remotePath}",
+            "$downloadFolderName${ocFile.remotePath}",
         )
         tempDownloadPath.parentFile?.mkdirs()
         registerForCleanup(tempDownloadPath)
 
         val downloadOperation = DownloadRemoteFileOperation(
             remotePath = ocFile.remotePath,
-            localFolderPath = temporalFolderPath + "/archive_zip_sources",
+            localFolderPath = "$temporalFolderPath/$downloadFolderName",
             spaceWebDavUrl = spaceWebDavUrl,
         )
         val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
@@ -346,9 +347,12 @@ class ZipFilesWorker(
         }
     }
 
-    private fun createTempFile(directoryName: String, fileName: String): File {
+    private fun archiveZipSourcesFolderName(): String =
+        "archive_zip_sources_${workerParameters.id}"
+
+    private fun createTempZipFile(fileName: String): File {
         val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, parentFolder.spaceId)
-        val tempFile = File(temporalFolderPath, "$directoryName/$fileName")
+        val tempFile = File(temporalFolderPath, "zip_output_${workerParameters.id}/$fileName")
         tempFile.parentFile?.mkdirs()
         registerForCleanup(tempFile)
         return tempFile
@@ -357,7 +361,8 @@ class ZipFilesWorker(
     private fun registerForCleanup(file: File) {
         tempPathsToCleanup.add(file)
         file.parentFile?.let { parent ->
-            if (parent.name == "archive_zip_sources" || parent.name == "zip_output") {
+            val parentName = parent.name
+            if (parentName.startsWith("archive_zip_sources") || parentName.startsWith("zip_output")) {
                 tempPathsToCleanup.add(parent)
             }
         }
@@ -368,10 +373,13 @@ class ZipFilesWorker(
             .distinctBy { it.absolutePath }
             .sortedByDescending { it.absolutePath.length }
             .forEach { file ->
-                if (file.isDirectory) {
-                    FileStorageUtils.deleteDir(file)
-                } else if (file.exists()) {
-                    file.delete()
+                val deleted = when {
+                    file.isDirectory -> FileStorageUtils.deleteDir(file)
+                    file.exists() -> file.delete()
+                    else -> true
+                }
+                if (!deleted) {
+                    Timber.w("Failed to delete temp file: ${file.absolutePath}")
                 }
             }
     }

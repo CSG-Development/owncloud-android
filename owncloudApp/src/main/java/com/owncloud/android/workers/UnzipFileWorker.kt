@@ -85,7 +85,7 @@ class UnzipFileWorker(
                 progress.completePhase(UnzipPhase.DOWNLOAD)
             }
 
-            val extractDirectory = createTempDirectory("unzip_output")
+            val extractDirectory = createExtractDirectory()
             ZipArchiveExtractor.extract(
                 zipFile = localZipFile,
                 targetDirectory = extractDirectory,
@@ -191,14 +191,15 @@ class UnzipFileWorker(
             return File(zipFile.storagePath!!)
         }
 
+        val downloadFolderName = archiveUnzipSourceFolderName()
         val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, zipFile.spaceId)
-        val tempDownloadPath = File(temporalFolderPath, "archive_unzip_source${zipFile.remotePath}")
+        val tempDownloadPath = File(temporalFolderPath, "$downloadFolderName${zipFile.remotePath}")
         tempDownloadPath.parentFile?.mkdirs()
         registerForCleanup(tempDownloadPath)
 
         val downloadOperation = DownloadRemoteFileOperation(
             remotePath = zipFile.remotePath,
-            localFolderPath = "$temporalFolderPath/archive_unzip_source",
+            localFolderPath = "$temporalFolderPath/$downloadFolderName",
             spaceWebDavUrl = spaceWebDavUrl,
         )
         val progressListener = OnDatatransferProgressListener { _, totalTransferredSoFar, totalToTransfer, _ ->
@@ -372,9 +373,18 @@ class UnzipFileWorker(
             else -> 1L
         }
 
-    private fun createTempDirectory(directoryName: String): File {
+    private fun archiveUnzipSourceFolderName(): String =
+        "archive_unzip_source_${workerParameters.id}"
+
+    private fun createExtractDirectory(): File {
         val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, zipFile.spaceId)
-        val tempDirectory = File(temporalFolderPath, directoryName)
+        val tempDirectory = File(temporalFolderPath, "unzip_output_${workerParameters.id}")
+        if (tempDirectory.exists()) {
+            val cleared = FileStorageUtils.deleteDir(tempDirectory)
+            if (!cleared) {
+                Timber.w("Failed to clear extract directory ${tempDirectory.absolutePath}")
+            }
+        }
         tempDirectory.mkdirs()
         registerForCleanup(tempDirectory)
         return tempDirectory
@@ -382,6 +392,12 @@ class UnzipFileWorker(
 
     private fun registerForCleanup(file: File) {
         tempPathsToCleanup.add(file)
+        file.parentFile?.let { parent ->
+            val parentName = parent.name
+            if (parentName.startsWith("archive_unzip_source") || parentName.startsWith("unzip_output")) {
+                tempPathsToCleanup.add(parent)
+            }
+        }
     }
 
     private fun cleanupTempFiles() {
@@ -389,10 +405,13 @@ class UnzipFileWorker(
             .distinctBy { it.absolutePath }
             .sortedByDescending { it.absolutePath.length }
             .forEach { file ->
-                if (file.isDirectory) {
-                    FileStorageUtils.deleteDir(file)
-                } else if (file.exists()) {
-                    file.delete()
+                val deleted = when {
+                    file.isDirectory -> FileStorageUtils.deleteDir(file)
+                    file.exists() -> file.delete()
+                    else -> true
+                }
+                if (!deleted) {
+                    Timber.w("Failed to delete temp file: ${file.absolutePath}")
                 }
             }
     }
