@@ -4,7 +4,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.owncloud.android.domain.BaseUseCase
-import com.owncloud.android.domain.archive.ArchiveNameResolver
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.extensions.PENDING_WORK_STATUS
 import com.owncloud.android.extensions.buildWorkQuery
@@ -27,17 +26,10 @@ class ZipFilesUseCase(
             return null
         }
 
-        val displayName = ArchiveNameResolver.resolveArchiveBaseName(
-            selectedFiles = params.files,
-            parentFolder = params.parentFolder,
-        )
-
         val inputData = workDataOf(
             ZipFilesWorker.KEY_PARAM_ACCOUNT to params.accountName,
             ZipFilesWorker.KEY_PARAM_PARENT_FOLDER_ID to params.parentFolder.id,
             ZipFilesWorker.KEY_PARAM_FILE_IDS to fileIds.toLongArray(),
-            ZipFilesWorker.KEY_PARAM_DISPLAY_NAME to displayName,
-            ZipFilesWorker.KEY_PARAM_SPACE_ID to params.parentFolder.spaceId,
         )
 
         val zipWork = OneTimeWorkRequestBuilder<ZipFilesWorker>()

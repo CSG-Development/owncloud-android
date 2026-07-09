@@ -33,6 +33,7 @@ import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
 import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
+import kotlinx.coroutines.CoroutineScope
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
@@ -61,7 +62,10 @@ class UnzipFileWorker(
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
 
-        progress = ArchiveOperationProgress.forWorker { data -> setProgress(data) }
+        progress = ArchiveOperationProgress.forWorker(
+            scope = CoroutineScope(coroutineContext),
+            setProgress = { data -> setProgress(data) },
+        )
         progress.reportStart()
 
         spaceWebDavUrl = getWebDavUrlForSpaceUseCase(
@@ -431,9 +435,6 @@ class UnzipFileWorker(
     companion object {
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_ZIP_FILE_ID = "KEY_PARAM_ZIP_FILE_ID"
-        const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
-        const val KEY_PARAM_EXTRACT_FOLDER_NAME = "KEY_PARAM_EXTRACT_FOLDER_NAME"
-        const val KEY_PARAM_SPACE_ID = "KEY_PARAM_SPACE_ID"
         private const val ARCHIVE_NOTIFICATION_ID = 15
     }
 }

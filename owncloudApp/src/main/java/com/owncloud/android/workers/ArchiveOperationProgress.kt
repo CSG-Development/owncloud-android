@@ -3,7 +3,6 @@ package com.owncloud.android.workers
 import androidx.work.Data
 import androidx.work.workDataOf
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.round
@@ -49,6 +48,7 @@ object UnzipPhase {
 }
 
 class ArchiveOperationProgress(
+    private val scope: CoroutineScope,
     private val reportProgress: suspend (Data) -> Unit,
 ) {
     private val phases = mutableMapOf<String, PhaseRange>()
@@ -92,7 +92,7 @@ class ArchiveOperationProgress(
             if (percent <= previous) return
         } while (!lastReportedPercent.compareAndSet(previous, percent))
 
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             if (percent < lastReportedPercent.get()) return@launch
             reportProgress(workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to percent))
         }
@@ -104,7 +104,10 @@ class ArchiveOperationProgress(
     )
 
     companion object {
-        fun forWorker(setProgress: suspend (Data) -> Unit): ArchiveOperationProgress =
-            ArchiveOperationProgress(reportProgress = setProgress)
+        fun forWorker(
+            scope: CoroutineScope,
+            setProgress: suspend (Data) -> Unit,
+        ): ArchiveOperationProgress =
+            ArchiveOperationProgress(scope = scope, reportProgress = setProgress)
     }
 }

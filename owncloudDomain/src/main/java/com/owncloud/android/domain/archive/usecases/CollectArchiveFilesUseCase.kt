@@ -4,6 +4,7 @@ import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.archive.ArchiveCollectionResult
 import com.owncloud.android.domain.archive.ArchiveEntry
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
+import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.files.FileRepository
 import com.owncloud.android.domain.files.model.OCFile
 
@@ -50,11 +51,16 @@ class CollectArchiveFilesUseCase(
         emptyDirectoryPaths: MutableSet<String>,
         usedEntryPaths: MutableSet<String>,
     ) {
-        val folderContents = fileRepository.refreshFolder(
+        fileRepository.refreshFolder(
             remotePath = folder.remotePath,
             accountName = accountName,
             spaceId = folder.spaceId,
-        ).drop(1)
+        )
+        val folderId = folder.id
+            ?: throw InvalidArchiveException(
+                IllegalStateException("Folder has no local id: ${folder.remotePath}"),
+            )
+        val folderContents = fileRepository.getFolderContent(folderId)
 
         if (folderContents.isEmpty()) {
             addDirectoryPath("$rootEntryName/", emptyDirectoryPaths, usedEntryPaths)
