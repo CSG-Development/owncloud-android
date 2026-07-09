@@ -48,6 +48,7 @@ import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.OCFooterFile
 import com.owncloud.android.domain.files.model.isUploadVirtualFile
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
@@ -182,8 +183,9 @@ class FileListAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isNotEmpty() && payloads[0] is Int) {
-            bindUploadProgress(holder, payloads[0] as Int)
+        if (payloads.isNotEmpty() && payloads[0] is VirtualFileProgressPayload) {
+            val payload = payloads[0] as VirtualFileProgressPayload
+            bindUploadProgress(holder, payload.progress, payload.isIndeterminate)
             return
         }
         onBindViewHolder(holder, position)
@@ -198,7 +200,7 @@ class FileListAdapter(
             val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
             val file = fileWithSyncInfo.file
             val name = file.fileName
-            val isVirtual = file.isUploadVirtualFile()
+            val isVirtual = file.isVirtualFile()
             val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
                 tag = file.id
             }
@@ -232,7 +234,11 @@ class FileListAdapter(
             val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
             if (isVirtual) {
                 threeDotMenu?.isVisible = false
-                bindUploadProgress(holder, uploadProgress)
+                bindUploadProgress(
+                    holder = holder,
+                    progress = uploadProgress,
+                    isIndeterminate = fileWithSyncInfo.isProgressIndeterminate,
+                )
             } else {
                 progressIndicator?.isVisible = false
                 // three_dot_menu visibility is managed in setSpecificViewHolder for list items
@@ -255,8 +261,12 @@ class FileListAdapter(
                 holder.itemView.apply {
                     isClickable = true
                     isLongClickable = false
-                    setOnClickListener {
-                        listener.onVirtualFileClick(fileWithSyncInfo, this)
+                    if (file.isUploadVirtualFile()) {
+                        setOnClickListener {
+                            listener.onVirtualFileClick(fileWithSyncInfo, this)
+                        }
+                    } else {
+                        setOnClickListener(null)
                     }
                     setOnLongClickListener(null)
                 }
@@ -314,10 +324,19 @@ class FileListAdapter(
         }
     }
 
-    private fun bindUploadProgress(holder: RecyclerView.ViewHolder, progress: Int) {
+    private fun bindUploadProgress(
+        holder: RecyclerView.ViewHolder,
+        progress: Int,
+        isIndeterminate: Boolean = false,
+    ) {
         holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)?.apply {
             isVisible = true
-            this.progress = progress.coerceIn(0, 100)
+            if (isIndeterminate) {
+                this.isIndeterminate = true
+            } else {
+                this.isIndeterminate = false
+                this.progress = progress.coerceIn(0, 100)
+            }
         }
     }
 

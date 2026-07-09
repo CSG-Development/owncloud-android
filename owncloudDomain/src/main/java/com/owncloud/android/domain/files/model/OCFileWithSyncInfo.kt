@@ -27,7 +27,9 @@ data class OCFileWithSyncInfo(
     val file: OCFile,
     val uploadWorkerUuid: UUID? = null,
     val downloadWorkerUuid: UUID? = null,
+    val archiveWorkerUuid: UUID? = null,
     val isSynchronizing: Boolean = false,
     val uploadProgress: Int? = null,
+    val isProgressIndeterminate: Boolean = false,
     val space: OCSpace? = null,
 )

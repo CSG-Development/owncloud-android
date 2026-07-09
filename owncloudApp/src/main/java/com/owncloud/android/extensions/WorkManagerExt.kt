@@ -51,6 +51,12 @@ fun WorkManager.getRunningWorkInfosLiveData(tags: List<String>): LiveData<List<W
      getWorkInfosLiveData(buildWorkQuery(tags = tags, states = listOf(WorkInfo.State.RUNNING)))
 
 /**
+ * Get a list of WorkInfo of pending workers (enqueued, running, blocked) as LiveData that matches at least one of the tags.
+ */
+fun WorkManager.getPendingWorkInfosLiveData(tags: List<String>): LiveData<List<WorkInfo>> =
+    getWorkInfosLiveData(buildWorkQuery(tags = tags, states = PENDING_WORK_STATUS))
+
+/**
  * Check if a download is pending. It could be enqueued, downloading or blocked.
  * @param account - Owner of the file
  * @param file - File to check whether it is pending.

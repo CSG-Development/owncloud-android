@@ -22,6 +22,7 @@ package com.owncloud.android.usecases.files
 
 import androidx.work.WorkManager
 import com.owncloud.android.domain.BaseUseCase
+import com.owncloud.android.domain.archive.ArchiveMimeTypes
 import com.owncloud.android.domain.availableoffline.model.AvailableOfflineStatus
 import com.owncloud.android.domain.capabilities.CapabilityRepository
 import com.owncloud.android.domain.files.model.FileMenuOption
@@ -29,6 +30,8 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.spaces.usecases.GetSpaceWithSpecialsByIdForAccountUseCase
 import com.owncloud.android.extensions.getRunningWorkInfosByTags
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_UNZIP
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_ZIP
 import com.owncloud.android.usecases.transfers.TRANSFER_TAG_DOWNLOAD
 
 class FilterFileMenuOptionsUseCase(
@@ -79,6 +82,7 @@ class FilterFileMenuOptionsUseCase(
         val shareViaLinkAllowed = params.shareViaLinkAllowed
         val shareWithUsersAllowed = params.shareWithUsersAllowed
         val sendAllowed = params.sendAllowed
+        val currentFolder = params.currentFolder
 
         val noSyncAndPreviewing = !isAnyFileSynchronizing && !isAnyFileVideoPreviewing
         val noSyncAndStreaming = !isAnyFileSynchronizing && !isAnyFileVideoStreaming
@@ -130,6 +134,23 @@ class FilterFileMenuOptionsUseCase(
         if (noSyncAndPreviewing && !onlyAvailableOfflineFiles && !onlySharedByLinkFiles) {
             optionsToShow.add(FileMenuOption.COPY)
         }
+        // Compress
+        if (currentFolder != null &&
+            noSyncAndPreviewing && !onlyAvailableOfflineFiles && !onlySharedByLinkFiles &&
+            currentFolder.hasAddFilePermission &&
+            !isAnyArchiveOperationRunning(files, params.accountName, ARCHIVE_TAG_ZIP)
+        ) {
+            optionsToShow.add(FileMenuOption.COMPRESS)
+        }
+        // Extract
+        if (currentFolder != null &&
+            noSyncAndPreviewing && !onlyAvailableOfflineFiles && !onlySharedByLinkFiles &&
+            isSingleFile(files) && ArchiveMimeTypes.isZipFile(files.first()) &&
+            currentFolder.hasAddFilePermission && currentFolder.hasAddSubdirectoriesPermission &&
+            !isAnyArchiveOperationRunning(files, params.accountName, ARCHIVE_TAG_UNZIP)
+        ) {
+            optionsToShow.add(FileMenuOption.EXTRACT)
+        }
         // Send
         if (noSyncAndStreaming && !onlyAvailableOfflineFiles && !anyFolder(files) &&
             noFilesDownloadedOrIsSingleFile && sendAllowed) {
@@ -168,14 +189,31 @@ class FilterFileMenuOptionsUseCase(
     }
 
     private fun anyFileSynchronizingLookingIntoWorkers(files: List<OCFile>, accountName: String): Boolean {
-        val workInfos = workManager.getRunningWorkInfosByTags(listOf(TRANSFER_TAG_DOWNLOAD, accountName))
-        val workInfosNotFinished = workInfos.filter { !it.state.isFinished }
+        val transferWorkInfos = workManager.getRunningWorkInfosByTags(listOf(TRANSFER_TAG_DOWNLOAD, accountName))
+        val archiveWorkInfos = workManager.getRunningWorkInfosByTags(
+            listOf(ARCHIVE_TAG_ZIP, ARCHIVE_TAG_UNZIP, accountName),
+        )
+        val workInfosNotFinished = (transferWorkInfos + archiveWorkInfos)
+            .filter { !it.state.isFinished }
+            .distinctBy { it.id }
         workInfosNotFinished.forEach { workInfoNotFinished ->
             if (files.any { workInfoNotFinished.tags.contains(it.id.toString()) }) {
                 return true
             }
         }
         return false
+    }
+
+    private fun isAnyArchiveOperationRunning(
+        files: List<OCFile>,
+        accountName: String,
+        archiveTag: String,
+    ): Boolean {
+        val workInfos = workManager.getRunningWorkInfosByTags(listOf(archiveTag, accountName))
+        val workInfosNotFinished = workInfos.filter { !it.state.isFinished }
+        return workInfosNotFinished.any { workInfo ->
+            files.any { workInfo.tags.contains(it.id.toString()) }
+        }
     }
 
     private fun anyFileSynchronizingLookingIIntoFilesSyncInfo(filesSyncInfo: List<OCFileSyncInfo>) =
@@ -210,6 +248,7 @@ class FilterFileMenuOptionsUseCase(
         val files: List<OCFile>,
         val filesSyncInfo: List<OCFileSyncInfo> = emptyList(),
         val accountName: String,
+        val currentFolder: OCFile? = null,
         val isAnyFileVideoPreviewing: Boolean,
         val displaySelectAll: Boolean,
         val displaySelectInverse: Boolean,

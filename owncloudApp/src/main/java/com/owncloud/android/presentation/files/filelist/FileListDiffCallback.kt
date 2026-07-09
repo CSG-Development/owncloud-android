@@ -72,8 +72,11 @@ class FileListDiffCallback(
         val oldItem = oldList[oldItemPosition]
         val newItem = newList[newItemPosition]
 
-        if (oldItem is OCFileWithSyncInfo && newItem is OCFileWithSyncInfo && oldItem.isUploadProgressOnlyChange(newItem)) {
-            return newItem.uploadProgress ?: 0
+        if (oldItem is OCFileWithSyncInfo && newItem is OCFileWithSyncInfo && oldItem.isVirtualProgressOnlyChange(newItem)) {
+            return VirtualFileProgressPayload(
+                progress = newItem.uploadProgress ?: 0,
+                isIndeterminate = newItem.isProgressIndeterminate,
+            )
         }
         return null
     }

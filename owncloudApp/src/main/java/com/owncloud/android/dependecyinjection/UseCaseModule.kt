@@ -29,6 +29,7 @@ import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProvide
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryForMimeTypeAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetAppRegistryWhichAllowCreationAsStreamUseCase
 import com.owncloud.android.domain.appregistry.usecases.GetUrlToOpenInWebUseCase
+import com.owncloud.android.domain.archive.usecases.CollectArchiveFilesUseCase
 import com.owncloud.android.domain.authentication.oauth.OIDCDiscoveryUseCase
 import com.owncloud.android.domain.authentication.oauth.RegisterClientUseCase
 import com.owncloud.android.domain.authentication.oauth.RequestTokenUseCase
@@ -154,6 +155,8 @@ import com.owncloud.android.domain.user.usecases.RefreshUserQuotaFromServerAsync
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstanceFromWebFingerUseCase
 import com.owncloud.android.domain.webfinger.usecases.GetOwnCloudInstancesFromAuthenticatedWebFingerUseCase
 import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
+import com.owncloud.android.usecases.archive.UnzipFileUseCase
+import com.owncloud.android.usecases.archive.ZipFilesUseCase
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.files.RemoveLocalFilesForAccountUseCase
 import com.owncloud.android.usecases.files.RemoveLocallyFilesWithLastUsageOlderThanGivenTimeUseCase
@@ -298,6 +301,11 @@ val useCaseModule = module {
     factoryOf(::GetWebDavUrlForSpaceUseCase)
     factoryOf(::RefreshSpacesFromServerAsyncUseCase)
     factoryOf(::GetSpaceByIdForAccountUseCase)
+
+    // Archive
+    factoryOf(::CollectArchiveFilesUseCase)
+    factoryOf(::ZipFilesUseCase)
+    factoryOf(::UnzipFileUseCase)
 
     // Transfers
     factoryOf(::CancelDownloadForFileUseCase)

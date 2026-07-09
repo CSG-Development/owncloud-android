@@ -31,7 +31,10 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.owncloud.android.extensions.getPendingWorkInfosLiveData
 import com.owncloud.android.extensions.getRunningWorkInfosLiveData
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_UNZIP
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_ZIP
 import com.owncloud.android.workers.AccountDiscoveryWorker
 import com.owncloud.android.workers.AutomaticUploadsWorker
 import com.owncloud.android.workers.AvailableOfflinePeriodicWorker
@@ -144,6 +147,11 @@ class WorkManagerProvider(
                 UploadFileFromContentUriWorker::class.java.name,
                 UploadFileFromFileSystemWorker::class.java.name
             )
+        )
+
+    fun getPendingArchiveWorkInfosLiveData(): LiveData<List<WorkInfo>> =
+        WorkManager.getInstance(context).getPendingWorkInfosLiveData(
+            listOf(ARCHIVE_TAG_ZIP, ARCHIVE_TAG_UNZIP),
         )
 
     fun cancelAllWorkByTag(tag: String) = WorkManager.getInstance(context).cancelAllWorkByTag(tag)

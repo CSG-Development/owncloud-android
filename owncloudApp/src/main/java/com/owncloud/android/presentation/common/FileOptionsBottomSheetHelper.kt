@@ -21,6 +21,8 @@ import com.owncloud.android.extensions.toStringResId
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
+import com.owncloud.android.presentation.files.operations.FileOperation.CompressOperation
+import com.owncloud.android.presentation.files.operations.FileOperation.ExtractOperation
 import com.owncloud.android.presentation.files.operations.FileOperation.SetFileFavoriteStatus
 import com.owncloud.android.presentation.files.operations.FileOperation.SetFilesAsAvailableOffline
 import com.owncloud.android.presentation.files.operations.FileOperation.SynchronizeFileOperation
@@ -43,6 +45,7 @@ object FileOptionsBottomSheetHelper {
         menuOptions: List<FileMenuOption>,
         fileOperationsViewModel: FileOperationsViewModel,
         fileActions: MainFileListFragment.FileActions?,
+        parentFolder: OCFile? = null,
         isMultiPersonal: Boolean = false,
         onRemoveSelected: ((OCFile) -> Unit)? = null,
     ) {
@@ -128,7 +131,7 @@ object FileOptionsBottomSheetHelper {
             itemView.itemIcon = ResourcesCompat.getDrawable(activity.resources, menuOption.toDrawableResId(), null)
             itemView.setOnClickListener {
                 if (menuOption == FileMenuOption.REMOVE) onRemoveSelected?.invoke(file)
-                handleMenuOption(menuOption, file, fileOperationsViewModel, fileActions, fragment)
+                handleMenuOption(menuOption, file, fileOperationsViewModel, fileActions, fragment, parentFolder)
                 dialog.hide()
                 dialog.dismiss()
             }
@@ -145,6 +148,7 @@ object FileOptionsBottomSheetHelper {
         fileOperationsViewModel: FileOperationsViewModel,
         fileActions: MainFileListFragment.FileActions?,
         fragment: Fragment,
+        parentFolder: OCFile?,
     ) {
         val activity = fragment.requireActivity()
         when (menuOption) {
@@ -184,6 +188,27 @@ object FileOptionsBottomSheetHelper {
                     putExtra(FolderPickerActivity.EXTRA_PICKER_MODE, FolderPickerActivity.PickerMode.COPY)
                 }
                 activity.startActivityForResult(action, FileDisplayActivity.REQUEST_CODE__COPY_FILES)
+            }
+
+            FileMenuOption.COMPRESS -> {
+                parentFolder?.let { folder ->
+                    fileOperationsViewModel.performOperation(
+                        CompressOperation(
+                            accountName = folder.owner,
+                            parentFolder = folder,
+                            files = listOf(file),
+                        ),
+                    )
+                }
+            }
+
+            FileMenuOption.EXTRACT -> {
+                fileOperationsViewModel.performOperation(
+                    ExtractOperation(
+                        accountName = file.owner,
+                        zipFile = file,
+                    ),
+                )
             }
 
             FileMenuOption.REMOVE -> fileOperationsViewModel.showRemoveDialog(listOf(file))
