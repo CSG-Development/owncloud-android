@@ -229,6 +229,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
         binding.trashListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_trash_empty_title)
         binding.trashListEmpty.listEmptyDatasetSubTitle.setText(R.string.homecloud_trash_empty_subtitle)
         updateBottomActionBar(selectedCount = 0)
+        toolbarListener?.onSelectionChanged(0, 0)
     }
 
     private fun showNotSupported() {
