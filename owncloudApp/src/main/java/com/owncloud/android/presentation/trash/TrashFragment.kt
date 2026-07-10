@@ -18,6 +18,7 @@ import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.showErrorInSnackbar
 import com.owncloud.android.extensions.showMessageInSnackbar
+import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -96,36 +97,44 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
             }
         }
 
-        collectLatestLifecycleFlow(trashViewModel.deleteEvent) { event ->
-            when (event) {
-                is TrashViewModel.TrashDeleteEvent.Success -> {
+        collectLatestLifecycleFlow(trashViewModel.deleteOperation) { result ->
+            when (result) {
+                is UIResult.Loading -> binding.swipeRefreshTrash.isRefreshing = true
+                is UIResult.Success -> {
+                    binding.swipeRefreshTrash.isRefreshing = false
+                    val deletedCount = result.data ?: return@collectLatestLifecycleFlow
                     showMessageInSnackbar(
                         resources.getQuantityString(
                             R.plurals.homecloud_trash_delete_success,
-                            event.deletedCount,
-                            event.deletedCount,
+                            deletedCount,
+                            deletedCount,
                         ),
                     )
                 }
-                is TrashViewModel.TrashDeleteEvent.Error -> {
-                    showErrorInSnackbar(R.string.homecloud_trash_delete_error, event.throwable)
+                is UIResult.Error -> {
+                    binding.swipeRefreshTrash.isRefreshing = false
+                    showErrorInSnackbar(R.string.homecloud_trash_delete_error, result.getThrowableOrNull())
                 }
             }
         }
 
-        collectLatestLifecycleFlow(trashViewModel.restoreEvent) { event ->
-            when (event) {
-                is TrashViewModel.TrashRestoreEvent.Success -> {
+        collectLatestLifecycleFlow(trashViewModel.restoreOperation) { result ->
+            when (result) {
+                is UIResult.Loading -> binding.swipeRefreshTrash.isRefreshing = true
+                is UIResult.Success -> {
+                    binding.swipeRefreshTrash.isRefreshing = false
+                    val restoredCount = result.data ?: return@collectLatestLifecycleFlow
                     showMessageInSnackbar(
                         resources.getQuantityString(
                             R.plurals.homecloud_trash_restore_success,
-                            event.restoredCount,
-                            event.restoredCount,
+                            restoredCount,
+                            restoredCount,
                         ),
                     )
                 }
-                is TrashViewModel.TrashRestoreEvent.Error -> {
-                    showErrorInSnackbar(R.string.homecloud_trash_restore_error, event.throwable)
+                is UIResult.Error -> {
+                    binding.swipeRefreshTrash.isRefreshing = false
+                    showErrorInSnackbar(R.string.homecloud_trash_restore_error, result.getThrowableOrNull())
                 }
             }
         }
