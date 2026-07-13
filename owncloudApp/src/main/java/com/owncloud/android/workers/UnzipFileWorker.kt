@@ -108,10 +108,11 @@ class UnzipFileWorker(
             val client = getClient()
             val targetSubfolderPath = getAvailableRemotePath(
                 ownCloudClient = client,
-                remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile),
+                remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
+                    .trimEnd(OCFile.PATH_SEPARATOR),
                 spaceWebDavUrl = spaceWebDavUrl,
                 isUserLogged = AccountUtils.getCurrentOwnCloudAccount(appContext) != null,
-            )
+            ) + OCFile.PATH_SEPARATOR
 
             createRemoteFolder(client, targetSubfolderPath)
             progress.completePhase(UnzipPhase.CREATE_FOLDER)
