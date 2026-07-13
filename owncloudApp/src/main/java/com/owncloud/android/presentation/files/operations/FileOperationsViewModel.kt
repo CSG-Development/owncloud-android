@@ -372,7 +372,6 @@ class FileOperationsViewModel(
 
             val displayName = ArchiveNameResolver.resolveArchiveBaseName(
                 selectedFiles = fileOperation.files,
-                parentFolder = fileOperation.parentFolder,
             )
             val enqueued = ArchiveWorkEnqueued(
                 workId = workId,

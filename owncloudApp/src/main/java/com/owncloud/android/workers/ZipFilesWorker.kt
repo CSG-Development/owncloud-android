@@ -76,7 +76,6 @@ class ZipFilesWorker(
 
         val archiveFileName = ArchiveNameResolver.resolveArchiveBaseName(
             selectedFiles = selectedFiles,
-            parentFolder = parentFolder,
         )
 
         return try {
