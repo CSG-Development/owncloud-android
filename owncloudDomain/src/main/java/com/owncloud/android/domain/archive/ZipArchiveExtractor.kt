@@ -4,13 +4,13 @@ import com.owncloud.android.domain.exceptions.ArchivePathTraversalException
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.exceptions.UnsupportedArchiveFormatException
-import java.io.BufferedInputStream
+import timber.log.Timber
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipException
-import java.util.zip.ZipInputStream
+import java.util.zip.ZipFile
 
 object ZipArchiveExtractor {
 
@@ -31,22 +31,21 @@ object ZipArchiveExtractor {
         var processedBytes = 0L
 
         try {
-            BufferedInputStream(FileInputStream(zipFile)).use { inputStream ->
-                ZipInputStream(inputStream).use { zipInputStream ->
-                    var entry: ZipEntry? = zipInputStream.nextEntry
-                    while (entry != null) {
-                        val bytesRead = extractEntry(
-                            zipInputStream = zipInputStream,
+            ZipFile(zipFile).use { zip ->
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    val bytesRead = zip.getInputStream(entry).use { inputStream ->
+                        extractEntry(
+                            inputStream = inputStream,
                             entry = entry,
                             targetDirectory = targetDirectory,
                             usedEntryPaths = usedEntryPaths,
                         )
-                        if (onBytesProcessed != null) {
-                            processedBytes += bytesRead
-                            onBytesProcessed(processedBytes.coerceAtMost(totalBytes), totalBytes)
-                        }
-                        zipInputStream.closeEntry()
-                        entry = zipInputStream.nextEntry
+                    }
+                    if (onBytesProcessed != null) {
+                        processedBytes += bytesRead
+                        onBytesProcessed(processedBytes.coerceAtMost(totalBytes), totalBytes)
                     }
                 }
             }
@@ -66,7 +65,7 @@ object ZipArchiveExtractor {
     }
 
     private fun extractEntry(
-        zipInputStream: ZipInputStream,
+        inputStream: InputStream,
         entry: ZipEntry,
         targetDirectory: File,
         usedEntryPaths: MutableSet<String>,
@@ -87,13 +86,16 @@ object ZipArchiveExtractor {
 
         if (entry.isDirectory || sanitizedPath.endsWith('/')) {
             outputFile.mkdirs()
+            Timber.d("Extracted ${entry.name}: 0 bytes (directory)")
             return 0L
         }
 
         outputFile.parentFile?.mkdirs()
-        return FileOutputStream(outputFile).use { outputStream ->
-            zipInputStream.copyTo(outputStream)
+        val bytesRead = FileOutputStream(outputFile).use { outputStream ->
+            inputStream.copyTo(outputStream)
         }
+        Timber.d("Extracted ${entry.name}: $bytesRead bytes (method=${entry.method})")
+        return bytesRead
     }
 
     internal fun sanitizeEntryPath(entryName: String): String {
