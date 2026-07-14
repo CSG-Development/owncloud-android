@@ -3,7 +3,9 @@ package com.owncloud.android.workers
 import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.Data
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.archive.ArchiveMimeTypes
@@ -54,6 +56,8 @@ class UnzipFileWorker(
 
     private val tempPathsToCleanup = mutableListOf<File>()
     private lateinit var progress: ArchiveOperationProgress
+    private var targetRemotePath: String? = null
+    private var lastProgressPercent = 0
     private var uploadBytesTotal = 0L
     private var uploadedBytes = 0L
     private var filesToUploadCount = 0
@@ -62,9 +66,14 @@ class UnzipFileWorker(
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
 
+        targetRemotePath = readPersistedTargetRemotePath()
+
         progress = ArchiveOperationProgress.forWorker(
             scope = CoroutineScope(coroutineContext),
-            setProgress = { data -> setProgress(data) },
+            setProgress = { data ->
+                lastProgressPercent = data.getInt(DownloadFileWorker.WORKER_KEY_PROGRESS, lastProgressPercent)
+                setProgress(mergeTargetPathIntoProgress(data))
+            },
         )
         progress.reportStart()
 
@@ -106,13 +115,7 @@ class UnzipFileWorker(
             ensureNotCancelled()
 
             val client = getClient()
-            val targetSubfolderPath = getAvailableRemotePath(
-                ownCloudClient = client,
-                remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
-                    .trimEnd(OCFile.PATH_SEPARATOR),
-                spaceWebDavUrl = spaceWebDavUrl,
-                isUserLogged = AccountUtils.getCurrentOwnCloudAccount(appContext) != null,
-            ) + OCFile.PATH_SEPARATOR
+            val targetSubfolderPath = resolveTargetSubfolderPath(client)
 
             createRemoteFolder(client, targetSubfolderPath)
             progress.completePhase(UnzipPhase.CREATE_FOLDER)
@@ -136,6 +139,7 @@ class UnzipFileWorker(
             )
 
             progress.reportComplete()
+            clearPersistedTargetRemotePath()
             notifyUnzipResult(throwable = null, zipFileName = zipFileName)
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Unzip operation failed")
@@ -233,6 +237,70 @@ class UnzipFileWorker(
         }
         return tempDownloadPath
     }
+
+    private suspend fun resolveTargetSubfolderPath(client: OwnCloudClient): String {
+        targetRemotePath?.let { return it }
+
+        val resolvedPath = getAvailableRemotePath(
+            ownCloudClient = client,
+            remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
+                .trimEnd(OCFile.PATH_SEPARATOR),
+            spaceWebDavUrl = spaceWebDavUrl,
+            isUserLogged = AccountUtils.getCurrentOwnCloudAccount(appContext) != null,
+        ) + OCFile.PATH_SEPARATOR
+
+        val normalizedPath = normalizeRemoteFolderPath(resolvedPath)
+        targetRemotePath = normalizedPath
+        persistTargetRemotePath(normalizedPath)
+        setProgress(
+            mergeTargetPathIntoProgress(
+                workDataOf(DownloadFileWorker.WORKER_KEY_PROGRESS to lastProgressPercent),
+            ),
+        )
+        return normalizedPath
+    }
+
+    private fun targetPathPersistenceFile(): File {
+        val temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, zipFile.spaceId)
+        return File(temporalFolderPath, "unzip_target_${workerParameters.id}")
+    }
+
+    private fun readPersistedTargetRemotePath(): String? {
+        val file = targetPathPersistenceFile()
+        if (!file.exists()) return null
+        return file.readText()
+            .trim()
+            .takeIf { it.isNotBlank() }
+            ?.let(::normalizeRemoteFolderPath)
+    }
+
+    private fun persistTargetRemotePath(path: String) {
+        val file = targetPathPersistenceFile()
+        file.parentFile?.mkdirs()
+        file.writeText(path)
+    }
+
+    private fun clearPersistedTargetRemotePath() {
+        val file = targetPathPersistenceFile()
+        if (file.exists() && !file.delete()) {
+            Timber.w("Failed to delete persisted target path: ${file.absolutePath}")
+        }
+    }
+
+    private fun mergeTargetPathIntoProgress(data: Data): Data {
+        val targetPath = targetRemotePath ?: return data
+        return Data.Builder()
+            .putAll(data)
+            .putString(KEY_TARGET_REMOTE_PATH, targetPath)
+            .build()
+    }
+
+    private fun normalizeRemoteFolderPath(path: String): String =
+        if (path.endsWith(OCFile.PATH_SEPARATOR)) {
+            path
+        } else {
+            "$path${OCFile.PATH_SEPARATOR}"
+        }
 
     private fun createRemoteFolder(client: OwnCloudClient, remotePath: String) {
         val normalizedPath = if (remotePath.endsWith(OCFile.PATH_SEPARATOR)) {
@@ -436,6 +504,7 @@ class UnzipFileWorker(
     companion object {
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_ZIP_FILE_ID = "KEY_PARAM_ZIP_FILE_ID"
+        const val KEY_TARGET_REMOTE_PATH = "KEY_TARGET_REMOTE_PATH"
         private const val ARCHIVE_NOTIFICATION_ID = 15
     }
 }
