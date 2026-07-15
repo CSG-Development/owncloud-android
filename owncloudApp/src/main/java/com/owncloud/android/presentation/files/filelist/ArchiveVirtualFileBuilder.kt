@@ -9,6 +9,7 @@ import com.owncloud.android.domain.files.model.VirtualArchiveFileIds
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.usecases.archive.ARCHIVE_TAG_UNZIP
 import com.owncloud.android.usecases.archive.ARCHIVE_TAG_ZIP
+import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.workers.DownloadFileWorker
 import java.util.UUID
 
@@ -45,10 +46,10 @@ object ArchiveVirtualFileBuilder {
     ): OCFileWithSyncInfo {
         val progress = workInfo.progress.getInt(DownloadFileWorker.WORKER_KEY_PROGRESS, -1)
         val isIndeterminate = progress < 0
-        val mimeType = if (isCompress) {
-            ArchiveMimeTypes.ZIP
-        } else {
-            MIME_DIR_UNIX
+        val mimeType = when {
+            isCompress -> ArchiveMimeTypes.ZIP
+            remotePath.endsWith(OCFile.PATH_SEPARATOR) -> MIME_DIR_UNIX
+            else -> FileStorageUtils.getMimeTypeFromName(remotePath)
         }
 
         return OCFileWithSyncInfo(

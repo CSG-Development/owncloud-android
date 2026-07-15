@@ -31,7 +31,9 @@ import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
+import com.owncloud.android.domain.archive.ArchiveExtractLayout
 import com.owncloud.android.domain.archive.ArchiveNameResolver
+import com.owncloud.android.domain.archive.ZipArchiveExtractor
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.device.DeviceConnectionMonitor
@@ -66,6 +68,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import java.net.URI
 
 class FileOperationsViewModel(
@@ -400,20 +403,46 @@ class FileOperationsViewModel(
             ) ?: return@launch
 
             val zipFile = fileOperation.zipFile
-            val extractFolderName = zipFile.fileName
-                .substringBeforeLast('.')
-                .ifBlank { zipFile.fileName }
+            val (displayName, remotePath) = resolveExtractWorkMetadata(zipFile)
             val enqueued = ArchiveWorkEnqueued(
                 workId = workId,
-                displayName = extractFolderName,
+                displayName = displayName,
                 isCompress = false,
                 parentFolderId = zipFile.parentId!!,
-                remotePath = ArchiveNameResolver.resolveExtractSubfolderPath(zipFile),
+                remotePath = remotePath,
                 spaceId = zipFile.spaceId,
                 accountName = fileOperation.accountName,
             )
             _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
+        }
+    }
+
+    private fun resolveExtractWorkMetadata(zipFile: OCFile): Pair<String, String> {
+        val localZipFile = zipFile.storagePath
+            ?.let { File(it) }
+            .takeIf { zipFile.isAvailableLocally }
+
+        val layout = localZipFile?.let { zip ->
+            runCatching { ZipArchiveExtractor.peekLayout(zip) }.getOrNull()
+        }
+
+        return when (layout) {
+            is ArchiveExtractLayout.DirectToParent -> {
+                val entryName = if (layout.isTopLevelFolder) {
+                    layout.topLevelRoot + OCFile.PATH_SEPARATOR
+                } else {
+                    layout.topLevelRoot
+                }
+                layout.topLevelRoot to (zipFile.getParentRemotePath() + entryName)
+            }
+
+            else -> {
+                val extractFolderName = zipFile.fileName
+                    .substringBeforeLast('.')
+                    .ifBlank { zipFile.fileName }
+                extractFolderName to ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
+            }
         }
     }
 
