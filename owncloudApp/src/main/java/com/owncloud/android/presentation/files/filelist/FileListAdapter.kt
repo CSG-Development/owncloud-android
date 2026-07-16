@@ -46,7 +46,6 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GridItemBinding
-import com.owncloud.android.databinding.ListFooterBinding
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
@@ -55,6 +54,7 @@ import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import com.owncloud.android.presentation.files.filelist.compose.FileListFooter
 import com.owncloud.android.presentation.files.filelist.compose.FileListRow
 import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
 import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
@@ -133,12 +133,15 @@ class FileListAdapter(
             }
 
             else -> {
-                val binding = ListFooterBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                binding.root.apply {
+                val composeView = ComposeView(parent.context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
                     tag = ViewType.FOOTER
                     filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
                 }
-                FooterViewHolder(binding)
+                FooterComposeViewHolder(composeView)
             }
         }
 
@@ -206,14 +209,7 @@ class FileListAdapter(
         val viewType = getItemViewType(position)
 
         if (viewType == ViewType.FOOTER.ordinal) {
-            if (!isPickerMode) {
-                val view = holder as FooterViewHolder
-                val file = files[position] as OCFooterFile
-                (view.itemView.layoutParams as StaggeredGridLayoutManager.LayoutParams).apply {
-                    isFullSpan = true
-                }
-                view.binding.footerText.text = file.text
-            }
+            bindFooterComposeItem(holder as FooterComposeViewHolder, position)
             return
         }
 
@@ -399,6 +395,29 @@ class FileListAdapter(
         }
     }
 
+    private fun bindFooterComposeItem(
+        holder: FooterComposeViewHolder,
+        position: Int,
+    ) {
+        (holder.itemView.layoutParams as? StaggeredGridLayoutManager.LayoutParams)?.apply {
+            isFullSpan = true
+        }
+        if (isPickerMode) {
+            return
+        }
+        val footer = files[position] as OCFooterFile
+        holder.composeView.filterTouchesWhenObscured =
+            PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+        holder.composeView.setContent {
+            HomeCloudTheme {
+                FileListFooter(
+                    text = footer.text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+
     private fun bindUploadProgress(
         holder: RecyclerView.ViewHolder,
         progress: Int,
@@ -559,7 +578,7 @@ class FileListAdapter(
     inner class GridViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)
     inner class GridImageViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)
     inner class ListComposeViewHolder(val composeView: ComposeView) : RecyclerView.ViewHolder(composeView)
-    inner class FooterViewHolder(val binding: ListFooterBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class FooterComposeViewHolder(val composeView: ComposeView) : RecyclerView.ViewHolder(composeView)
 
     enum class ViewType {
         LIST_ITEM, GRID_IMAGE, GRID_ITEM, FOOTER
