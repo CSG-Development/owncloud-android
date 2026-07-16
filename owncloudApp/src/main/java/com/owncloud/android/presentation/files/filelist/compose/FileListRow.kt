@@ -1,5 +1,6 @@
 package com.owncloud.android.presentation.files.filelist.compose
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,11 +24,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -49,6 +52,7 @@ import com.owncloud.android.utils.DisplayUtils
 fun FileListRow(
     item: FileListItemUiModel,
     modifier: Modifier = Modifier,
+    thumbnail: Bitmap? = null,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     onThreeDotClick: () -> Unit = {},
@@ -64,6 +68,7 @@ fun FileListRow(
         FileListRowContent(
             item = item,
             contentAlpha = contentAlpha,
+            thumbnail = thumbnail,
             onThreeDotClick = onThreeDotClick,
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,6 +89,7 @@ fun FileListRow(
 private fun FileListRowContent(
     item: FileListItemUiModel,
     contentAlpha: Float,
+    thumbnail: Bitmap?,
     onThreeDotClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -94,6 +100,7 @@ private fun FileListRowContent(
         FileListRowThumbnail(
             item = item,
             contentAlpha = contentAlpha,
+            thumbnail = thumbnail,
             modifier = Modifier.widthIn(min = dimensionResource(R.dimen.item_file_list_icon_min_width)),
         )
         FileListRowDetails(
@@ -341,31 +348,42 @@ private fun FileListRowUploadProgress(
 private fun FileListRowThumbnail(
     item: FileListItemUiModel,
     contentAlpha: Float,
+    thumbnail: Bitmap?,
     modifier: Modifier = Modifier,
 ) {
     val iconSize = dimensionResource(R.dimen.file_icon_size)
     val pngBackground = colorResource(R.color.background_color)
+    val imageModifier = Modifier
+        .size(iconSize)
+        .alpha(contentAlpha)
+        .then(
+            if (item.mimeType == "image/png") {
+                Modifier.background(pngBackground)
+            } else {
+                Modifier
+            }
+        )
 
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
         Box {
-            Image(
-                painter = painterResource(item.mimeIconRes),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(iconSize)
-                    .alpha(contentAlpha)
-                    .then(
-                        if (item.mimeType == "image/png") {
-                            Modifier.background(pngBackground)
-                        } else {
-                            Modifier
-                        }
-                    ),
-            )
+            if (thumbnail != null) {
+                Image(
+                    bitmap = thumbnail.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = imageModifier,
+                )
+            } else {
+                Image(
+                    painter = painterResource(item.mimeIconRes),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = imageModifier,
+                )
+            }
             FileListRowLocalPin(
                 localPin = item.localPin,
                 modifier = Modifier
@@ -465,6 +483,43 @@ private fun FileListRowPreview(
         Surface {
             FileListRow(
                 item = item,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = dimensionResource(R.dimen.item_file_list_min_height)),
+            )
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun FileListRowThumbnailMissingPreview() {
+    HomeCloudTheme {
+        Surface {
+            FileListRow(
+                item = FileListItemUiModelFixtures.file,
+                thumbnail = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = dimensionResource(R.dimen.item_file_list_min_height)),
+            )
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun FileListRowThumbnailLoadedPreview() {
+    val thumbnail = remember {
+        Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { bitmap ->
+            bitmap.eraseColor(android.graphics.Color.parseColor("#1976D2"))
+        }
+    }
+    HomeCloudTheme {
+        Surface {
+            FileListRow(
+                item = FileListItemUiModelFixtures.fileWithThumbnail,
+                thumbnail = thumbnail,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = dimensionResource(R.dimen.item_file_list_min_height)),
