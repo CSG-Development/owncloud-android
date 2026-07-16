@@ -33,6 +33,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.dimensionResource
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
@@ -41,7 +46,6 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GridItemBinding
-import com.owncloud.android.databinding.ItemFileListBinding
 import com.owncloud.android.databinding.ListFooterBinding
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.FileListOption
@@ -50,7 +54,10 @@ import com.owncloud.android.domain.files.model.OCFooterFile
 import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.presentation.authentication.AccountUtils
-import com.owncloud.android.utils.DisplayUtils
+import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import com.owncloud.android.presentation.files.filelist.compose.FileListRow
+import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
+import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
 
@@ -96,12 +103,15 @@ class FileListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
         when (viewType) {
             ViewType.LIST_ITEM.ordinal -> {
-                val binding = ItemFileListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                binding.root.apply {
+                val composeView = ComposeView(parent.context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
                     tag = ViewType.LIST_ITEM
                     filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
                 }
-                ListViewHolder(binding)
+                ListComposeViewHolder(composeView)
             }
 
             ViewType.GRID_IMAGE.ordinal -> {
@@ -195,124 +205,7 @@ class FileListAdapter(
 
         val viewType = getItemViewType(position)
 
-        if (viewType != ViewType.FOOTER.ordinal) { // Is Item
-
-            val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
-            val file = fileWithSyncInfo.file
-            val name = file.fileName
-            val isVirtual = file.isVirtualFile()
-            val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
-                tag = file.id
-            }
-            val thumbnail: Bitmap? = if (!isVirtual) {
-                file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
-            } else null
-
-            holder.itemView.findViewById<LinearLayout>(R.id.ListItemLayout)?.apply {
-                contentDescription = "LinearLayout-$name"
-
-                // Allow or disallow touches with other visible windows
-                filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
-            }
-
-            holder.itemView.findViewById<LinearLayout>(R.id.share_icons_layout).isVisible =
-                !isVirtual && (file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe)
-            holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible =
-                !isVirtual && file.sharedByLink
-            holder.itemView.findViewById<ImageView>(R.id.shared_via_users_icon).isVisible =
-                !isVirtual && (file.sharedWithSharee == true || file.isSharedWithMe)
-            holder.itemView.findViewById<ImageView>(R.id.thumbnail).alpha = if (isVirtual) 0.5f else 1f
-            holder.itemView.findViewById<TextView>(R.id.Filename).alpha = if (isVirtual) 0.5f else 1f
-
-            setSpecificViewHolder(viewType, holder, fileWithSyncInfo, thumbnail)
-
-            setIconPinAccordingToFilesLocalState(holder.itemView.findViewById(R.id.localFileIndicator), fileWithSyncInfo)
-
-            // Show/hide upload progress indicator and three_dot_menu
-            val progressIndicator = holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)
-            val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
-            val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
-            if (isVirtual) {
-                threeDotMenu?.isVisible = false
-                bindUploadProgress(
-                    holder = holder,
-                    progress = uploadProgress,
-                    isIndeterminate = fileWithSyncInfo.isProgressIndeterminate,
-                )
-            } else {
-                progressIndicator?.isVisible = false
-                // three_dot_menu visibility is managed in setSpecificViewHolder for list items
-            }
-
-            if (!isVirtual) {
-                holder.itemView.setOnClickListener {
-                    listener.onItemClick(
-                        ocFileWithSyncInfo = fileWithSyncInfo,
-                        position = position
-                    )
-                }
-
-                holder.itemView.setOnLongClickListener {
-                    listener.onLongItemClick(
-                        position = position
-                    )
-                }
-            } else {
-                holder.itemView.apply {
-                    isClickable = true
-                    isLongClickable = false
-                    if (file.isUploadVirtualFile()) {
-                        setOnClickListener {
-                            listener.onVirtualFileClick(fileWithSyncInfo, this)
-                        }
-                    } else {
-                        setOnClickListener(null)
-                    }
-                    setOnLongClickListener(null)
-                }
-            }
-            //holder.itemView.setBackgroundColor(Color.WHITE)
-
-            val checkBoxV = holder.itemView.findViewById<ImageView>(R.id.custom_checkbox).apply {
-                isVisible = !isVirtual && getCheckedItems().isNotEmpty()
-            }
-
-            if (isSelected(position)) {
-                //holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.selected_item_background))
-                checkBoxV.setImageResource(R.drawable.ic_checkbox_marked)
-            } else {
-                //holder.itemView.setBackgroundColor(Color.WHITE)
-                checkBoxV.setImageResource(R.drawable.ic_checkbox_blank_outline)
-            }
-
-            if (file.isFolder) {
-                // Folder
-                fileIcon.setImageResource(R.drawable.ic_homecloud_folder)
-            } else {
-                // Set file icon depending on its mimetype. Ask for thumbnail later.
-                fileIcon.setImageResource(MimetypeIconUtil.getFileTypeIconId(file.mimeType, file.fileName))
-
-                if (thumbnail != null) {
-                    fileIcon.setImageBitmap(thumbnail)
-                }
-                if (!isVirtual && file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
-                    // generate new Thumbnail
-                    val task = ThumbnailsCacheManager.ThumbnailGenerationTask(fileIcon, account)
-                    val asyncDrawable = ThumbnailsCacheManager.AsyncThumbnailDrawable(context.resources, thumbnail, task)
-
-                    // If drawable is not visible, do not update it.
-                    if (asyncDrawable.minimumHeight > 0 && asyncDrawable.minimumWidth > 0) {
-                        fileIcon.setImageDrawable(asyncDrawable)
-                    }
-                    task.execute(file)
-                }
-
-                if (file.mimeType == "image/png") {
-                    fileIcon.setBackgroundColor(ContextCompat.getColor(context, R.color.background_color))
-                }
-            }
-
-        } else { // Is Footer
+        if (viewType == ViewType.FOOTER.ordinal) {
             if (!isPickerMode) {
                 val view = holder as FooterViewHolder
                 val file = files[position] as OCFooterFile
@@ -320,6 +213,188 @@ class FileListAdapter(
                     isFullSpan = true
                 }
                 view.binding.footerText.text = file.text
+            }
+            return
+        }
+
+        val fileWithSyncInfo = files[position] as OCFileWithSyncInfo
+
+        if (viewType == ViewType.LIST_ITEM.ordinal) {
+            bindListComposeItem(holder as ListComposeViewHolder, fileWithSyncInfo, position)
+            return
+        }
+
+        // Grid XML items
+        val file = fileWithSyncInfo.file
+        val name = file.fileName
+        val isVirtual = file.isVirtualFile()
+        val fileIcon = holder.itemView.findViewById<ImageView>(R.id.thumbnail).apply {
+            tag = file.id
+        }
+        val thumbnail: Bitmap? = if (!isVirtual) {
+            file.remoteId?.let { ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId) }
+        } else null
+
+        holder.itemView.findViewById<LinearLayout>(R.id.ListItemLayout)?.apply {
+            contentDescription = "LinearLayout-$name"
+
+            // Allow or disallow touches with other visible windows
+            filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+        }
+
+        holder.itemView.findViewById<LinearLayout>(R.id.share_icons_layout).isVisible =
+            !isVirtual && (file.sharedByLink || file.sharedWithSharee == true || file.isSharedWithMe)
+        holder.itemView.findViewById<ImageView>(R.id.shared_by_link_icon).isVisible =
+            !isVirtual && file.sharedByLink
+        holder.itemView.findViewById<ImageView>(R.id.shared_via_users_icon).isVisible =
+            !isVirtual && (file.sharedWithSharee == true || file.isSharedWithMe)
+        holder.itemView.findViewById<ImageView>(R.id.thumbnail).alpha = if (isVirtual) 0.5f else 1f
+        holder.itemView.findViewById<TextView>(R.id.Filename).alpha = if (isVirtual) 0.5f else 1f
+
+        setSpecificViewHolder(viewType, holder, fileWithSyncInfo, thumbnail)
+
+        setIconPinAccordingToFilesLocalState(holder.itemView.findViewById(R.id.localFileIndicator), fileWithSyncInfo)
+
+        // Show/hide upload progress indicator and three_dot_menu
+        val progressIndicator = holder.itemView.findViewById<LinearProgressIndicator>(R.id.uploadProgressIndicator)
+        val threeDotMenu = holder.itemView.findViewById<ImageView>(R.id.three_dot_menu)
+        val uploadProgress = fileWithSyncInfo.uploadProgress ?: 0
+        if (isVirtual) {
+            threeDotMenu?.isVisible = false
+            bindUploadProgress(
+                holder = holder,
+                progress = uploadProgress,
+                isIndeterminate = fileWithSyncInfo.isProgressIndeterminate,
+            )
+        } else {
+            progressIndicator?.isVisible = false
+        }
+
+        if (!isVirtual) {
+            holder.itemView.setOnClickListener {
+                listener.onItemClick(
+                    ocFileWithSyncInfo = fileWithSyncInfo,
+                    position = position
+                )
+            }
+
+            holder.itemView.setOnLongClickListener {
+                listener.onLongItemClick(
+                    position = position
+                )
+            }
+        } else {
+            holder.itemView.apply {
+                isClickable = true
+                isLongClickable = false
+                if (file.isUploadVirtualFile()) {
+                    setOnClickListener {
+                        listener.onVirtualFileClick(fileWithSyncInfo, this)
+                    }
+                } else {
+                    setOnClickListener(null)
+                }
+                setOnLongClickListener(null)
+            }
+        }
+
+        val checkBoxV = holder.itemView.findViewById<ImageView>(R.id.custom_checkbox).apply {
+            isVisible = !isVirtual && getCheckedItems().isNotEmpty()
+        }
+
+        if (isSelected(position)) {
+            checkBoxV.setImageResource(R.drawable.ic_checkbox_marked)
+        } else {
+            checkBoxV.setImageResource(R.drawable.ic_checkbox_blank_outline)
+        }
+
+        if (file.isFolder) {
+            // Folder
+            fileIcon.setImageResource(R.drawable.ic_homecloud_folder)
+        } else {
+            // Set file icon depending on its mimetype. Ask for thumbnail later.
+            fileIcon.setImageResource(MimetypeIconUtil.getFileTypeIconId(file.mimeType, file.fileName))
+
+            if (thumbnail != null) {
+                fileIcon.setImageBitmap(thumbnail)
+            }
+            if (!isVirtual && file.needsToUpdateThumbnail && ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, fileIcon)) {
+                // generate new Thumbnail
+                val task = ThumbnailsCacheManager.ThumbnailGenerationTask(fileIcon, account)
+                val asyncDrawable = ThumbnailsCacheManager.AsyncThumbnailDrawable(context.resources, thumbnail, task)
+
+                // If drawable is not visible, do not update it.
+                if (asyncDrawable.minimumHeight > 0 && asyncDrawable.minimumWidth > 0) {
+                    fileIcon.setImageDrawable(asyncDrawable)
+                }
+                task.execute(file)
+            }
+
+            if (file.mimeType == "image/png") {
+                fileIcon.setBackgroundColor(ContextCompat.getColor(context, R.color.background_color))
+            }
+        }
+    }
+
+    private fun bindListComposeItem(
+        holder: ListComposeViewHolder,
+        fileWithSyncInfo: OCFileWithSyncInfo,
+        position: Int,
+    ) {
+        val file = fileWithSyncInfo.file
+        val isVirtual = file.isVirtualFile()
+        val selectionModeActive = getCheckedItems().isNotEmpty()
+        val showThreeDotMenu = !selectionModeActive && !fileListOption.isFavorites()
+        val showSpacePath = fileListOption.isAvailableOffline() ||
+            fileListOption.isFavorites() ||
+            (fileListOption.isSharedByLink() && fileWithSyncInfo.space == null)
+
+        val item = fileWithSyncInfo.toFileListItemUiModel(
+            isSelected = isSelected(position),
+            selectionModeActive = selectionModeActive,
+            showThreeDotMenu = showThreeDotMenu,
+            showSpacePath = showSpacePath,
+            isMultiPersonal = isMultiPersonal,
+        )
+
+        holder.composeView.apply {
+            contentDescription = "LinearLayout-${file.fileName}"
+            filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+        }
+
+        holder.composeView.setContent {
+            HomeCloudTheme {
+                val thumbnail = rememberFileListThumbnail(
+                    file = file.takeUnless { isVirtual || file.isFolder },
+                    account = account,
+                )
+                FileListRow(
+                    item = item,
+                    thumbnail = thumbnail,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = dimensionResource(R.dimen.item_file_list_min_height)),
+                    onClick = {
+                        if (isVirtual) {
+                            if (file.isUploadVirtualFile()) {
+                                listener.onVirtualFileClick(fileWithSyncInfo, holder.itemView)
+                            }
+                        } else {
+                            listener.onItemClick(
+                                ocFileWithSyncInfo = fileWithSyncInfo,
+                                position = position,
+                            )
+                        }
+                    },
+                    onLongClick = {
+                        if (!isVirtual) {
+                            listener.onLongItemClick(position = position)
+                        }
+                    },
+                    onThreeDotClick = {
+                        listener.onThreeDotButtonClick(fileWithSyncInfo = fileWithSyncInfo)
+                    },
+                )
             }
         }
     }
@@ -344,47 +419,6 @@ class FileListAdapter(
         val file = fileWithSyncInfo.file
 
         when (viewType) {
-            ViewType.LIST_ITEM.ordinal -> {
-                val view = holder as ListViewHolder
-                view.binding.let {
-                    it.fileListConstraintLayout.filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
-                    it.Filename.text = file.fileName
-                    val isFolderInKw = isMultiPersonal && file.isFolder
-                    it.fileListSize.text = if (isFolderInKw) "" else DisplayUtils.bytesToHumanReadable(file.length, context, true)
-                    it.fileListSeparator.visibility = if (isFolderInKw) View.GONE else View.VISIBLE
-                    it.fileListLastMod.layoutParams = (it.fileListLastMod.layoutParams as ViewGroup.MarginLayoutParams).also { params ->
-                        params.marginStart = if (isFolderInKw) 0 else
-                            context.resources.getDimensionPixelSize(R.dimen.standard_quarter_margin)
-                    }
-                    it.fileListLastMod.text = DisplayUtils.getRelativeTimestamp(context, file.modificationTimestamp)
-                    it.threeDotMenu.isVisible = getCheckedItems().isEmpty() && !fileListOption.isFavorites()
-                    it.threeDotMenu.contentDescription = context.getString(R.string.content_description_file_operations, file.fileName)
-                    if (fileListOption.isAvailableOffline() || fileListOption.isFavorites() || (fileListOption.isSharedByLink() && fileWithSyncInfo.space == null)) {
-                        it.spacePathLine.path.apply {
-                            text = file.getParentRemotePath()
-                            isVisible = true
-                        }
-                        fileWithSyncInfo.space?.let { space ->
-                            it.spacePathLine.spaceIcon.isVisible = true
-                            it.spacePathLine.spaceName.isVisible = true
-                            if (space.isPersonal && !isMultiPersonal) {
-                                it.spacePathLine.spaceIcon.setImageResource(R.drawable.ic_folder)
-                                it.spacePathLine.spaceName.setText(R.string.bottom_nav_personal)
-                            } else {
-                                it.spacePathLine.spaceName.text = space.name
-                            }
-                        }
-                    } else {
-                        it.spacePathLine.path.isVisible = false
-                        it.spacePathLine.spaceIcon.isVisible = false
-                        it.spacePathLine.spaceName.isVisible = false
-                    }
-                    it.threeDotMenu.setOnClickListener {
-                        listener.onThreeDotButtonClick(fileWithSyncInfo = fileWithSyncInfo)
-                    }
-                }
-            }
-
             ViewType.GRID_ITEM.ordinal -> {
                 // Filename
                 val view = holder as GridViewHolder
@@ -524,7 +558,7 @@ class FileListAdapter(
 
     inner class GridViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)
     inner class GridImageViewHolder(val binding: GridItemBinding) : RecyclerView.ViewHolder(binding.root)
-    inner class ListViewHolder(val binding: ItemFileListBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class ListComposeViewHolder(val composeView: ComposeView) : RecyclerView.ViewHolder(composeView)
     inner class FooterViewHolder(val binding: ListFooterBinding) : RecyclerView.ViewHolder(binding.root)
 
     enum class ViewType {

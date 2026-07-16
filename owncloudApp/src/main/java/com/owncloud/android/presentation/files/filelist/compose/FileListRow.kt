@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,9 +37,12 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.owncloud.android.R
@@ -64,6 +67,7 @@ fun FileListRow(
             onClick = onClick,
             onLongClick = onLongClick.takeUnless { item.isVirtual },
         ),
+        contentAlignment = Alignment.CenterStart,
     ) {
         FileListRowContent(
             item = item,
@@ -150,8 +154,10 @@ private fun FileListRowFileName(
 ) {
     Text(
         text = name,
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = dimensionResource(R.dimen.two_line_primary_text_size).value.sp,
+        style = fileListTextStyle(
+            fontSize = dimensionResource(R.dimen.two_line_primary_text_size).value.sp,
+            color = MaterialTheme.colorScheme.primary,
+        ),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,
@@ -234,7 +240,10 @@ private fun FileListRowSizeAndDate(
     secondaryTextColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    val secondaryFontSize = dimensionResource(R.dimen.two_line_secondary_text_size).value.sp
+    val secondaryStyle = fileListTextStyle(
+        fontSize = dimensionResource(R.dimen.two_line_secondary_text_size).value.sp,
+        color = secondaryTextColor,
+    )
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -242,27 +251,23 @@ private fun FileListRowSizeAndDate(
         if (hideSizeAndSeparator) {
             Text(
                 text = lastModifiedText,
-                color = secondaryTextColor,
-                fontSize = secondaryFontSize,
+                style = secondaryStyle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         } else {
             Text(
                 text = sizeText,
-                color = secondaryTextColor,
-                fontSize = secondaryFontSize,
+                style = secondaryStyle,
                 maxLines = 1,
             )
             Text(
                 text = ",",
-                color = secondaryTextColor,
-                fontSize = secondaryFontSize,
+                style = secondaryStyle,
             )
             Text(
                 text = lastModifiedText,
-                color = secondaryTextColor,
-                fontSize = secondaryFontSize,
+                style = secondaryStyle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = dimensionResource(R.dimen.standard_quarter_margin)),
@@ -313,9 +318,9 @@ private fun FileListRowThreeDotMenu(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = modifier,
+    Box(
+        modifier = modifier.clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_three_dot_menu),
@@ -327,6 +332,16 @@ private fun FileListRowThreeDotMenu(
         )
     }
 }
+
+/** Matches XML TextView sizing (no M3 letter-spacing / inflated line height). */
+private fun fileListTextStyle(fontSize: TextUnit, color: Color): TextStyle =
+    TextStyle(
+        color = color,
+        fontSize = fontSize,
+        lineHeight = fontSize,
+        letterSpacing = 0.sp,
+        platformStyle = PlatformTextStyle(includeFontPadding = true),
+    )
 
 @Composable
 private fun FileListRowUploadProgress(
