@@ -54,6 +54,16 @@ dependencies {
     implementation(libs.androidx.enterprise.feedback) { because "MDM feedback" }
     implementation(libs.androidx.splash)
 
+    // Jetpack Compose (BOM manages artifact versions)
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.foundation
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.activity.compose
+    debugImplementation platform(libs.androidx.compose.bom)
+    debugImplementation libs.androidx.compose.ui.tooling
+
     // Image loading
     implementation libs.coil
     implementation libs.glide
@@ -227,6 +237,11 @@ android {
 
     buildFeatures {
         viewBinding true
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
 
     packagingOptions {
