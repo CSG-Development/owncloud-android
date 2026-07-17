@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -138,7 +137,7 @@ private fun FileGridItemMedia(
             )
         }
         if (item.isVirtual) {
-            FileGridItemUploadProgress(
+            FileListUploadProgress(
                 item = item,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -260,22 +259,6 @@ private fun FileGridItemCheckbox(
         contentDescription = null,
         modifier = modifier,
     )
-}
-
-@Composable
-private fun FileGridItemUploadProgress(
-    item: FileListItemUiModel,
-    modifier: Modifier = Modifier,
-) {
-    if (item.isProgressIndeterminate) {
-        LinearProgressIndicator(modifier = modifier)
-    } else {
-        val progress = ((item.uploadProgress ?: 0).coerceIn(0, 100)) / 100f
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = modifier,
-        )
-    }
 }
 
 @SuppressLint("UnusedBoxWithConstraintsScope")

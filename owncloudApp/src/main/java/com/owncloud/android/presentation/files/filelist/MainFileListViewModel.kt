@@ -413,9 +413,10 @@ class MainFileListViewModel(
     ): Boolean {
         if (oldList.size != newList.size) return false
         if (oldList === newList || oldList == newList) return false
-        val oldIds = oldList.map { it.file.id }.groupingBy { it }.eachCount()
-        val newIds = newList.map { it.file.id }.groupingBy { it }.eachCount()
-        return oldIds == newIds
+        // Full-item equality (same as FileListDiffCallback): progress-only updates must not scroll.
+        val oldFreq = oldList.groupingBy { it }.eachCount()
+        val newFreq = newList.groupingBy { it }.eachCount()
+        return oldFreq == newFreq
     }
 
     private fun sortList(filesWithSyncInfo: List<OCFileWithSyncInfo>, sortTypeAndOrder: Pair<SortType, SortOrder>): List<OCFileWithSyncInfo> =

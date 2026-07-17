@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,7 +78,7 @@ fun FileListRow(
                 .padding(vertical = dimensionResource(R.dimen.standard_quarter_margin)),
         )
         if (item.isVirtual) {
-            FileListRowUploadProgress(
+            FileListUploadProgress(
                 item = item,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -342,22 +341,6 @@ private fun fileListTextStyle(fontSize: TextUnit, color: Color): TextStyle =
         letterSpacing = 0.sp,
         platformStyle = PlatformTextStyle(includeFontPadding = true),
     )
-
-@Composable
-private fun FileListRowUploadProgress(
-    item: FileListItemUiModel,
-    modifier: Modifier = Modifier,
-) {
-    if (item.isProgressIndeterminate) {
-        LinearProgressIndicator(modifier = modifier)
-    } else {
-        val progress = ((item.uploadProgress ?: 0).coerceIn(0, 100)) / 100f
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = modifier,
-        )
-    }
-}
 
 @Composable
 private fun FileListRowThumbnail(
