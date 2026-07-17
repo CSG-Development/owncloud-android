@@ -109,10 +109,10 @@ val viewModelModule = module {
     viewModel { (filePath: String, accountName: String) ->
         ShareViewModel(filePath, accountName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
-    viewModel { (initialFolderToDisplay: OCFile, fileListOption: FileListOption) ->
+    viewModel { (initialFolderToDisplay: OCFile, fileListOption: FileListOption, isPickerMode: Boolean) ->
         MainFileListViewModel(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(), get(), initialFolderToDisplay, fileListOption
+            get(), get(), initialFolderToDisplay, fileListOption, isPickerMode
         )
     }
     viewModel { (ocFile: OCFile) -> ConflictsResolveViewModel(get(), get(), get(), get(), get(), ocFile) }

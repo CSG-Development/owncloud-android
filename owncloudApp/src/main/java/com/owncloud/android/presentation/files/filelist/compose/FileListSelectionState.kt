@@ -70,6 +70,14 @@ class FileListSelectionState(
         val current = selectedIds
         selectedIds = fileIds.filterTo(mutableSetOf()) { it !in current }
     }
+
+    /** Drops selected ids that are not present in [fileIds] (e.g. after folder/filter change). */
+    fun retain(fileIds: Collection<Long>) {
+        val retained = selectedIds.intersect(fileIds.toSet())
+        if (retained != selectedIds) {
+            selectedIds = retained
+        }
+    }
 }
 
 @Composable

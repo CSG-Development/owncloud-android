@@ -69,7 +69,7 @@ class FileListAdapter(
         listWithFooter.addAll(filesToAdd)
 
         if (listWithFooter.isNotEmpty()) {
-            listWithFooter.add(OCFooterFile(manageListOfFilesAndGenerateText(filesToAdd)))
+            listWithFooter.add(OCFooterFile(FileListFooterText.fromFiles(context, filesToAdd)))
         }
 
         val diffUtilCallback = FileListDiffCallback(
@@ -365,76 +365,6 @@ class FileListAdapter(
         // Progress payload rebinding for Compose items is handled in Step 9.
     }
 
-
-    private fun manageListOfFilesAndGenerateText(list: List<OCFileWithSyncInfo>): String {
-        var filesCount = 0
-        var foldersCount = 0
-        for (fileWithSyncInfo in list) {
-            if (fileWithSyncInfo.file.isFolder) {
-                foldersCount++
-            } else {
-                if (!fileWithSyncInfo.file.isHidden) {
-                    filesCount++
-                }
-            }
-        }
-
-        return generateFooterText(filesCount, foldersCount)
-    }
-
-
-    private fun generateFooterText(filesCount: Int, foldersCount: Int): String =
-        when {
-            filesCount <= 0 -> {
-                when {
-                    foldersCount <= 0 -> {
-                        ""
-                    }
-
-                    foldersCount == 1 -> {
-                        context.getString(R.string.file_list__footer__folder)
-                    }
-
-                    else -> { // foldersCount > 1
-                        context.getString(R.string.file_list__footer__folders, foldersCount)
-                    }
-                }
-            }
-
-            filesCount == 1 -> {
-                when {
-                    foldersCount <= 0 -> {
-                        context.getString(R.string.file_list__footer__file)
-                    }
-
-                    foldersCount == 1 -> {
-                        context.getString(R.string.file_list__footer__file_and_folder)
-                    }
-
-                    else -> { // foldersCount > 1
-                        context.getString(R.string.file_list__footer__file_and_folders, foldersCount)
-                    }
-                }
-            }
-
-            else -> {    // filesCount > 1
-                when {
-                    foldersCount <= 0 -> {
-                        context.getString(R.string.file_list__footer__files, filesCount)
-                    }
-
-                    foldersCount == 1 -> {
-                        context.getString(R.string.file_list__footer__files_and_folder, filesCount)
-                    }
-
-                    else -> { // foldersCount > 1
-                        context.getString(
-                            R.string.file_list__footer__files_and_folders, filesCount, foldersCount
-                        )
-                    }
-                }
-            }
-        }
 
     interface FileListAdapterListener {
         fun onItemClick(ocFileWithSyncInfo: OCFileWithSyncInfo, position: Int)

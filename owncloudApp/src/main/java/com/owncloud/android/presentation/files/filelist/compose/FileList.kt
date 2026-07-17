@@ -1,17 +1,28 @@
 package com.owncloud.android.presentation.files.filelist.compose
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
@@ -25,66 +36,112 @@ enum class FileListLayoutMode {
 }
 
 /**
- * Lazy file-list container (list or grid) with optional footer.
- * Not wired to fragments yet — hosts own data, selection, and callbacks.
+ * Lazy file-list container (list or grid) with optional footer and pull-to-refresh.
+ * Hosts own selection and callbacks; fragments supply items and chrome.
+ *
+ * When [onRefresh] is non-null and [pullToRefreshEnabled] is true, content is wrapped in [PullToRefreshBox].
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileList(
     items: List<FileListItemUiModel>,
     layoutMode: FileListLayoutMode,
     modifier: Modifier = Modifier,
-    selectionState: FileListSelectionState = rememberFileListSelectionState(),
+    selectedIds: Set<Long> = emptySet(),
     footerText: String? = null,
     gridColumns: Int = 3,
+    listState: LazyListState = rememberLazyListState(),
+    gridState: LazyGridState = rememberLazyGridState(),
+    isRefreshing: Boolean = false,
+    pullToRefreshEnabled: Boolean = true,
+    onRefresh: (() -> Unit)? = null,
+    emptyContent: FileListEmptyUiModel? = null,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap? = { null },
     onItemClick: (FileListItemUiModel) -> Unit = {},
     onItemLongClick: (FileListItemUiModel) -> Unit = {},
     onThreeDotClick: (FileListItemUiModel) -> Unit = {},
 ) {
-    when (layoutMode) {
-        FileListLayoutMode.List -> FileListLazyColumn(
-            items = items,
-            selectionState = selectionState,
-            footerText = footerText,
-            thumbnail = thumbnail,
-            onItemClick = onItemClick,
-            onItemLongClick = onItemLongClick,
-            onThreeDotClick = onThreeDotClick,
-            modifier = modifier,
-        )
+    val listContent: @Composable (Modifier) -> Unit = { contentModifier ->
+        if (items.isEmpty() && emptyContent != null) {
+            // LazyColumn is required so PullToRefreshBox receives nested-scroll events when empty.
+            LazyColumn(
+                modifier = contentModifier,
+                state = listState,
+            ) {
+                item(key = EMPTY_CONTENT_KEY) {
+                    FileListEmpty(
+                        content = emptyContent,
+                        modifier = Modifier.fillParentMaxSize(),
+                    )
+                }
+            }
+        } else {
+            when (layoutMode) {
+                FileListLayoutMode.List -> FileListLazyColumn(
+                    items = items,
+                    selectedIds = selectedIds,
+                    footerText = footerText,
+                    listState = listState,
+                    thumbnail = thumbnail,
+                    onItemClick = onItemClick,
+                    onItemLongClick = onItemLongClick,
+                    onThreeDotClick = onThreeDotClick,
+                    modifier = contentModifier,
+                )
 
-        FileListLayoutMode.Grid -> FileListLazyGrid(
-            items = items,
-            selectionState = selectionState,
-            footerText = footerText,
-            gridColumns = gridColumns.coerceAtLeast(1),
-            thumbnail = thumbnail,
-            onItemClick = onItemClick,
-            onItemLongClick = onItemLongClick,
+                FileListLayoutMode.Grid -> FileListLazyGrid(
+                    items = items,
+                    selectedIds = selectedIds,
+                    footerText = footerText,
+                    gridColumns = gridColumns.coerceAtLeast(1),
+                    gridState = gridState,
+                    thumbnail = thumbnail,
+                    onItemClick = onItemClick,
+                    onItemLongClick = onItemLongClick,
+                    modifier = contentModifier,
+                )
+            }
+        }
+    }
+
+    // Material3 1.3 PullToRefreshBox has no `enabled` flag yet — omit the box when disabled.
+    if (onRefresh != null && pullToRefreshEnabled) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
             modifier = modifier,
-        )
+        ) {
+            // fillMaxSize so an empty list remains a valid pull target
+            listContent(Modifier.fillMaxSize())
+        }
+    } else {
+        listContent(modifier)
     }
 }
 
 @Composable
 private fun FileListLazyColumn(
     items: List<FileListItemUiModel>,
-    selectionState: FileListSelectionState,
+    selectedIds: Set<Long>,
     footerText: String?,
+    listState: LazyListState,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
     onThreeDotClick: (FileListItemUiModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier) {
+    LazyColumn(
+        modifier = modifier,
+        state = listState,
+    ) {
         items(
             items = items,
             key = { it.fileId },
         ) { item ->
             FileListLazyRow(
                 item = item,
-                selectionState = selectionState,
+                selectedIds = selectedIds,
                 thumbnail = thumbnail,
                 onItemClick = onItemClick,
                 onItemLongClick = onItemLongClick,
@@ -108,9 +165,10 @@ private fun FileListLazyColumn(
 @Composable
 private fun FileListLazyGrid(
     items: List<FileListItemUiModel>,
-    selectionState: FileListSelectionState,
+    selectedIds: Set<Long>,
     footerText: String?,
     gridColumns: Int,
+    gridState: LazyGridState,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
@@ -119,6 +177,7 @@ private fun FileListLazyGrid(
     LazyVerticalGrid(
         columns = GridCells.Fixed(gridColumns),
         modifier = modifier,
+        state = gridState,
     ) {
         items(
             items = items,
@@ -126,7 +185,7 @@ private fun FileListLazyGrid(
         ) { item ->
             FileListLazyGridCell(
                 item = item,
-                selectionState = selectionState,
+                selectedIds = selectedIds,
                 thumbnail = thumbnail,
                 onItemClick = onItemClick,
                 onItemLongClick = onItemLongClick,
@@ -150,14 +209,14 @@ private fun FileListLazyGrid(
 @Composable
 private fun FileListLazyRow(
     item: FileListItemUiModel,
-    selectionState: FileListSelectionState,
+    selectedIds: Set<Long>,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
     onThreeDotClick: (FileListItemUiModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val displayItem = item.withSelection(selectionState)
+    val displayItem = item.withSelection(selectedIds)
     FileListRow(
         item = displayItem,
         thumbnail = thumbnail(displayItem),
@@ -171,13 +230,13 @@ private fun FileListLazyRow(
 @Composable
 private fun FileListLazyGridCell(
     item: FileListItemUiModel,
-    selectionState: FileListSelectionState,
+    selectedIds: Set<Long>,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val displayItem = item.withSelection(selectionState)
+    val displayItem = item.withSelection(selectedIds)
     val thumb = thumbnail(displayItem)
     FileGridItem(
         item = displayItem,
@@ -190,14 +249,14 @@ private fun FileListLazyGridCell(
 }
 
 /**
- * Overlays [FileListSelectionState] onto a row/cell model for rendering.
+ * Overlays selection ids onto a row/cell model for rendering.
  * When selection is active, checkbox chrome replaces the three-dot menu (non-virtual only).
  */
 private fun FileListItemUiModel.withSelection(
-    selection: FileListSelectionState,
+    selectedIds: Set<Long>,
 ): FileListItemUiModel {
-    val selected = selection.isSelected(fileId)
-    return if (selection.hasSelection) {
+    val selected = fileId in selectedIds
+    return if (selectedIds.isNotEmpty()) {
         copy(
             isSelected = selected,
             showCheckbox = !isVirtual,
@@ -209,6 +268,7 @@ private fun FileListItemUiModel.withSelection(
 }
 
 private const val FOOTER_KEY = "file_list_footer"
+private const val EMPTY_CONTENT_KEY = "file_list_empty"
 
 private fun previewItems(count: Int): List<FileListItemUiModel> {
     val base = FileListItemUiModelFixtures.all
@@ -276,21 +336,25 @@ private fun FileListGridPreview() {
 @HomeCloudPreview
 @Composable
 private fun FileListSelectionModePreview() {
-    val selection = rememberFileListSelectionState(
-        initiallySelectedIds = setOf(1L, 3L),
-    )
+    var selectedIds by remember { mutableStateOf(setOf(1L, 3L)) }
     HomeCloudTheme {
         Surface {
             FileList(
                 items = previewItems(6),
                 layoutMode = FileListLayoutMode.List,
-                selectionState = selection,
+                selectedIds = selectedIds,
                 footerText = "4 files, 2 folders",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(480.dp),
-                onItemClick = { selection.toggle(it.fileId) },
-                onItemLongClick = { selection.select(it.fileId) },
+                onItemClick = { item ->
+                    selectedIds = if (item.fileId in selectedIds) {
+                        selectedIds - item.fileId
+                    } else {
+                        selectedIds + item.fileId
+                    }
+                },
+                onItemLongClick = { selectedIds = selectedIds + it.fileId },
             )
         }
     }
