@@ -189,8 +189,9 @@ private fun FileGridItemThumbnail(
         contentAlignment = Alignment.Center,
     ) {
         if (thumbnail != null) {
+            val imageBitmap = remember(thumbnail) { thumbnail.asImageBitmap() }
             Image(
-                bitmap = thumbnail.asImageBitmap(),
+                bitmap = imageBitmap,
                 contentDescription = null,
                 contentScale = contentScale,
                 modifier = imageModifier,

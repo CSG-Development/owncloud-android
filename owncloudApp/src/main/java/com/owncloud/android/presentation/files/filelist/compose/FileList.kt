@@ -147,6 +147,7 @@ private fun FileListLazyColumn(
         items(
             items = items,
             key = { it.fileId },
+            contentType = { it.lazyContentType() },
         ) { item ->
             FileListLazyRow(
                 item = item,
@@ -191,6 +192,7 @@ private fun FileListLazyGrid(
         items(
             items = items,
             key = { it.fileId },
+            contentType = { it.lazyContentType() },
         ) { item ->
             FileListLazyGridCell(
                 item = item,
@@ -260,24 +262,34 @@ private fun FileListLazyGridCell(
 /**
  * Overlays selection ids onto a row/cell model for rendering.
  * When selection is active, checkbox chrome replaces the three-dot menu (non-virtual only).
+ * Returns the same instance when selection is inactive to avoid per-row allocations while scrolling.
  */
 private fun FileListItemUiModel.withSelection(
     selectedIds: Set<Long>,
 ): FileListItemUiModel {
-    val selected = fileId in selectedIds
-    return if (selectedIds.isNotEmpty()) {
-        copy(
-            isSelected = selected,
-            showCheckbox = !isVirtual,
-            showThreeDotMenu = false,
-        )
-    } else {
-        copy(isSelected = false)
+    if (selectedIds.isEmpty()) {
+        return this
     }
+    return copy(
+        isSelected = fileId in selectedIds,
+        showCheckbox = !isVirtual,
+        showThreeDotMenu = false,
+    )
+}
+
+private fun FileListItemUiModel.lazyContentType(): String = when {
+    isVirtual -> CONTENT_TYPE_VIRTUAL
+    isFolder -> CONTENT_TYPE_FOLDER
+    isImage -> CONTENT_TYPE_IMAGE
+    else -> CONTENT_TYPE_FILE
 }
 
 private const val FOOTER_KEY = "file_list_footer"
 private const val EMPTY_CONTENT_KEY = "file_list_empty"
+private const val CONTENT_TYPE_VIRTUAL = "virtual"
+private const val CONTENT_TYPE_FOLDER = "folder"
+private const val CONTENT_TYPE_IMAGE = "image"
+private const val CONTENT_TYPE_FILE = "file"
 
 private fun previewItems(count: Int): List<FileListItemUiModel> {
     val base = FileListItemUiModelFixtures.all

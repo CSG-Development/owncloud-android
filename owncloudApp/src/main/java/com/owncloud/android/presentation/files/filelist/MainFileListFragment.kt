@@ -29,6 +29,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
@@ -52,10 +53,12 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
@@ -119,6 +122,7 @@ import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.createfolder.CreateFolderDialogFragment
 import com.owncloud.android.presentation.files.createshortcut.CreateShortcutDialogFragment
 import com.owncloud.android.presentation.files.filelist.compose.FileList
+import com.owncloud.android.presentation.files.filelist.compose.FileListItemUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
 import com.owncloud.android.presentation.files.operations.FileOperation
@@ -459,6 +463,28 @@ class MainFileListFragment : FileFragment(),
                     val filesById = remember(composeState.folderContent) {
                         composeState.folderContent.associateBy { it.file.id }
                     }
+                    val filesByIdState = rememberUpdatedState(filesById)
+                    val accountState = rememberUpdatedState(account)
+                    val onItemClick = remember<(FileListItemUiModel) -> Unit> {
+                        { onComposeItemClick(it.fileId) }
+                    }
+                    val onItemLongClick = remember<(FileListItemUiModel) -> Unit> {
+                        { onComposeItemLongClick(it.fileId) }
+                    }
+                    val onThreeDotClick = remember<(FileListItemUiModel) -> Unit> {
+                        { onComposeThreeDotClick(it.fileId) }
+                    }
+                    val onRefresh = remember { { refreshFileListFromPull() } }
+                    val thumbnail: @Composable (FileListItemUiModel) -> Bitmap? =
+                        remember {
+                            { item ->
+                                val file = filesByIdState.value[item.fileId]?.file
+                                rememberFileListThumbnail(
+                                    file = file?.takeUnless { it.isFolder || it.isVirtualFile() },
+                                    account = accountState.value,
+                                )
+                            }
+                        }
                     FileList(
                         content = composeState.content,
                         layoutMode = composeState.layoutMode,
@@ -468,18 +494,12 @@ class MainFileListFragment : FileFragment(),
                         gridState = gridScrollState,
                         isRefreshing = composeState.isRefreshing,
                         pullToRefreshEnabled = composeState.pullToRefreshEnabled,
-                        onRefresh = { refreshFileListFromPull() },
+                        onRefresh = onRefresh,
                         modifier = Modifier.fillMaxSize(),
-                        thumbnail = { item ->
-                            val file = filesById[item.fileId]?.file
-                            rememberFileListThumbnail(
-                                file = file?.takeUnless { it.isFolder || it.isVirtualFile() },
-                                account = account,
-                            )
-                        },
-                        onItemClick = { onComposeItemClick(it.fileId) },
-                        onItemLongClick = { onComposeItemLongClick(it.fileId) },
-                        onThreeDotClick = { onComposeThreeDotClick(it.fileId) },
+                        thumbnail = thumbnail,
+                        onItemClick = onItemClick,
+                        onItemLongClick = onItemLongClick,
+                        onThreeDotClick = onThreeDotClick,
                     )
                 }
             }

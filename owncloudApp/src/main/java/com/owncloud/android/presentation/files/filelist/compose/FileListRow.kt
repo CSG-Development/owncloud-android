@@ -170,14 +170,18 @@ private fun FileListRowSubtitle(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val sizeText = if (item.hideSizeAndSeparator) {
-        ""
-    } else {
-        DisplayUtils.bytesToHumanReadable(item.length, context, true)
+    val sizeText = remember(item.length, item.hideSizeAndSeparator, context) {
+        if (item.hideSizeAndSeparator) {
+            ""
+        } else {
+            DisplayUtils.bytesToHumanReadable(item.length, context, true)
+        }
     }
-    val lastModifiedText = DisplayUtils
-        .getRelativeTimestamp(context, item.modificationTimestamp)
-        .toString()
+    val lastModifiedText = remember(item.modificationTimestamp, context) {
+        DisplayUtils
+            .getRelativeTimestamp(context, item.modificationTimestamp)
+            .toString()
+    }
 
     Row(
         modifier = modifier,
@@ -368,8 +372,9 @@ private fun FileListRowThumbnail(
     ) {
         Box {
             if (thumbnail != null) {
+                val imageBitmap = remember(thumbnail) { thumbnail.asImageBitmap() }
                 Image(
-                    bitmap = thumbnail.asImageBitmap(),
+                    bitmap = imageBitmap,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = imageModifier,

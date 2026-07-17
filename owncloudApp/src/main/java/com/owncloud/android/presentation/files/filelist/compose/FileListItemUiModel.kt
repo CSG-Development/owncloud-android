@@ -1,6 +1,7 @@
 package com.owncloud.android.presentation.files.filelist.compose
 
 import androidx.annotation.DrawableRes
+import androidx.compose.runtime.Immutable
 import com.owncloud.android.R
 
 /**
@@ -9,6 +10,7 @@ import com.owncloud.android.R
  *
  * Size and relative timestamps are raw values; format them in the composable with resources/DisplayUtils.
  */
+@Immutable
 data class FileListItemUiModel(
     val fileId: Long,
     val name: String,
@@ -59,6 +61,7 @@ enum class FileListVirtualKind {
  * @param spaceName Domain space name when not using the personal label; ignored if [showPersonalLabel] is true.
  * @param showPersonalLabel When true, UI should show the personal-space string resource and folder icon.
  */
+@Immutable
 data class FileListSpacePathUiModel(
     val parentPath: String,
     val spaceName: String?,
