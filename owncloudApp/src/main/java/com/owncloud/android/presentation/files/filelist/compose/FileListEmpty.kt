@@ -30,10 +30,16 @@ import com.owncloud.android.extensions.toTitleStringRes
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 
+/**
+ * Empty-dataset model. Prefer [titleRes]/[subtitleRes]; use [titleText]/[subtitleText] for dynamic copy
+ * (e.g. search error). Omit subtitle fields (or pass blank [subtitleText]) to hide the subtitle line.
+ */
 data class FileListEmptyUiModel(
     @DrawableRes val iconRes: Int,
-    @StringRes val titleRes: Int,
-    @StringRes val subtitleRes: Int,
+    @StringRes val titleRes: Int? = null,
+    @StringRes val subtitleRes: Int? = null,
+    val titleText: String? = null,
+    val subtitleText: String? = null,
 )
 
 fun FileListOption.toFileListEmptyUiModel(isSharesSpace: Boolean = false): FileListEmptyUiModel =
@@ -62,6 +68,8 @@ fun FileListEmpty(
     val labelColor = colorResource(R.color.homecloud_gray_label)
     val horizontalMargin = dimensionResource(R.dimen.standard_margin)
     val halfPadding = dimensionResource(R.dimen.standard_half_padding)
+    val title = content.titleText ?: content.titleRes?.let { stringResource(it) }.orEmpty()
+    val subtitle = content.subtitleText ?: content.subtitleRes?.let { stringResource(it) }
 
     Column(
         modifier = modifier
@@ -76,7 +84,7 @@ fun FileListEmpty(
             tint = labelColor,
         )
         Text(
-            text = stringResource(content.titleRes),
+            text = title,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = labelColor,
             textAlign = TextAlign.Center,
@@ -84,15 +92,17 @@ fun FileListEmpty(
                 .fillMaxWidth()
                 .padding(horizontal = horizontalMargin, vertical = halfPadding),
         )
-        Text(
-            text = stringResource(content.subtitleRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = labelColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalMargin),
-        )
+        if (!subtitle.isNullOrEmpty()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyLarge,
+                color = labelColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalMargin),
+            )
+        }
     }
 }
 
@@ -118,6 +128,22 @@ private fun FileListEmptySharesSpacePreview() {
         Surface {
             FileListEmpty(
                 content = FileListOption.SHARED_BY_LINK.toFileListEmptyUiModel(isSharesSpace = true),
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun FileListEmptyTitleOnlyPreview() {
+    HomeCloudTheme {
+        Surface {
+            FileListEmpty(
+                content = FileListEmptyUiModel(
+                    iconRes = R.drawable.ic_search_2,
+                    titleRes = R.string.homecloud_global_search_initial_title,
+                ),
                 modifier = Modifier.fillMaxSize(),
             )
         }

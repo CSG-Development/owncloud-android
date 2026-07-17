@@ -17,6 +17,7 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
 import com.owncloud.android.presentation.files.filelist.FileListFooterText
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
+import com.owncloud.android.presentation.files.filelist.compose.FileListContent
 import com.owncloud.android.presentation.files.filelist.compose.FileListEmptyUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
@@ -231,6 +232,7 @@ class FavoritesViewModel(
         when (favoritesUiState) {
             FavoritesUiState.Loading -> {
                 return FavoritesComposeUiState(
+                    content = FileListContent.Loading,
                     layoutMode = layoutMode,
                     gridColumns = gridColumns,
                     selectedIds = selectedIds,
@@ -239,7 +241,7 @@ class FavoritesViewModel(
 
             FavoritesUiState.Empty -> {
                 return FavoritesComposeUiState(
-                    emptyContent = FAVORITES_EMPTY,
+                    content = FileListContent.Empty(FAVORITES_EMPTY),
                     layoutMode = layoutMode,
                     gridColumns = gridColumns,
                     selectedIds = selectedIds,
@@ -257,8 +259,10 @@ class FavoritesViewModel(
                 }
                 return FavoritesComposeUiState(
                     folderContent = folderContent,
-                    items = items,
-                    footerText = FileListFooterText.fromFiles(contextProvider.getContext(), folderContent),
+                    content = FileListContent.Items(
+                        items = items,
+                        footerText = FileListFooterText.fromFiles(contextProvider.getContext(), folderContent),
+                    ),
                     layoutMode = layoutMode,
                     gridColumns = gridColumns,
                     selectedIds = selectedIds,

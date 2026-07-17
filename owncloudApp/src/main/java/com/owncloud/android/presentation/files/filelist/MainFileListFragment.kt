@@ -460,17 +460,15 @@ class MainFileListFragment : FileFragment(),
                         composeState.folderContent.associateBy { it.file.id }
                     }
                     FileList(
-                        items = composeState.items,
+                        content = composeState.content,
                         layoutMode = composeState.layoutMode,
                         selectedIds = composeState.selectedIds,
-                        footerText = composeState.footerText,
                         gridColumns = composeState.gridColumns,
                         listState = listScrollState,
                         gridState = gridScrollState,
                         isRefreshing = composeState.isRefreshing,
                         pullToRefreshEnabled = composeState.pullToRefreshEnabled,
                         onRefresh = { refreshFileListFromPull() },
-                        emptyContent = composeState.emptyContent,
                         modifier = Modifier.fillMaxSize(),
                         thumbnail = { item ->
                             val file = filesById[item.fileId]?.file

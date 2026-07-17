@@ -56,6 +56,7 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
+import com.owncloud.android.presentation.files.filelist.compose.FileListContent
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyUiModel
 import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
@@ -363,6 +364,7 @@ class MainFileListViewModel(
         val pullEnabled = option != FileListOption.AV_OFFLINE
         if (fileListUiState !is FileListUiState.Success) {
             return MainFileListComposeUiState(
+                content = FileListContent.Loading,
                 layoutMode = layoutMode,
                 gridColumns = gridColumns,
                 selectedIds = selectedIds,
@@ -382,23 +384,25 @@ class MainFileListViewModel(
                 isMultiPersonal = isMultiPersonal,
             )
         }
-        val footerText = when {
-            isPickerMode || folderContent.isEmpty() -> null
-            else -> FileListFooterText.fromFiles(contextProvider.getContext(), folderContent)
-        }
-        val emptyContent = if (folderContent.isEmpty()) {
-            option.toFileListEmptyUiModel(
-                isSharesSpace = option.isSharedByLink() && fileListUiState.space != null,
+        val content = if (folderContent.isEmpty()) {
+            FileListContent.Empty(
+                model = option.toFileListEmptyUiModel(
+                    isSharesSpace = option.isSharedByLink() && fileListUiState.space != null,
+                ),
             )
         } else {
-            null
+            FileListContent.Items(
+                items = items,
+                footerText = if (isPickerMode) null else FileListFooterText.fromFiles(
+                    contextProvider.getContext(),
+                    folderContent,
+                ),
+            )
         }
 
         return MainFileListComposeUiState(
             folderContent = folderContent,
-            items = items,
-            footerText = footerText,
-            emptyContent = emptyContent,
+            content = content,
             layoutMode = layoutMode,
             gridColumns = gridColumns,
             selectedIds = selectedIds,

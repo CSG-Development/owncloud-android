@@ -1,8 +1,7 @@
 package com.owncloud.android.presentation.files.filelist
 
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
-import com.owncloud.android.presentation.files.filelist.compose.FileListEmptyUiModel
-import com.owncloud.android.presentation.files.filelist.compose.FileListItemUiModel
+import com.owncloud.android.presentation.files.filelist.compose.FileListContent
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 
 /**
@@ -11,9 +10,7 @@ import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMo
  */
 data class MainFileListComposeUiState(
     val folderContent: List<OCFileWithSyncInfo> = emptyList(),
-    val items: List<FileListItemUiModel> = emptyList(),
-    val footerText: String? = null,
-    val emptyContent: FileListEmptyUiModel? = null,
+    val content: FileListContent = FileListContent.Loading,
     val layoutMode: FileListLayoutMode = FileListLayoutMode.List,
     val gridColumns: Int = 3,
     val selectedIds: Set<Long> = emptySet(),

@@ -37,69 +37,78 @@ enum class FileListLayoutMode {
 
 /**
  * Lazy file-list container (list or grid) with optional footer and pull-to-refresh.
- * Hosts own selection and callbacks; fragments supply items and chrome.
+ * Hosts own selection and callbacks; fragments supply [FileListContent] and chrome.
  *
  * When [onRefresh] is non-null and [pullToRefreshEnabled] is true, content is wrapped in [PullToRefreshBox].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileList(
-    items: List<FileListItemUiModel>,
+    content: FileListContent,
     layoutMode: FileListLayoutMode,
     modifier: Modifier = Modifier,
     selectedIds: Set<Long> = emptySet(),
-    footerText: String? = null,
     gridColumns: Int = 3,
     listState: LazyListState = rememberLazyListState(),
     gridState: LazyGridState = rememberLazyGridState(),
     isRefreshing: Boolean = false,
     pullToRefreshEnabled: Boolean = true,
     onRefresh: (() -> Unit)? = null,
-    emptyContent: FileListEmptyUiModel? = null,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap? = { null },
     onItemClick: (FileListItemUiModel) -> Unit = {},
     onItemLongClick: (FileListItemUiModel) -> Unit = {},
     onThreeDotClick: (FileListItemUiModel) -> Unit = {},
 ) {
     val listContent: @Composable (Modifier) -> Unit = { contentModifier ->
-        if (items.isEmpty() && emptyContent != null) {
-            // LazyColumn is required so PullToRefreshBox receives nested-scroll events when empty.
-            LazyColumn(
-                modifier = contentModifier,
-                state = listState,
-            ) {
-                item(key = EMPTY_CONTENT_KEY) {
-                    FileListEmpty(
-                        content = emptyContent,
-                        modifier = Modifier.fillParentMaxSize(),
-                    )
+        when (content) {
+            FileListContent.Loading -> {
+                // Empty LazyColumn keeps PullToRefreshBox nested-scroll working while loading.
+                LazyColumn(
+                    modifier = contentModifier,
+                    state = listState,
+                ) {}
+            }
+
+            is FileListContent.Empty -> {
+                LazyColumn(
+                    modifier = contentModifier,
+                    state = listState,
+                ) {
+                    item(key = EMPTY_CONTENT_KEY) {
+                        FileListEmpty(
+                            content = content.model,
+                            modifier = Modifier.fillParentMaxSize(),
+                        )
+                    }
                 }
             }
-        } else {
-            when (layoutMode) {
-                FileListLayoutMode.List -> FileListLazyColumn(
-                    items = items,
-                    selectedIds = selectedIds,
-                    footerText = footerText,
-                    listState = listState,
-                    thumbnail = thumbnail,
-                    onItemClick = onItemClick,
-                    onItemLongClick = onItemLongClick,
-                    onThreeDotClick = onThreeDotClick,
-                    modifier = contentModifier,
-                )
 
-                FileListLayoutMode.Grid -> FileListLazyGrid(
-                    items = items,
-                    selectedIds = selectedIds,
-                    footerText = footerText,
-                    gridColumns = gridColumns.coerceAtLeast(1),
-                    gridState = gridState,
-                    thumbnail = thumbnail,
-                    onItemClick = onItemClick,
-                    onItemLongClick = onItemLongClick,
-                    modifier = contentModifier,
-                )
+            is FileListContent.Items -> {
+                when (layoutMode) {
+                    FileListLayoutMode.List -> FileListLazyColumn(
+                        items = content.items,
+                        selectedIds = selectedIds,
+                        footerText = content.footerText,
+                        listState = listState,
+                        thumbnail = thumbnail,
+                        onItemClick = onItemClick,
+                        onItemLongClick = onItemLongClick,
+                        onThreeDotClick = onThreeDotClick,
+                        modifier = contentModifier,
+                    )
+
+                    FileListLayoutMode.Grid -> FileListLazyGrid(
+                        items = content.items,
+                        selectedIds = selectedIds,
+                        footerText = content.footerText,
+                        gridColumns = gridColumns.coerceAtLeast(1),
+                        gridState = gridState,
+                        thumbnail = thumbnail,
+                        onItemClick = onItemClick,
+                        onItemLongClick = onItemLongClick,
+                        modifier = contentModifier,
+                    )
+                }
             }
         }
     }
@@ -287,9 +296,11 @@ private fun FileListShortListPreview() {
     HomeCloudTheme {
         Surface {
             FileList(
-                items = previewItems(5),
+                content = FileListContent.Items(
+                    items = previewItems(5),
+                    footerText = "3 files, 2 folders",
+                ),
                 layoutMode = FileListLayoutMode.List,
-                footerText = "3 files, 2 folders",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(480.dp),
@@ -304,9 +315,11 @@ private fun FileListLongListPreview() {
     HomeCloudTheme {
         Surface {
             FileList(
-                items = previewItems(40),
+                content = FileListContent.Items(
+                    items = previewItems(40),
+                    footerText = "30 files, 10 folders",
+                ),
                 layoutMode = FileListLayoutMode.List,
-                footerText = "30 files, 10 folders",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(640.dp),
@@ -321,10 +334,12 @@ private fun FileListGridPreview() {
     HomeCloudTheme {
         Surface {
             FileList(
-                items = previewItems(12),
+                content = FileListContent.Items(
+                    items = previewItems(12),
+                    footerText = "8 files, 4 folders",
+                ),
                 layoutMode = FileListLayoutMode.Grid,
                 gridColumns = 3,
-                footerText = "8 files, 4 folders",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(640.dp),
@@ -340,10 +355,12 @@ private fun FileListSelectionModePreview() {
     HomeCloudTheme {
         Surface {
             FileList(
-                items = previewItems(6),
+                content = FileListContent.Items(
+                    items = previewItems(6),
+                    footerText = "4 files, 2 folders",
+                ),
                 layoutMode = FileListLayoutMode.List,
                 selectedIds = selectedIds,
-                footerText = "4 files, 2 folders",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(480.dp),
@@ -355,6 +372,29 @@ private fun FileListSelectionModePreview() {
                     }
                 },
                 onItemLongClick = { selectedIds = selectedIds + it.fileId },
+            )
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun FileListEmptyContentPreview() {
+    HomeCloudTheme {
+        Surface {
+            FileList(
+                content = FileListContent.Empty(
+                    model = FileListEmptyUiModel(
+                        iconRes = R.drawable.ic_search_2,
+                        titleRes = R.string.homecloud_global_search_empty_title,
+                        subtitleRes = R.string.homecloud_global_search_empty_subtitle,
+                    ),
+                ),
+                layoutMode = FileListLayoutMode.List,
+                pullToRefreshEnabled = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(480.dp),
             )
         }
     }

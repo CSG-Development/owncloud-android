@@ -200,15 +200,13 @@ class FavoritesFragment : Fragment(),
                         composeState.folderContent.associateBy { it.file.id }
                     }
                     FileList(
-                        items = composeState.items,
+                        content = composeState.content,
                         layoutMode = composeState.layoutMode,
                         selectedIds = composeState.selectedIds,
-                        footerText = composeState.footerText,
                         gridColumns = composeState.gridColumns,
                         listState = listScrollState,
                         gridState = gridScrollState,
                         pullToRefreshEnabled = false,
-                        emptyContent = composeState.emptyContent,
                         modifier = Modifier.fillMaxSize(),
                         thumbnail = { item ->
                             val file = filesById[item.fileId]?.file

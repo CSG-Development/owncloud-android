@@ -1,14 +1,14 @@
-package com.owncloud.android.presentation.files.favorites
+package com.owncloud.android.presentation.files.globalsearch
 
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.presentation.files.filelist.compose.FileListContent
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 
 /**
- * Fully rendered Favorites file-list state for Compose.
- * The Fragment displays this and forwards user events to [FavoritesViewModel].
+ * Fully rendered Global Search file-list state for Compose.
+ * The Fragment displays this and forwards user events to [GlobalSearchViewModel].
  */
-data class FavoritesComposeUiState(
+data class GlobalSearchComposeUiState(
     val folderContent: List<OCFileWithSyncInfo> = emptyList(),
     val content: FileListContent = FileListContent.Loading,
     val layoutMode: FileListLayoutMode = FileListLayoutMode.List,
