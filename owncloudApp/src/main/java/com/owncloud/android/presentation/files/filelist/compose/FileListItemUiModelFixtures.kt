@@ -69,6 +69,7 @@ object FileListItemUiModelFixtures {
         mimeIconRes = R.drawable.file_image,
         thumbnailRemoteId = "remote-thumb-3",
         needsThumbnail = true,
+        localPin = FileListLocalPin.Downloaded,
     )
 
     val longName = file.copy(
