@@ -4,12 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.domain.UseCaseResult
+import com.owncloud.android.domain.device.DeviceConnectionMonitor
+import com.owncloud.android.domain.exceptions.NoConnectionWithServerException
+import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
+import com.owncloud.android.domain.exceptions.ServerConnectionTimeoutException
+import com.owncloud.android.domain.exceptions.ServerNotReachableException
+import com.owncloud.android.domain.exceptions.ServerResponseTimeoutException
 import com.owncloud.android.domain.trash.model.HCTrashItem
 import com.owncloud.android.domain.trash.usecases.DeleteTrashItemUseCase
 import com.owncloud.android.domain.trash.usecases.IsTrashEnabledUseCase
 import com.owncloud.android.domain.trash.usecases.ListTrashUseCase
 import com.owncloud.android.domain.trash.usecases.RestoreTrashItemUseCase
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
 import com.owncloud.android.providers.ContextProvider
@@ -21,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class TrashViewModel(
     private val listTrashUseCase: ListTrashUseCase,
@@ -30,16 +38,28 @@ class TrashViewModel(
     private val sharedPreferencesProvider: SharedPreferencesProvider,
     private val appContextProvider: ContextProvider,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
+    private val deviceConnectionMonitor: DeviceConnectionMonitor,
 ) : ViewModel() {
 
     private val _trashUiState = MutableStateFlow<TrashUiState>(TrashUiState.Loading)
     val trashUiState: StateFlow<TrashUiState> = _trashUiState
 
-    private val _deleteEvent = MutableSharedFlow<TrashDeleteEvent>()
-    val deleteEvent: SharedFlow<TrashDeleteEvent> = _deleteEvent.asSharedFlow()
+    private val _deleteOperation = MutableSharedFlow<UIResult<Int>>()
+    val deleteOperation: SharedFlow<UIResult<Int>> = _deleteOperation.asSharedFlow()
 
-    private val _restoreEvent = MutableSharedFlow<TrashRestoreEvent>()
-    val restoreEvent: SharedFlow<TrashRestoreEvent> = _restoreEvent.asSharedFlow()
+    private val _restoreOperation = MutableSharedFlow<UIResult<Int>>()
+    val restoreOperation: SharedFlow<UIResult<Int>> = _restoreOperation.asSharedFlow()
+
+    private val networkErrorHandler: (Throwable) -> Unit = { throwable ->
+        when (throwable) {
+            is NoNetworkConnectionException -> deviceConnectionMonitor.reportNoNetwork()
+            is ServerResponseTimeoutException,
+            is ServerConnectionTimeoutException,
+            is NoConnectionWithServerException,
+            is ServerNotReachableException,
+            -> deviceConnectionMonitor.reportUnreachable()
+        }
+    }
 
     val itemCount: Int
         get() = when (val state = _trashUiState.value) {
@@ -125,24 +145,18 @@ class TrashViewModel(
 
         val accountName = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())?.name ?: return
 
-        updateTrashUiState(TrashUiState.Loading)
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+        clearSelection()
+        runTrashOperation(
+            operationFlow = _deleteOperation,
+            itemCount = itemsToDelete.size,
+        ) {
             for (item in itemsToDelete) {
                 when (val result = deleteTrashItemUseCase(DeleteTrashItemUseCase.Params(accountName, item.fileId))) {
-                    is UseCaseResult.Success -> {
-                        // do nothing
-                    }
-                    is UseCaseResult.Error -> {
-                        clearSelection()
-                        loadTrash()
-                        _deleteEvent.emit(TrashDeleteEvent.Error(result.throwable))
-                        return@launch
-                    }
+                    is UseCaseResult.Success -> Unit
+                    is UseCaseResult.Error -> return@runTrashOperation result.throwable
                 }
             }
-            clearSelection()
-            _deleteEvent.emit(TrashDeleteEvent.Success(itemsToDelete.size))
-            loadTrash()
+            null
         }
     }
 
@@ -152,8 +166,11 @@ class TrashViewModel(
 
         val accountName = AccountUtils.getCurrentOwnCloudAccount(appContextProvider.getContext())?.name ?: return
 
-        updateTrashUiState(TrashUiState.Loading)
-        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+        clearSelection()
+        runTrashOperation(
+            operationFlow = _restoreOperation,
+            itemCount = itemsToRestore.size,
+        ) {
             for (item in itemsToRestore) {
                 when (
                     val result = restoreTrashItemUseCase(
@@ -164,19 +181,37 @@ class TrashViewModel(
                         ),
                     )
                 ) {
-                    is UseCaseResult.Success -> {
-                        // do nothing
-                    }
-                    is UseCaseResult.Error -> {
-                        clearSelection()
-                        loadTrash()
-                        _restoreEvent.emit(TrashRestoreEvent.Error(result.throwable))
-                        return@launch
-                    }
+                    is UseCaseResult.Success -> Unit
+                    is UseCaseResult.Error -> return@runTrashOperation result.throwable
                 }
             }
-            clearSelection()
-            _restoreEvent.emit(TrashRestoreEvent.Success(itemsToRestore.size))
+            null
+        }
+    }
+
+    private fun runTrashOperation(
+        operationFlow: MutableSharedFlow<UIResult<Int>>,
+        itemCount: Int,
+        block: suspend () -> Throwable?,
+    ) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            operationFlow.emit(UIResult.Loading())
+
+            if (!appContextProvider.isConnected()) {
+                deviceConnectionMonitor.reportNoNetwork()
+                operationFlow.emit(UIResult.Error(error = NoNetworkConnectionException()))
+                Timber.w("Trash operation will not be executed due to lack of network connection")
+                return@launch
+            }
+
+            val error = block()
+            if (error != null) {
+                networkErrorHandler(error)
+                operationFlow.emit(UIResult.Error(error = error))
+                return@launch
+            }
+
+            operationFlow.emit(UIResult.Success(itemCount))
             loadTrash()
         }
     }
@@ -220,15 +255,5 @@ class TrashViewModel(
         data object Empty : TrashUiState()
         data object NotSupported : TrashUiState()
         data class Error(val message: String) : TrashUiState()
-    }
-
-    sealed class TrashDeleteEvent {
-        data class Success(val deletedCount: Int) : TrashDeleteEvent()
-        data class Error(val throwable: Throwable) : TrashDeleteEvent()
-    }
-
-    sealed class TrashRestoreEvent {
-        data class Success(val restoredCount: Int) : TrashRestoreEvent()
-        data class Error(val throwable: Throwable) : TrashRestoreEvent()
     }
 }

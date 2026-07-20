@@ -81,6 +81,18 @@
         app:showAsAction="never"
         android:orderInCategory="1" />
     <item
+        android:id="@+id/action_compress"
+        android:title="@string/homecloud_filelist_compress"
+        android:icon="@drawable/ic_archive"
+        app:showAsAction="never"
+        android:orderInCategory="1" />
+    <item
+        android:id="@+id/action_extract"
+        android:title="@string/homecloud_filelist_extract"
+        android:icon="@drawable/ic_folder_outlined"
+        app:showAsAction="never"
+        android:orderInCategory="1" />
+    <item
         android:id="@+id/action_send_file"
         android:title="@string/actionbar_send_file"
         android:icon="@drawable/ic_send_white"

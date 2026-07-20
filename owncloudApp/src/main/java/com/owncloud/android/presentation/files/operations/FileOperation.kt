@@ -33,6 +33,17 @@ sealed interface FileOperation {
         val isUserLogged: Boolean,
     ) : FileOperation
 
+    data class CompressOperation(
+        val accountName: String,
+        val parentFolder: OCFile,
+        val files: List<OCFile>,
+    ) : FileOperation
+
+    data class ExtractOperation(
+        val accountName: String,
+        val zipFile: OCFile,
+    ) : FileOperation
+
     data class CreateFolder(val folderName: String, val parentFile: OCFile) : FileOperation
     data class MoveOperation(
         val listOfFilesToMove: List<OCFile>,

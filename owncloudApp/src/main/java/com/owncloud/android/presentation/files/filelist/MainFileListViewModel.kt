@@ -56,6 +56,7 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
+import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
@@ -81,6 +82,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import com.owncloud.android.domain.files.usecases.SortType.Companion as SortTypeDomain
@@ -178,6 +180,21 @@ class MainFileListViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyMap(),
             )
+
+    private val _archiveWorkMetadata = MutableStateFlow<Map<UUID, ArchiveWorkEnqueued>>(emptyMap())
+
+    private val pendingArchiveWorkInfos: StateFlow<List<WorkInfo>> =
+        workManagerProvider.getPendingArchiveWorkInfosLiveData()
+            .asFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
+            )
+
+    fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
+        _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+    }
 
     init {
         val sortTypeSelected = SortType.values()[sharedPreferencesProvider.getInt(PREF_FILE_LIST_SORT_TYPE, SortType.SORT_TYPE_BY_NAME.ordinal)]
@@ -365,6 +382,7 @@ class MainFileListViewModel(
                     files = files,
                     filesSyncInfo = filesSyncInfo,
                     accountName = currentFolderDisplayed.value.owner,
+                    currentFolder = currentFolderDisplayed.value,
                     isAnyFileVideoPreviewing = false,
                     displaySelectAll = displaySelectAll,
                     displaySelectInverse = isMultiselection,
@@ -493,10 +511,24 @@ class MainFileListViewModel(
         searchFilter: String?,
         sortTypeAndOrder: Pair<SortType, SortOrder>,
         space: OCSpace?,
-    ) = combine(this, uploadProgressByTransferId) { folderContent, progressByTransferId ->
-        folderContent.map { fileWithSyncInfo ->
-            fileWithSyncInfo.withUploadProgress(progressByTransferId)
+    ) = combine(
+        this,
+        uploadProgressByTransferId,
+        pendingArchiveWorkInfos,
+        _archiveWorkMetadata,
+    ) { folderContent, progressByTransferId, pendingWorks, workMetadata ->
+        val activeMetadata = workMetadata.filterKeys { workId ->
+            pendingWorks.any { it.id == workId }
         }
+        folderContent
+            .map { fileWithSyncInfo ->
+                fileWithSyncInfo.withUploadProgress(progressByTransferId)
+            }
+            .withArchiveVirtualFiles(
+                currentFolder = currentFolderDisplayed,
+                pendingWorks = pendingWorks,
+                workMetadata = activeMetadata,
+            )
     }.map { folderContentWithProgress ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,

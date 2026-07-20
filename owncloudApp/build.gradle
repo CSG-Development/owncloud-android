@@ -86,6 +86,7 @@ dependencies {
     implementation libs.retrofit.converter.moshi
     implementation libs.okhttp.logging.interceptor
     implementation libs.moshi.kotlin
+    ksp libs.moshi.kotlin.codegen
 
     // Timber
     implementation libs.timber
@@ -130,8 +131,8 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_28_00_0
-        versionName = "1.28.0"
+        versionCode = 1_29_00_0
+        versionName = "1.29.0"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""

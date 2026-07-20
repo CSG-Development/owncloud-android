@@ -31,6 +31,8 @@ fun FileMenuOption.toResId() =
         FileMenuOption.RENAME -> R.id.action_rename_file
         FileMenuOption.MOVE -> R.id.action_move
         FileMenuOption.COPY -> R.id.action_copy
+        FileMenuOption.COMPRESS -> R.id.action_compress
+        FileMenuOption.EXTRACT -> R.id.action_extract
         FileMenuOption.REMOVE -> R.id.action_remove_file
         FileMenuOption.OPEN_WITH -> R.id.action_open_file_with
         FileMenuOption.SYNC -> R.id.action_sync_file
@@ -53,6 +55,8 @@ fun FileMenuOption.toStringResId() =
         FileMenuOption.RENAME -> R.string.common_rename
         FileMenuOption.MOVE -> R.string.actionbar_move
         FileMenuOption.COPY -> android.R.string.copy
+        FileMenuOption.COMPRESS -> R.string.homecloud_filelist_compress
+        FileMenuOption.EXTRACT -> R.string.homecloud_filelist_extract
         FileMenuOption.REMOVE -> R.string.common_remove
         FileMenuOption.OPEN_WITH -> R.string.actionbar_open_with
         FileMenuOption.SYNC -> R.string.filedetails_sync_file
@@ -75,6 +79,8 @@ fun FileMenuOption.toDrawableResId() =
         FileMenuOption.RENAME -> R.drawable.ic_pencil
         FileMenuOption.MOVE -> R.drawable.ic_action_move
         FileMenuOption.COPY -> R.drawable.ic_action_copy
+        FileMenuOption.COMPRESS -> R.drawable.ic_archive
+        FileMenuOption.EXTRACT -> R.drawable.ic_archive
         FileMenuOption.REMOVE -> R.drawable.ic_action_delete_white
         FileMenuOption.OPEN_WITH -> R.drawable.ic_open_in_app
         FileMenuOption.SYNC -> R.drawable.ic_action_refresh

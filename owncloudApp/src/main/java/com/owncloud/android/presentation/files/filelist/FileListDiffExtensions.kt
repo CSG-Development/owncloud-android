@@ -1,10 +1,10 @@
 package com.owncloud.android.presentation.files.filelist
 
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
-import com.owncloud.android.domain.files.model.isUploadVirtualFile
+import com.owncloud.android.domain.files.model.isVirtualFile
 
 internal fun OCFileWithSyncInfo.equalsForFileListDiff(other: OCFileWithSyncInfo): Boolean {
-    if (!file.isUploadVirtualFile()) {
+    if (!file.isVirtualFile()) {
         return this == other
     }
     return copy(
@@ -12,9 +12,12 @@ internal fun OCFileWithSyncInfo.equalsForFileListDiff(other: OCFileWithSyncInfo)
     ) == other
 }
 
-internal fun OCFileWithSyncInfo.isUploadProgressOnlyChange(other: OCFileWithSyncInfo): Boolean {
-    if (!file.isUploadVirtualFile() || !other.file.isUploadVirtualFile()) return false
+internal fun OCFileWithSyncInfo.isVirtualProgressOnlyChange(other: OCFileWithSyncInfo): Boolean {
+    if (!file.isVirtualFile() || !other.file.isVirtualFile()) return false
     if (file.id != other.file.id) return false
-    if (uploadProgress == other.uploadProgress) return false
-    return copy(uploadProgress = other.uploadProgress).equalsForFileListDiff(other)
+    if (uploadProgress == other.uploadProgress && isProgressIndeterminate == other.isProgressIndeterminate) return false
+    return copy(
+        uploadProgress = other.uploadProgress,
+        isProgressIndeterminate = other.isProgressIndeterminate,
+    ).equalsForFileListDiff(other)
 }

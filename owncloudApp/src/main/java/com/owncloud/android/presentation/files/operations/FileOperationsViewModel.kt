@@ -31,6 +31,9 @@ import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
+import com.owncloud.android.domain.archive.ArchiveExtractLayout
+import com.owncloud.android.domain.archive.ArchiveNameResolver
+import com.owncloud.android.domain.archive.ZipArchiveExtractor
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.device.DeviceConnectionMonitor
@@ -55,6 +58,8 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
+import com.owncloud.android.usecases.archive.UnzipFileUseCase
+import com.owncloud.android.usecases.archive.ZipFilesUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -63,6 +68,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import java.net.URI
 
 class FileOperationsViewModel(
@@ -77,6 +83,8 @@ class FileOperationsViewModel(
     private val setFilesAsAvailableOfflineUseCase: SetFilesAsAvailableOfflineUseCase,
     private val unsetFilesAsAvailableOfflineUseCase: UnsetFilesAsAvailableOfflineUseCase,
     private val setFileFavoriteStatusUseCase: SetFileFavoriteStatusUseCase,
+    private val zipFilesUseCase: ZipFilesUseCase,
+    private val unzipFileUseCase: UnzipFileUseCase,
     private val manageDeepLinkUseCase: ManageDeepLinkUseCase,
     private val setLastUsageFileUseCase: SetLastUsageFileUseCase,
     private val isAnyFileAvailableLocallyAndNotAvailableOfflineUseCase: IsAnyFileAvailableLocallyAndNotAvailableOfflineUseCase,
@@ -123,6 +131,9 @@ class FileOperationsViewModel(
     private val _disableSelectionModeEvent = MutableSharedFlow<Unit>()
     val disableSelectionModeEvent: SharedFlow<Unit> = _disableSelectionModeEvent
 
+    private val _archiveWorkEnqueued = MutableSharedFlow<ArchiveWorkEnqueued>()
+    val archiveWorkEnqueued: SharedFlow<ArchiveWorkEnqueued> = _archiveWorkEnqueued
+
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
 
@@ -151,6 +162,8 @@ class FileOperationsViewModel(
             is FileOperation.RefreshFolderOperation -> refreshFolderOperation(fileOperation)
             is FileOperation.CreateFileWithAppProviderOperation -> createFileWithAppProvider(fileOperation)
             is FileOperation.SetFileFavoriteStatus -> setFileFavoriteStatus(fileOperation)
+            is FileOperation.CompressOperation -> compressOperation(fileOperation)
+            is FileOperation.ExtractOperation -> extractOperation(fileOperation)
         }
     }
 
@@ -347,6 +360,89 @@ class FileOperationsViewModel(
                     isFavorite = fileOperation.isFavorite,
                 )
             )
+        }
+    }
+
+    private fun compressOperation(fileOperation: FileOperation.CompressOperation) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val workId = zipFilesUseCase(
+                ZipFilesUseCase.Params(
+                    accountName = fileOperation.accountName,
+                    parentFolder = fileOperation.parentFolder,
+                    files = fileOperation.files,
+                ),
+            ) ?: return@launch
+
+            val displayName = ArchiveNameResolver.resolveArchiveBaseName(
+                selectedFiles = fileOperation.files,
+            )
+            val enqueued = ArchiveWorkEnqueued(
+                workId = workId,
+                displayName = displayName,
+                isCompress = true,
+                parentFolderId = fileOperation.parentFolder.id!!,
+                remotePath = ArchiveNameResolver.resolveRemoteZipPath(
+                    parentFolder = fileOperation.parentFolder,
+                    archiveFileName = displayName,
+                ),
+                spaceId = fileOperation.parentFolder.spaceId,
+                accountName = fileOperation.accountName,
+            )
+            _archiveWorkEnqueued.emit(enqueued)
+            _disableSelectionModeEvent.emit(Unit)
+        }
+    }
+
+    private fun extractOperation(fileOperation: FileOperation.ExtractOperation) {
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val workId = unzipFileUseCase(
+                UnzipFileUseCase.Params(
+                    accountName = fileOperation.accountName,
+                    zipFile = fileOperation.zipFile,
+                ),
+            ) ?: return@launch
+
+            val zipFile = fileOperation.zipFile
+            val (displayName, remotePath) = resolveExtractWorkMetadata(zipFile)
+            val enqueued = ArchiveWorkEnqueued(
+                workId = workId,
+                displayName = displayName,
+                isCompress = false,
+                parentFolderId = zipFile.parentId!!,
+                remotePath = remotePath,
+                spaceId = zipFile.spaceId,
+                accountName = fileOperation.accountName,
+            )
+            _archiveWorkEnqueued.emit(enqueued)
+            _disableSelectionModeEvent.emit(Unit)
+        }
+    }
+
+    private fun resolveExtractWorkMetadata(zipFile: OCFile): Pair<String, String> {
+        val localZipFile = zipFile.storagePath
+            ?.let { File(it) }
+            .takeIf { zipFile.isAvailableLocally }
+
+        val layout = localZipFile?.let { zip ->
+            runCatching { ZipArchiveExtractor.peekLayout(zip) }.getOrNull()
+        }
+
+        return when (layout) {
+            is ArchiveExtractLayout.DirectToParent -> {
+                val entryName = if (layout.isTopLevelFolder) {
+                    layout.topLevelRoot + OCFile.PATH_SEPARATOR
+                } else {
+                    layout.topLevelRoot
+                }
+                layout.topLevelRoot to (zipFile.getParentRemotePath() + entryName)
+            }
+
+            else -> {
+                val extractFolderName = zipFile.fileName
+                    .substringBeforeLast('.')
+                    .ifBlank { zipFile.fileName }
+                extractFolderName to ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
+            }
         }
     }
 
