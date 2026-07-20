@@ -1,44 +1,57 @@
 package com.owncloud.android.presentation.tags
 
-import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.forEach
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.lifecycle.lifecycleScope
 import com.owncloud.android.R
 import com.owncloud.android.databinding.TagFilesFragmentBinding
-import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.FileOptionsBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
 import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
-import com.owncloud.android.presentation.files.filelist.FileListAdapter
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
+import com.owncloud.android.presentation.files.filelist.compose.FileList
+import com.owncloud.android.presentation.files.filelist.compose.FileListItemUiModel
+import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
+import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
+import com.owncloud.android.utils.PreferenceUtils
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class TagFilesFragment : Fragment(),
-    FileListAdapter.FileListAdapterListener,
     SortBottomSheetFragment.SortDialogListener,
     SortOptionsView.SortOptionsListener {
 
@@ -51,26 +64,8 @@ class TagFilesFragment : Fragment(),
     private var fileSingleFile: OCFileWithSyncInfo? = null
     private var filesToRemove: List<OCFile> = emptyList()
 
-    private val layoutManager: StaggeredGridLayoutManager by lazy {
-        if (tagFilesViewModel.isGridModeSetAsPreferred()) {
-            StaggeredGridLayoutManager(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root),
-                RecyclerView.VERTICAL
-            )
-        } else {
-            StaggeredGridLayoutManager(1, RecyclerView.VERTICAL)
-        }
-    }
-
-    private val fileListAdapter: FileListAdapter by lazy {
-        FileListAdapter(
-            context = requireContext(),
-            layoutManager = layoutManager,
-            isPickerMode = false,
-            listener = this,
-            isMultiPersonal = false,
-        )
-    }
+    private val listScrollState = LazyListState()
+    private val gridScrollState = LazyGridState()
 
     private val serverTagId: String by lazy { arguments?.getString(ARG_SERVER_TAG_ID).orEmpty() }
     val tagName: String by lazy { "“${arguments?.getString(ARG_TAG_NAME).orEmpty()}”" }
@@ -98,28 +93,75 @@ class TagFilesFragment : Fragment(),
     }
 
     private fun initViews() {
-        binding.optionsLayout.viewTypeSelected = if (tagFilesViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
+        if (tagFilesViewModel.isGridModeSetAsPreferred()) {
+            binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_GRID
+            tagFilesViewModel.setGridModeAsPreferred()
+            tagFilesViewModel.updateGridColumns(
+                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+            )
+        } else {
+            binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_LIST
+            tagFilesViewModel.setListModeAsPreferred()
+        }
         binding.optionsLayout.sortTypeSelected = tagFilesViewModel.getSortType()
         binding.optionsLayout.sortOrderSelected = tagFilesViewModel.getSortOrder()
-
-        binding.recyclerViewTagFiles.layoutManager = layoutManager
-        binding.recyclerViewTagFiles.adapter = fileListAdapter
-
         binding.optionsLayout.onSortOptionsListener = this
         binding.optionsLayout.selectAdditionalView(SortOptionsView.AdditionalView.VIEW_TYPE)
 
-        binding.swipeRefreshTagFiles.setOnRefreshListener { reloadFiles() }
+        setupComposeFileList()
+    }
+
+    private fun setupComposeFileList() {
+        val account = AccountUtils.getCurrentOwnCloudAccount(requireContext())
+        binding.composeViewTagFiles.apply {
+            filterTouchesWhenObscured =
+                PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val composeState by tagFilesViewModel.composeUiState.collectAsState()
+                HomeCloudTheme {
+                    val filesById = remember(composeState.folderContent) {
+                        composeState.folderContent.associateBy { it.file.id }
+                    }
+                    val filesByIdState = rememberUpdatedState(filesById)
+                    val accountState = rememberUpdatedState(account)
+                    val onItemClick = remember<(FileListItemUiModel) -> Unit> {
+                        { onComposeItemClick(it.fileId) }
+                    }
+                    val onThreeDotClick = remember<(FileListItemUiModel) -> Unit> {
+                        { onComposeThreeDotClick(it.fileId) }
+                    }
+                    val onRefresh = remember { { reloadFiles() } }
+                    val thumbnail: @Composable (FileListItemUiModel) -> Bitmap? =
+                        remember {
+                            { item ->
+                                val file = filesByIdState.value[item.fileId]?.file
+                                rememberFileListThumbnail(
+                                    file = file?.takeUnless { it.isFolder || it.isVirtualFile() },
+                                    account = accountState.value,
+                                )
+                            }
+                        }
+                    FileList(
+                        content = composeState.content,
+                        layoutMode = composeState.layoutMode,
+                        gridColumns = composeState.gridColumns,
+                        listState = listScrollState,
+                        gridState = gridScrollState,
+                        isRefreshing = composeState.isRefreshing,
+                        pullToRefreshEnabled = true,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                        thumbnail = thumbnail,
+                        onItemClick = onItemClick,
+                        onThreeDotClick = onThreeDotClick,
+                    )
+                }
+            }
+        }
     }
 
     private fun subscribeToViewModels() {
-        collectLatestLifecycleFlow(tagFilesViewModel.uiState) { uiState ->
-            when (uiState) {
-                is TagFilesViewModel.TagFilesUiState.Loading -> showLoading()
-                is TagFilesViewModel.TagFilesUiState.Success -> showResults(uiState.files)
-                is TagFilesViewModel.TagFilesUiState.Empty -> showEmptyState()
-                is TagFilesViewModel.TagFilesUiState.Error -> showEmptyState()
-            }
-        }
         collectLatestLifecycleFlow(tagFilesViewModel.menuOptionsSingleFile) { menuOptions ->
             fileSingleFile?.let { fileWithSyncInfo ->
                 FileOptionsBottomSheetHelper.show(
@@ -161,42 +203,29 @@ class TagFilesFragment : Fragment(),
                 }
             }
         }
+        collectLatestLifecycleFlow(tagFilesViewModel.scrollToTopEvents) {
+            scrollFileListToTop()
+        }
+    }
+
+    private fun scrollFileListToTop() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (tagFilesViewModel.composeUiState.value.layoutMode) {
+                FileListLayoutMode.List -> listScrollState.scrollToItem(0)
+                FileListLayoutMode.Grid -> gridScrollState.scrollToItem(0)
+            }
+        }
     }
 
     private fun reloadFiles() {
         accountName?.let { tagFilesViewModel.loadFiles(it, serverTagId) }
     }
 
-    private fun showLoading() {
-        binding.swipeRefreshTagFiles.isRefreshing = true
-        binding.recyclerViewTagFiles.isVisible = false
-        binding.tagFilesListEmpty.root.isVisible = false
-    }
+    private fun findFileWithSyncInfo(fileId: Long): OCFileWithSyncInfo? =
+        tagFilesViewModel.composeUiState.value.findFile(fileId)
 
-    private fun showResults(files: List<OCFileWithSyncInfo>) {
-        binding.swipeRefreshTagFiles.isRefreshing = false
-        binding.recyclerViewTagFiles.isVisible = true
-        binding.tagFilesListEmpty.root.isVisible = false
-
-        fileListAdapter.updateFileList(
-            filesToAdd = files,
-            fileListOption = FileListOption.TAG_FILES,
-        ) {
-            binding.recyclerViewTagFiles.post { binding.recyclerViewTagFiles.scrollToPosition(0) }
-        }
-    }
-
-    private fun showEmptyState() {
-        binding.swipeRefreshTagFiles.isRefreshing = false
-        binding.recyclerViewTagFiles.isVisible = false
-        binding.tagFilesListEmpty.root.isVisible = true
-        binding.tagFilesListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_tag_big)
-        binding.tagFilesListEmpty.listEmptyDatasetTitle.setText(R.string.tag_files_empty_title)
-        binding.tagFilesListEmpty.listEmptyDatasetSubTitle.isVisible = false
-    }
-
-    override fun onItemClick(ocFileWithSyncInfo: OCFileWithSyncInfo, position: Int) {
-        val file = ocFileWithSyncInfo.file
+    private fun onComposeItemClick(fileId: Long) {
+        val file = findFileWithSyncInfo(fileId)?.file ?: return
         val fileDisplayActivity = requireActivity() as? FileDisplayActivity
         if (file.isFolder) {
             fileDisplayActivity?.startFolderPreview(file)
@@ -205,9 +234,8 @@ class TagFilesFragment : Fragment(),
         }
     }
 
-    override fun onLongItemClick(position: Int): Boolean = false
-
-    override fun onThreeDotButtonClick(fileWithSyncInfo: OCFileWithSyncInfo) {
+    private fun onComposeThreeDotClick(fileId: Long) {
+        val fileWithSyncInfo = findFileWithSyncInfo(fileId) ?: return
         fileSingleFile = fileWithSyncInfo
         tagFilesViewModel.filterMenuOptionsForSingleFile(fileWithSyncInfo)
     }
@@ -218,19 +246,17 @@ class TagFilesFragment : Fragment(),
         sortBottomSheetFragment.show(childFragmentManager, SortBottomSheetFragment.TAG)
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     override fun onViewTypeListener(viewType: ViewType) {
         binding.optionsLayout.viewTypeSelected = viewType
 
         if (viewType == ViewType.VIEW_TYPE_LIST) {
             tagFilesViewModel.setListModeAsPreferred()
-            layoutManager.spanCount = 1
         } else {
             tagFilesViewModel.setGridModeAsPreferred()
-            layoutManager.spanCount = ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+            tagFilesViewModel.updateGridColumns(
+                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+            )
         }
-
-        fileListAdapter.notifyDataSetChanged()
     }
 
     override fun onSortSelected(sortType: SortType) {
