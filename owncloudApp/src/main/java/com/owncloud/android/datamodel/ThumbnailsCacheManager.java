@@ -153,8 +153,32 @@ public class ThumbnailsCacheManager {
         return null;
     }
 
+    /**
+     * Receives a generated thumbnail without an {@link ImageView} binding (e.g. Compose).
+     * Invoked on the main thread when generation succeeds.
+     */
+    public interface ThumbnailGenerationListener {
+        void onThumbnailReady(@NotNull Object file, @NotNull Bitmap bitmap);
+    }
+
+    /**
+     * Starts thumbnail generation for an {@link OCFile} and delivers the result via {@link ThumbnailGenerationListener}.
+     * Caller must {@link AsyncTask#cancel(boolean)} the returned task when the request is obsolete.
+     */
+    @SuppressWarnings("deprecation")
+    public static ThumbnailGenerationTask startThumbnailGeneration(
+            @NotNull OCFile file,
+            @NotNull Account account,
+            @NotNull ThumbnailGenerationListener listener
+    ) {
+        ThumbnailGenerationTask task = new ThumbnailGenerationTask(listener, account);
+        task.execute(file);
+        return task;
+    }
+
     public static class ThumbnailGenerationTask extends AsyncTask<Object, Void, Bitmap> {
         private final WeakReference<ImageView> mImageViewReference;
+        private final WeakReference<ThumbnailGenerationListener> mListenerReference;
         private static Account mAccount;
         private Object mFile;
         private FileDataStorageManager mStorageManager;
@@ -162,12 +186,26 @@ public class ThumbnailsCacheManager {
         public ThumbnailGenerationTask(ImageView imageView, Account account) {
             // Use a WeakReference to ensure the ImageView can be garbage collected
             mImageViewReference = new WeakReference<>(imageView);
+            mListenerReference = null;
             mAccount = account;
         }
 
         public ThumbnailGenerationTask(ImageView imageView) {
             // Use a WeakReference to ensure the ImageView can be garbage collected
             mImageViewReference = new WeakReference<>(imageView);
+            mListenerReference = null;
+        }
+
+        /**
+         * ImageView-free generation for Compose / non-View hosts.
+         */
+        public ThumbnailGenerationTask(
+                @NotNull ThumbnailGenerationListener listener,
+                @NotNull Account account
+        ) {
+            mImageViewReference = null;
+            mListenerReference = new WeakReference<>(listener);
+            mAccount = account;
         }
 
         @Override
@@ -207,21 +245,35 @@ public class ThumbnailsCacheManager {
         }
 
         protected void onPostExecute(Bitmap bitmap) {
-            if (bitmap != null) {
-                final ImageView imageView = mImageViewReference.get();
-                final ThumbnailGenerationTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
-                if (this == bitmapWorkerTask) {
-                    String tagId = "";
-                    if (mFile instanceof OCFile) {
-                        tagId = String.valueOf(((OCFile) mFile).getId());
-                    } else if (mFile instanceof File) {
-                        tagId = String.valueOf(mFile.hashCode());
-                    } else if (mFile instanceof SpaceSpecial) {
-                        tagId = ((SpaceSpecial) mFile).getId();
-                    }
-                    if (String.valueOf(imageView.getTag()).equals(tagId)) {
-                        imageView.setImageBitmap(bitmap);
-                    }
+            if (bitmap == null || isCancelled()) {
+                return;
+            }
+
+            if (mListenerReference != null) {
+                final ThumbnailGenerationListener listener = mListenerReference.get();
+                if (listener != null && mFile != null) {
+                    listener.onThumbnailReady(mFile, bitmap);
+                }
+                return;
+            }
+
+            if (mImageViewReference == null) {
+                return;
+            }
+
+            final ImageView imageView = mImageViewReference.get();
+            final ThumbnailGenerationTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+            if (this == bitmapWorkerTask) {
+                String tagId = "";
+                if (mFile instanceof OCFile) {
+                    tagId = String.valueOf(((OCFile) mFile).getId());
+                } else if (mFile instanceof File) {
+                    tagId = String.valueOf(mFile.hashCode());
+                } else if (mFile instanceof SpaceSpecial) {
+                    tagId = ((SpaceSpecial) mFile).getId();
+                }
+                if (String.valueOf(imageView.getTag()).equals(tagId)) {
+                    imageView.setImageBitmap(bitmap);
                 }
             }
         }
