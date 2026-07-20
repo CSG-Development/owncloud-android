@@ -25,7 +25,6 @@ import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 
 /**
  * File-list footer showing the aggregated file/folder count text.
- * Visual parity with [R.layout.list_footer].
  */
 @Composable
 fun FileListFooter(

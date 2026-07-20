@@ -40,6 +40,7 @@ import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
@@ -56,10 +57,12 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
-import com.owncloud.android.presentation.files.filelist.compose.FileListContent
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
+import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
 import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyUiModel
-import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
@@ -212,7 +215,7 @@ class MainFileListViewModel(
                 initialValue = FileListUiState.Loading
             )
 
-    val composeUiState: StateFlow<MainFileListComposeUiState> = combine(
+    val composeUiState: StateFlow<FileListComposeUiState> = combine(
         fileListUiState,
         selectedIds,
         layoutMode,
@@ -232,7 +235,7 @@ class MainFileListViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = MainFileListComposeUiState(
+        initialValue = FileListComposeUiState(
             layoutMode = layoutMode.value,
             pullToRefreshEnabled = fileListOptionParam != FileListOption.AV_OFFLINE,
         ),
@@ -265,12 +268,14 @@ class MainFileListViewModel(
             fileListUiState.collect { state ->
                 if (state !is FileListUiState.Success) return@collect
                 val newContent = state.folderContent
-                if (isOnlySortOrderChanged(previousContent, newContent)) {
+                if (isOnlyListOrderChanged(previousContent, newContent)) {
                     _scrollToTopEvents.tryEmit(Unit)
                 }
                 previousContent = newContent
-                val currentIds = newContent.mapNotNull { it.file.id }.toSet()
-                selectedIds.update { it.intersect(currentIds) }
+                val selectableIds = newContent.mapNotNull { info ->
+                    info.file.id?.takeUnless { info.file.isVirtualFile() }
+                }.toSet()
+                selectedIds.retainFileSelection(selectableIds)
             }
         }
     }
@@ -291,12 +296,12 @@ class MainFileListViewModel(
         space.value
 
     fun setGridModeAsPreferred() {
-        savePreferredLayoutManager(true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
         layoutMode.value = FileListLayoutMode.Grid
     }
 
     fun setListModeAsPreferred() {
-        savePreferredLayoutManager(false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
         layoutMode.value = FileListLayoutMode.List
     }
 
@@ -313,41 +318,27 @@ class MainFileListViewModel(
     }
 
     fun toggleSelection(fileId: Long) {
-        selectedIds.update { current ->
-            if (fileId in current) current - fileId else current + fileId
-        }
+        selectedIds.toggleFileSelection(fileId)
     }
 
     fun select(fileId: Long) {
-        selectedIds.update { it + fileId }
+        selectedIds.selectFile(fileId)
     }
 
     fun clearSelection() {
-        selectedIds.value = emptySet()
+        selectedIds.clearFileSelection()
     }
 
     fun selectAll() {
-        val ids = (fileListUiState.value as? FileListUiState.Success)
-            ?.folderContent
-            ?.mapNotNull { it.file.id }
-            .orEmpty()
-        selectedIds.value = ids.toSet()
+        selectedIds.selectAllFiles(composeUiState.value.selectableFileIds())
     }
 
     fun selectInverse() {
-        val ids = (fileListUiState.value as? FileListUiState.Success)
-            ?.folderContent
-            ?.mapNotNull { it.file.id }
-            .orEmpty()
-        val current = selectedIds.value
-        selectedIds.value = ids.filterTo(mutableSetOf()) { it !in current }
+        selectedIds.inverseFileSelection(composeUiState.value.selectableFileIds())
     }
 
-    private fun savePreferredLayoutManager(isGridModeSelected: Boolean) {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, isGridModeSelected)
-    }
-
-    fun isGridModeSetAsPreferred() = sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+    fun isGridModeSetAsPreferred() =
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
     private fun toComposeUiState(
         fileListUiState: FileListUiState,
@@ -356,15 +347,14 @@ class MainFileListViewModel(
         gridColumns: Int,
         isRefreshing: Boolean,
         isMultiPersonal: Boolean,
-    ): MainFileListComposeUiState {
+    ): FileListComposeUiState {
         val option = when (fileListUiState) {
             is FileListUiState.Success -> fileListUiState.fileListOption
             else -> fileListOption.value
         }
         val pullEnabled = option != FileListOption.AV_OFFLINE
         if (fileListUiState !is FileListUiState.Success) {
-            return MainFileListComposeUiState(
-                content = FileListContent.Loading,
+            return fileListLoadingUiState(
                 layoutMode = layoutMode,
                 gridColumns = gridColumns,
                 selectedIds = selectedIds,
@@ -374,53 +364,26 @@ class MainFileListViewModel(
         }
 
         val folderContent = fileListUiState.folderContent
-        val items = folderContent.map { info ->
-            val showSpacePath = option.isAvailableOffline() ||
-                option.isFavorites() ||
-                (option.isSharedByLink() && info.space == null)
-            info.toFileListItemUiModel(
-                showThreeDotMenu = !option.isFavorites(),
-                showSpacePath = showSpacePath,
-                isMultiPersonal = isMultiPersonal,
-            )
-        }
-        val content = if (folderContent.isEmpty()) {
-            FileListContent.Empty(
-                model = option.toFileListEmptyUiModel(
-                    isSharesSpace = option.isSharedByLink() && fileListUiState.space != null,
-                ),
-            )
-        } else {
-            FileListContent.Items(
-                items = items,
-                footerText = if (isPickerMode) null else FileListFooterText.fromFiles(
-                    contextProvider.getContext(),
-                    folderContent,
-                ),
-            )
-        }
-
-        return MainFileListComposeUiState(
+        return fileListItemsUiState(
             folderContent = folderContent,
-            content = content,
+            emptyModel = option.toFileListEmptyUiModel(
+                isSharesSpace = option.isSharedByLink() && fileListUiState.space != null,
+            ),
             layoutMode = layoutMode,
             gridColumns = gridColumns,
             selectedIds = selectedIds,
             isRefreshing = isRefreshing,
             pullToRefreshEnabled = pullEnabled,
+            showThreeDotMenu = !option.isFavorites(),
+            isMultiPersonal = isMultiPersonal,
+            showSpacePathForItem = { info ->
+                option.isAvailableOffline() ||
+                    option.isFavorites() ||
+                    (option.isSharedByLink() && info.space == null)
+            },
+            footerContext = contextProvider.getContext(),
+            includeFooter = !isPickerMode,
         )
-    }
-
-    private fun isOnlySortOrderChanged(
-        oldList: List<OCFileWithSyncInfo>,
-        newList: List<OCFileWithSyncInfo>,
-    ): Boolean {
-        if (oldList.size != newList.size) return false
-        if (oldList === newList || oldList == newList) return false
-        // Full-item equality (same as FileListDiffCallback): progress-only updates must not scroll.
-        val oldFreq = oldList.groupingBy { it }.eachCount()
-        val newFreq = newList.groupingBy { it }.eachCount()
-        return oldFreq == newFreq
     }
 
     private fun sortList(filesWithSyncInfo: List<OCFileWithSyncInfo>, sortTypeAndOrder: Pair<SortType, SortOrder>): List<OCFileWithSyncInfo> =
@@ -749,9 +712,5 @@ class MainFileListViewModel(
         val gridColumns: Int,
         val isRefreshing: Boolean,
     )
-
-    companion object {
-        internal const val RECYCLER_VIEW_PREFERRED = "RECYCLER_VIEW_PREFERRED"
-    }
 }
 

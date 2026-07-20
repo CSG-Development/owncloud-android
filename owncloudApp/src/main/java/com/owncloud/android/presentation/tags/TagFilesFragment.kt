@@ -1,22 +1,13 @@
 package com.owncloud.android.presentation.tags
 
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -24,12 +15,10 @@ import com.owncloud.android.R
 import com.owncloud.android.databinding.TagFilesFragmentBinding
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
-import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.FileOptionsBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
-import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
 import com.owncloud.android.presentation.files.SortOrder
@@ -37,16 +26,13 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
-import com.owncloud.android.presentation.files.filelist.compose.FileList
-import com.owncloud.android.presentation.files.filelist.compose.FileListItemUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
-import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
+import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
-import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -97,7 +83,7 @@ class TagFilesFragment : Fragment(),
             binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_GRID
             tagFilesViewModel.setGridModeAsPreferred()
             tagFilesViewModel.updateGridColumns(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
             )
         } else {
             binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_LIST
@@ -113,52 +99,15 @@ class TagFilesFragment : Fragment(),
 
     private fun setupComposeFileList() {
         val account = AccountUtils.getCurrentOwnCloudAccount(requireContext())
-        binding.composeViewTagFiles.apply {
-            filterTouchesWhenObscured =
-                PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                val composeState by tagFilesViewModel.composeUiState.collectAsState()
-                HomeCloudTheme {
-                    val filesById = remember(composeState.folderContent) {
-                        composeState.folderContent.associateBy { it.file.id }
-                    }
-                    val filesByIdState = rememberUpdatedState(filesById)
-                    val accountState = rememberUpdatedState(account)
-                    val onItemClick = remember<(FileListItemUiModel) -> Unit> {
-                        { onComposeItemClick(it.fileId) }
-                    }
-                    val onThreeDotClick = remember<(FileListItemUiModel) -> Unit> {
-                        { onComposeThreeDotClick(it.fileId) }
-                    }
-                    val onRefresh = remember { { reloadFiles() } }
-                    val thumbnail: @Composable (FileListItemUiModel) -> Bitmap? =
-                        remember {
-                            { item ->
-                                val file = filesByIdState.value[item.fileId]?.file
-                                rememberFileListThumbnail(
-                                    file = file?.takeUnless { it.isFolder || it.isVirtualFile() },
-                                    account = accountState.value,
-                                )
-                            }
-                        }
-                    FileList(
-                        content = composeState.content,
-                        layoutMode = composeState.layoutMode,
-                        gridColumns = composeState.gridColumns,
-                        listState = listScrollState,
-                        gridState = gridScrollState,
-                        isRefreshing = composeState.isRefreshing,
-                        pullToRefreshEnabled = true,
-                        onRefresh = onRefresh,
-                        modifier = Modifier.fillMaxSize(),
-                        thumbnail = thumbnail,
-                        onItemClick = onItemClick,
-                        onThreeDotClick = onThreeDotClick,
-                    )
-                }
-            }
-        }
+        binding.composeViewTagFiles.setFileListContent(
+            uiStateFlow = tagFilesViewModel.composeUiState,
+            account = account,
+            listState = listScrollState,
+            gridState = gridScrollState,
+            onItemClick = ::onComposeItemClick,
+            onThreeDotClick = ::onComposeThreeDotClick,
+            onRefresh = ::reloadFiles,
+        )
     }
 
     private fun subscribeToViewModels() {
@@ -254,7 +203,7 @@ class TagFilesFragment : Fragment(),
         } else {
             tagFilesViewModel.setGridModeAsPreferred()
             tagFilesViewModel.updateGridColumns(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
             )
         }
     }

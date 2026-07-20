@@ -8,6 +8,7 @@ import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.files.usecases.GetFavoriteFilesForAccountAsStreamUseCase
 import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
@@ -15,12 +16,19 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
-import com.owncloud.android.presentation.files.filelist.FileListFooterText
-import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
-import com.owncloud.android.presentation.files.filelist.compose.FileListContent
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.clearFileSelection
+import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListEmptyUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
-import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
+import com.owncloud.android.presentation.files.filelist.compose.fileListEmptyUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
+import com.owncloud.android.presentation.files.filelist.inverseFileSelection
+import com.owncloud.android.presentation.files.filelist.isOnlyListOrderChanged
+import com.owncloud.android.presentation.files.filelist.retainFileSelection
+import com.owncloud.android.presentation.files.filelist.selectAllFiles
+import com.owncloud.android.presentation.files.filelist.toggleFileSelection
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
@@ -64,7 +72,7 @@ class FavoritesViewModel(
     private val _menuOptions: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptions: SharedFlow<List<FileMenuOption>> = _menuOptions
 
-    val composeUiState: StateFlow<FavoritesComposeUiState> = combine(
+    val composeUiState: StateFlow<FileListComposeUiState> = combine(
         favoritesUiState,
         selectedIds,
         layoutMode,
@@ -81,7 +89,10 @@ class FavoritesViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = FavoritesComposeUiState(layoutMode = layoutMode.value),
+        initialValue = FileListComposeUiState(
+            layoutMode = layoutMode.value,
+            pullToRefreshEnabled = false,
+        ),
     )
 
     init {
@@ -97,12 +108,14 @@ class FavoritesViewModel(
                     is FavoritesUiState.Success -> state.results
                     else -> emptyList()
                 }
-                if (state is FavoritesUiState.Success && isOnlySortOrderChanged(previousContent, newContent)) {
+                if (state is FavoritesUiState.Success && isOnlyListOrderChanged(previousContent, newContent)) {
                     _scrollToTopEvents.tryEmit(Unit)
                 }
                 previousContent = newContent
-                val currentIds = newContent.mapNotNull { it.file.id }.toSet()
-                selectedIds.update { it.intersect(currentIds) }
+                val selectableIds = newContent.mapNotNull { info ->
+                    info.file.id?.takeUnless { info.file.isVirtualFile() }
+                }.toSet()
+                selectedIds.retainFileSelection(selectableIds)
             }
         }
     }
@@ -155,12 +168,12 @@ class FavoritesViewModel(
     }
 
     fun setGridModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
         layoutMode.value = FileListLayoutMode.Grid
     }
 
     fun setListModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
         layoutMode.value = FileListLayoutMode.List
     }
 
@@ -169,27 +182,23 @@ class FavoritesViewModel(
     }
 
     fun toggleSelection(fileId: Long) {
-        selectedIds.update { current ->
-            if (fileId in current) current - fileId else current + fileId
-        }
+        selectedIds.toggleFileSelection(fileId)
     }
 
     fun clearSelection() {
-        selectedIds.value = emptySet()
+        selectedIds.clearFileSelection()
     }
 
     fun selectAll() {
-        selectedIds.value = composeUiState.value.selectableFileIds().toSet()
+        selectedIds.selectAllFiles(composeUiState.value.selectableFileIds())
     }
 
     fun selectInverse() {
-        val ids = composeUiState.value.selectableFileIds()
-        val current = selectedIds.value
-        selectedIds.value = ids.filterTo(mutableSetOf()) { it !in current }
+        selectedIds.inverseFileSelection(composeUiState.value.selectableFileIds())
     }
 
     fun isGridModeSetAsPreferred(): Boolean =
-        sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
     fun filterMenuOptions(
         files: List<OCFile>,
@@ -228,58 +237,34 @@ class FavoritesViewModel(
         layoutMode: FileListLayoutMode,
         gridColumns: Int,
         isMultiPersonal: Boolean,
-    ): FavoritesComposeUiState {
-        when (favoritesUiState) {
-            FavoritesUiState.Loading -> {
-                return FavoritesComposeUiState(
-                    content = FileListContent.Loading,
-                    layoutMode = layoutMode,
-                    gridColumns = gridColumns,
-                    selectedIds = selectedIds,
-                )
-            }
+    ): FileListComposeUiState = when (favoritesUiState) {
+        FavoritesUiState.Loading -> fileListLoadingUiState(
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            FavoritesUiState.Empty -> {
-                return FavoritesComposeUiState(
-                    content = FileListContent.Empty(FAVORITES_EMPTY),
-                    layoutMode = layoutMode,
-                    gridColumns = gridColumns,
-                    selectedIds = selectedIds,
-                )
-            }
+        FavoritesUiState.Empty -> fileListEmptyUiState(
+            emptyModel = FAVORITES_EMPTY,
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            is FavoritesUiState.Success -> {
-                val folderContent = favoritesUiState.results
-                val items = folderContent.map { info ->
-                    info.toFileListItemUiModel(
-                        showThreeDotMenu = false,
-                        showSpacePath = true,
-                        isMultiPersonal = isMultiPersonal,
-                    )
-                }
-                return FavoritesComposeUiState(
-                    folderContent = folderContent,
-                    content = FileListContent.Items(
-                        items = items,
-                        footerText = FileListFooterText.fromFiles(contextProvider.getContext(), folderContent),
-                    ),
-                    layoutMode = layoutMode,
-                    gridColumns = gridColumns,
-                    selectedIds = selectedIds,
-                )
-            }
-        }
-    }
-
-    private fun isOnlySortOrderChanged(
-        oldList: List<OCFileWithSyncInfo>,
-        newList: List<OCFileWithSyncInfo>,
-    ): Boolean {
-        if (oldList.size != newList.size) return false
-        if (oldList === newList || oldList == newList) return false
-        val oldFreq = oldList.groupingBy { it }.eachCount()
-        val newFreq = newList.groupingBy { it }.eachCount()
-        return oldFreq == newFreq
+        is FavoritesUiState.Success -> fileListItemsUiState(
+            folderContent = favoritesUiState.results,
+            emptyModel = FAVORITES_EMPTY,
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+            showThreeDotMenu = false,
+            showSpacePath = true,
+            isMultiPersonal = isMultiPersonal,
+            footerContext = contextProvider.getContext(),
+        )
     }
 
     private fun sortList(

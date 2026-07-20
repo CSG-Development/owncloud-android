@@ -14,12 +14,14 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
-import com.owncloud.android.presentation.files.filelist.FileListFooterText
-import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
-import com.owncloud.android.presentation.files.filelist.compose.FileListContent
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListEmptyUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
-import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
+import com.owncloud.android.presentation.files.filelist.compose.fileListEmptyUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
+import com.owncloud.android.presentation.files.filelist.isOnlyListOrderChanged
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
@@ -60,7 +62,7 @@ class TagFilesViewModel(
     private val _scrollToTopEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val scrollToTopEvents: SharedFlow<Unit> = _scrollToTopEvents.asSharedFlow()
 
-    val composeUiState: StateFlow<TagFilesComposeUiState> = combine(
+    val composeUiState: StateFlow<FileListComposeUiState> = combine(
         uiState,
         layoutMode,
         gridColumns,
@@ -75,7 +77,7 @@ class TagFilesViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = TagFilesComposeUiState(layoutMode = layoutMode.value),
+        initialValue = FileListComposeUiState(layoutMode = layoutMode.value),
     )
 
     init {
@@ -91,7 +93,7 @@ class TagFilesViewModel(
                     is TagFilesUiState.Success -> state.files
                     else -> emptyList()
                 }
-                if (state is TagFilesUiState.Success && isOnlySortOrderChanged(previousContent, newContent)) {
+                if (state is TagFilesUiState.Success && isOnlyListOrderChanged(previousContent, newContent)) {
                     _scrollToTopEvents.tryEmit(Unit)
                 }
                 previousContent = newContent
@@ -191,15 +193,15 @@ class TagFilesViewModel(
     }
 
     fun isGridModeSetAsPreferred(): Boolean =
-        sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
     fun setGridModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
         layoutMode.value = FileListLayoutMode.Grid
     }
 
     fun setListModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
         layoutMode.value = FileListLayoutMode.List
     }
 
@@ -212,56 +214,45 @@ class TagFilesViewModel(
         layoutMode: FileListLayoutMode,
         gridColumns: Int,
         isRefreshing: Boolean,
-    ): TagFilesComposeUiState =
+    ): FileListComposeUiState =
         when (tagFilesUiState) {
-            TagFilesUiState.Loading -> TagFilesComposeUiState(
-                content = FileListContent.Loading,
+            TagFilesUiState.Loading -> fileListLoadingUiState(
                 layoutMode = layoutMode,
                 gridColumns = gridColumns,
                 isRefreshing = isRefreshing,
             )
 
-            TagFilesUiState.Empty,
-            is TagFilesUiState.Error,
-            -> TagFilesComposeUiState(
-                content = FileListContent.Empty(TAG_FILES_EMPTY),
+            TagFilesUiState.Empty -> fileListEmptyUiState(
+                emptyModel = TAG_FILES_EMPTY,
                 layoutMode = layoutMode,
                 gridColumns = gridColumns,
                 isRefreshing = isRefreshing,
             )
 
-            is TagFilesUiState.Success -> {
-                val folderContent = tagFilesUiState.files
-                val items = folderContent.map { info ->
-                    info.toFileListItemUiModel(
-                        showThreeDotMenu = true,
-                        showSpacePath = false,
-                        isMultiPersonal = false,
-                    )
-                }
-                TagFilesComposeUiState(
-                    folderContent = folderContent,
-                    content = FileListContent.Items(
-                        items = items,
-                        footerText = FileListFooterText.fromFiles(contextProvider.getContext(), folderContent),
-                    ),
-                    layoutMode = layoutMode,
-                    gridColumns = gridColumns,
-                    isRefreshing = isRefreshing,
-                )
-            }
+            is TagFilesUiState.Error -> fileListEmptyUiState(
+                emptyModel = FileListEmptyUiModel(
+                    iconRes = R.drawable.ic_tag_big,
+                    titleText = tagFilesUiState.throwable.localizedMessage
+                        ?: tagFilesUiState.throwable.message
+                        ?: contextProvider.getContext().getString(R.string.common_error_unknown),
+                ),
+                layoutMode = layoutMode,
+                gridColumns = gridColumns,
+                isRefreshing = isRefreshing,
+            )
+
+            is TagFilesUiState.Success -> fileListItemsUiState(
+                folderContent = tagFilesUiState.files,
+                emptyModel = TAG_FILES_EMPTY,
+                layoutMode = layoutMode,
+                gridColumns = gridColumns,
+                isRefreshing = isRefreshing,
+                showThreeDotMenu = true,
+                showSpacePath = false,
+                isMultiPersonal = false,
+                footerContext = contextProvider.getContext(),
+            )
         }
-
-    private fun isOnlySortOrderChanged(
-        oldList: List<OCFileWithSyncInfo>,
-        newList: List<OCFileWithSyncInfo>,
-    ): Boolean {
-        if (oldList.size != newList.size) return false
-        if (oldList === newList || oldList == newList) return false
-        val oldFreq = oldList.groupingBy { it }.eachCount()
-        val newFreq = newList.groupingBy { it }.eachCount()
-        return oldFreq == newFreq
-    }
 
     private fun sortList(
         filesWithSyncInfo: List<OCFileWithSyncInfo>,

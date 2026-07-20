@@ -9,6 +9,7 @@ import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.files.usecases.SearchFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
 import com.owncloud.android.domain.tags.model.OCTag
@@ -18,12 +19,18 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
-import com.owncloud.android.presentation.files.filelist.FileListFooterText
-import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
-import com.owncloud.android.presentation.files.filelist.compose.FileListContent
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.clearFileSelection
+import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListEmptyUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
-import com.owncloud.android.presentation.files.filelist.compose.toFileListItemUiModel
+import com.owncloud.android.presentation.files.filelist.compose.fileListEmptyUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
+import com.owncloud.android.presentation.files.filelist.inverseFileSelection
+import com.owncloud.android.presentation.files.filelist.retainFileSelection
+import com.owncloud.android.presentation.files.filelist.selectAllFiles
+import com.owncloud.android.presentation.files.filelist.toggleFileSelection
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
@@ -77,7 +84,7 @@ class GlobalSearchViewModel(
     private val _openTagsBottomSheetEvent = MutableSharedFlow<List<OCTag>>()
     val openTagsBottomSheetEvent: SharedFlow<List<OCTag>> = _openTagsBottomSheetEvent
 
-    val composeUiState: StateFlow<GlobalSearchComposeUiState> = combine(
+    val composeUiState: StateFlow<FileListComposeUiState> = combine(
         searchUiState,
         selectedIds,
         layoutMode,
@@ -94,9 +101,10 @@ class GlobalSearchViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = GlobalSearchComposeUiState(
-            content = FileListContent.Empty(INITIAL_EMPTY),
+        initialValue = fileListEmptyUiState(
+            emptyModel = INITIAL_EMPTY,
             layoutMode = layoutMode.value,
+            pullToRefreshEnabled = false,
         ),
     )
 
@@ -115,8 +123,10 @@ class GlobalSearchViewModel(
                 if (state is SearchUiState.Success) {
                     _scrollToTopEvents.tryEmit(Unit)
                 }
-                val currentIds = newContent.mapNotNull { it.file.id }.toSet()
-                selectedIds.update { it.intersect(currentIds) }
+                val selectableIds = newContent.mapNotNull { info ->
+                    info.file.id?.takeUnless { info.file.isVirtualFile() }
+                }.toSet()
+                selectedIds.retainFileSelection(selectableIds)
             }
         }
     }
@@ -210,12 +220,12 @@ class GlobalSearchViewModel(
     }
 
     fun setGridModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
         layoutMode.value = FileListLayoutMode.Grid
     }
 
     fun setListModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
         layoutMode.value = FileListLayoutMode.List
     }
 
@@ -224,27 +234,23 @@ class GlobalSearchViewModel(
     }
 
     fun toggleSelection(fileId: Long) {
-        selectedIds.update { current ->
-            if (fileId in current) current - fileId else current + fileId
-        }
+        selectedIds.toggleFileSelection(fileId)
     }
 
     fun clearSelection() {
-        selectedIds.value = emptySet()
+        selectedIds.clearFileSelection()
     }
 
     fun selectAll() {
-        selectedIds.value = composeUiState.value.selectableFileIds().toSet()
+        selectedIds.selectAllFiles(composeUiState.value.selectableFileIds())
     }
 
     fun selectInverse() {
-        val ids = composeUiState.value.selectableFileIds()
-        val current = selectedIds.value
-        selectedIds.value = ids.filterTo(mutableSetOf()) { it !in current }
+        selectedIds.inverseFileSelection(composeUiState.value.selectableFileIds())
     }
 
     fun isGridModeSetAsPreferred(): Boolean =
-        sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
     private fun performSearch(query: String, allowEmptyQuery: Boolean = false) {
         if (query.isBlank() && !allowEmptyQuery) {
@@ -355,62 +361,53 @@ class GlobalSearchViewModel(
         layoutMode: FileListLayoutMode,
         gridColumns: Int,
         isMultiPersonal: Boolean,
-    ): GlobalSearchComposeUiState {
-        return when (searchUiState) {
-            SearchUiState.Initial -> GlobalSearchComposeUiState(
-                content = FileListContent.Empty(INITIAL_EMPTY),
-                layoutMode = layoutMode,
-                gridColumns = gridColumns,
-                selectedIds = selectedIds,
-            )
+    ): FileListComposeUiState = when (searchUiState) {
+        SearchUiState.Initial -> fileListEmptyUiState(
+            emptyModel = INITIAL_EMPTY,
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            is SearchUiState.Loading -> GlobalSearchComposeUiState(
-                content = FileListContent.Loading,
-                layoutMode = layoutMode,
-                gridColumns = gridColumns,
-                selectedIds = selectedIds,
-            )
+        is SearchUiState.Loading -> fileListLoadingUiState(
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            is SearchUiState.Empty -> GlobalSearchComposeUiState(
-                content = FileListContent.Empty(RESULTS_EMPTY),
-                layoutMode = layoutMode,
-                gridColumns = gridColumns,
-                selectedIds = selectedIds,
-            )
+        is SearchUiState.Empty -> fileListEmptyUiState(
+            emptyModel = RESULTS_EMPTY,
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            is SearchUiState.Error -> GlobalSearchComposeUiState(
-                content = FileListContent.Empty(
-                    FileListEmptyUiModel(
-                        iconRes = R.drawable.ic_search,
-                        titleText = searchUiState.message,
-                    ),
-                ),
-                layoutMode = layoutMode,
-                gridColumns = gridColumns,
-                selectedIds = selectedIds,
-            )
+        is SearchUiState.Error -> fileListEmptyUiState(
+            emptyModel = FileListEmptyUiModel(
+                iconRes = R.drawable.ic_search,
+                titleText = searchUiState.message,
+            ),
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+        )
 
-            is SearchUiState.Success -> {
-                val folderContent = searchUiState.results
-                val items = folderContent.map { info ->
-                    info.toFileListItemUiModel(
-                        showThreeDotMenu = true,
-                        showSpacePath = false,
-                        isMultiPersonal = isMultiPersonal,
-                    )
-                }
-                GlobalSearchComposeUiState(
-                    folderContent = folderContent,
-                    content = FileListContent.Items(
-                        items = items,
-                        footerText = FileListFooterText.fromFiles(contextProvider.getContext(), folderContent),
-                    ),
-                    layoutMode = layoutMode,
-                    gridColumns = gridColumns,
-                    selectedIds = selectedIds,
-                )
-            }
-        }
+        is SearchUiState.Success -> fileListItemsUiState(
+            folderContent = searchUiState.results,
+            emptyModel = RESULTS_EMPTY,
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            pullToRefreshEnabled = false,
+            showThreeDotMenu = true,
+            showSpacePath = false,
+            isMultiPersonal = isMultiPersonal,
+            footerContext = contextProvider.getContext(),
+        )
     }
 
     private sealed class SearchUiState(open val query: String) {

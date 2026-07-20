@@ -46,7 +46,7 @@ import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 
 /**
- * Grid cell for file list. Visual parity with [R.layout.grid_item].
+ * Grid cell for file list.
  *
  * @param expandedThumbnail When true (image grid cell with a loaded thumb), media fills the cell
  *   like XML MATCH_PARENT thumbnail sizing; otherwise uses the fixed 72dp icon size.

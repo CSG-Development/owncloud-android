@@ -29,7 +29,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
@@ -37,7 +36,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -46,21 +44,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
@@ -111,7 +99,6 @@ import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.BottomSheetFragmentItemView
 import com.owncloud.android.presentation.common.UIResult
-import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.Companion.newInstance
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.SortDialogListener
@@ -121,10 +108,8 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.createfolder.CreateFolderDialogFragment
 import com.owncloud.android.presentation.files.createshortcut.CreateShortcutDialogFragment
-import com.owncloud.android.presentation.files.filelist.compose.FileList
-import com.owncloud.android.presentation.files.filelist.compose.FileListItemUiModel
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
-import com.owncloud.android.presentation.files.filelist.compose.rememberFileListThumbnail
+import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -194,11 +179,6 @@ class MainFileListFragment : FileFragment(),
     private val listScrollState = LazyListState()
     private val gridScrollState = LazyGridState()
 
-    var actionMode: ActionMode? = null
-
-    private var statusBarColorActionMode: Int? = null
-    private var statusBarColor: Int? = null
-
     var fileActions: FileActions? = null
     var uploadActions: UploadActions? = null
 
@@ -209,132 +189,71 @@ class MainFileListFragment : FileFragment(),
 
     private var isMultiPersonal = false
 
-    private var menu: Menu? = null
-    private var checkedFiles: List<OCFile> = emptyList()
     private var filesToRemove: List<OCFile> = emptyList()
     private var fileSingleFile: OCFile? = null
     private var fileOptionsBottomSheetSingleFileLayout: LinearLayout? = null
     private var succeededTransfers: List<OCTransfer>? = null
     private var numberOfUploadsRefreshed: Int = 0
 
-    private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
+    private val actionModeController = FileListActionModeController(
+        object : FileListActionModeController.Host {
+            override fun requireAppCompatActivity(): AppCompatActivity =
+                requireActivity() as AppCompatActivity
 
-        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            setDrawerStatus(enabled = false)
-            actionMode = mode
+            override fun getCheckedItems(): List<OCFileWithSyncInfo> =
+                this@MainFileListFragment.getCheckedItems()
 
-            val inflater = requireActivity().menuInflater
-            inflater.inflate(R.menu.file_actions_menu, menu)
-            this@MainFileListFragment.menu = menu
+            override fun clearSelection() {
+                mainFileListViewModel.clearSelection()
+            }
 
-            mode?.invalidate()
+            override fun onActionItemClicked(itemId: Int?): Boolean =
+                onFileActionChosen(itemId)
 
-            // Set gray color
-            val window = activity?.window
-            statusBarColor = window?.statusBarColor ?: -1
-
-            // Hide FAB in multi selection mode
-            toggleFabVisibility(false)
-            fileActions?.setBottomBarVisibility(false)
-
-            // Hide sort options view in multi-selection mode
-            binding.optionsLayout.visibility = View.GONE
-
-            return true
-        }
-
-        /**
-         * Updates available action in menu depending on current selection.
-         */
-        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            val checkedFilesWithSyncInfo = getCheckedItems()
-            val checkedCount = checkedFilesWithSyncInfo.size
-            val title = resources.getQuantityString(
-                R.plurals.items_selected_count,
-                checkedCount,
-                checkedCount
-            )
-            mode?.title = title
-
-            checkedFiles = checkedFilesWithSyncInfo.map { it.file }
-
-            val checkedFilesSync = checkedFilesWithSyncInfo.map {
-                OCFileSyncInfo(
-                    fileId = it.file.id!!,
-                    uploadWorkerUuid = it.uploadWorkerUuid,
-                    downloadWorkerUuid = it.downloadWorkerUuid,
-                    isSynchronizing = it.isSynchronizing
+            override fun onPrepareMultiSelect(checkedItems: List<OCFileWithSyncInfo>, menu: Menu?) {
+                val checkedFiles = checkedItems.map { it.file }
+                val displaySelectAll = checkedItems.size != selectableFileIds().size
+                mainFileListViewModel.filterMenuOptions(
+                    checkedFiles,
+                    FileListActionModeController.toSyncInfoList(checkedItems),
+                    displaySelectAll,
+                    isMultiselection = true,
                 )
-            }
 
-            val displaySelectAll = checkedCount != selectableFileIds().size
-            mainFileListViewModel.filterMenuOptions(
-                checkedFiles, checkedFilesSync,
-                displaySelectAll, isMultiselection = true
-            )
-
-            if (checkedFiles.size == 1) {
-                mainFileListViewModel.getAppRegistryForMimeType(checkedFiles.first().mimeType, isMultiselection = true)
-            } else {
-                menu?.let {
-                    openInWebProviders.forEach { (_, menuItemId) ->
-                        it.removeItem(menuItemId)
+                if (checkedFiles.size == 1) {
+                    mainFileListViewModel.getAppRegistryForMimeType(
+                        checkedFiles.first().mimeType,
+                        isMultiselection = true,
+                    )
+                } else {
+                    menu?.let {
+                        openInWebProviders.forEach { (_, menuItemId) ->
+                            it.removeItem(menuItemId)
+                        }
+                        openInWebProviders = emptyMap()
                     }
-                    openInWebProviders = emptyMap()
                 }
+                setRolesAccessibilityToMenuItems()
             }
-            setRolesAccessibilityToMenuItems()
 
-            return true
-        }
+            override fun onEnterMultiSelect() {
+                setDrawerStatus(enabled = false)
+                toggleFabVisibility(false)
+                fileActions?.setBottomBarVisibility(false)
+                binding.optionsLayout.visibility = View.GONE
+            }
 
-        private fun setRolesAccessibilityToMenuItems() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val roleAccessibilityDescription = getString(R.string.button_role_accessibility)
-                menu?.apply {
-                    findItem(R.id.file_action_select_all)?.contentDescription =
-                        "${getString(R.string.actionbar_select_all)} $roleAccessibilityDescription"
-                    findItem(R.id.action_select_inverse)?.contentDescription =
-                        "${getString(R.string.actionbar_select_inverse)} $roleAccessibilityDescription"
-                    findItem(R.id.action_open_file_with)?.contentDescription =
-                        "${getString(R.string.actionbar_open_with)} $roleAccessibilityDescription"
-                    findItem(R.id.action_rename_file)?.contentDescription = "${getString(R.string.common_rename)} $roleAccessibilityDescription"
-                    findItem(R.id.action_move)?.contentDescription = "${getString(R.string.actionbar_move)} $roleAccessibilityDescription"
-                    findItem(R.id.action_copy)?.contentDescription = "${getString(R.string.copy)} $roleAccessibilityDescription"
-                    findItem(R.id.action_send_file)?.contentDescription =
-                        "${getString(R.string.actionbar_send_file)} $roleAccessibilityDescription"
-                    findItem(R.id.action_set_available_offline)?.contentDescription =
-                        "${getString(R.string.set_available_offline)} $roleAccessibilityDescription"
-                    findItem(R.id.action_unset_available_offline)?.contentDescription =
-                        "${getString(R.string.unset_available_offline)} $roleAccessibilityDescription"
-                    findItem(R.id.action_see_details)?.contentDescription =
-                        "${getString(R.string.actionbar_see_details)} $roleAccessibilityDescription"
-                    findItem(R.id.action_remove_file)?.contentDescription = "${getString(R.string.common_remove)} $roleAccessibilityDescription"
-                }
+            override fun onExitMultiSelect() {
+                setDrawerStatus(enabled = true)
+                showOrHideFab(
+                    mainFileListViewModel.fileListOption.value,
+                    mainFileListViewModel.currentFolderDisplayed.value,
+                )
+                fileActions?.setBottomBarVisibility(true)
+                binding.optionsLayout.visibility = View.VISIBLE
             }
         }
-
-        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean =
-            onFileActionChosen(item?.itemId)
-
-        override fun onDestroyActionMode(mode: ActionMode?) {
-            setDrawerStatus(enabled = true)
-            actionMode = null
-
-            // reset to previous color
-            requireActivity().window.statusBarColor = statusBarColor!!
-
-            // show or hide FAB on multi selection mode exit
-            showOrHideFab(mainFileListViewModel.fileListOption.value, mainFileListViewModel.currentFolderDisplayed.value)
-
-            fileActions?.setBottomBarVisibility(true)
-
-            // Show sort options view when multi-selection mode finish
-            binding.optionsLayout.visibility = View.VISIBLE
-
-            mainFileListViewModel.clearSelection()
-        }
-    }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -403,13 +322,12 @@ class MainFileListFragment : FileFragment(),
 
     private fun initViews() {
         setHasOptionsMenu(true)
-        statusBarColorActionMode = ContextCompat.getColor(requireContext(), R.color.action_mode_status_bar_background)
 
         if (mainFileListViewModel.isGridModeSetAsPreferred()) {
             viewType = ViewType.VIEW_TYPE_GRID
             mainFileListViewModel.setGridModeAsPreferred()
             mainFileListViewModel.updateGridColumns(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
             )
         } else {
             viewType = ViewType.VIEW_TYPE_LIST
@@ -446,62 +364,45 @@ class MainFileListFragment : FileFragment(),
 
     private fun setupComposeFileList() {
         val account = AccountUtils.getCurrentOwnCloudAccount(requireContext())
-        binding.composeViewMainFileList.apply {
-            filterTouchesWhenObscured =
-                PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                val composeState by mainFileListViewModel.composeUiState.collectAsState()
-                // Finish ActionMode when selection is cleared from the ViewModel
-                // (e.g. folder change prunes ids) without going through fragment toggles.
-                LaunchedEffect(composeState.hasSelection) {
-                    if (!composeState.hasSelection && actionMode != null) {
-                        actionMode?.finish()
-                    }
-                }
-                HomeCloudTheme {
-                    val filesById = remember(composeState.folderContent) {
-                        composeState.folderContent.associateBy { it.file.id }
-                    }
-                    val filesByIdState = rememberUpdatedState(filesById)
-                    val accountState = rememberUpdatedState(account)
-                    val onItemClick = remember<(FileListItemUiModel) -> Unit> {
-                        { onComposeItemClick(it.fileId) }
-                    }
-                    val onItemLongClick = remember<(FileListItemUiModel) -> Unit> {
-                        { onComposeItemLongClick(it.fileId) }
-                    }
-                    val onThreeDotClick = remember<(FileListItemUiModel) -> Unit> {
-                        { onComposeThreeDotClick(it.fileId) }
-                    }
-                    val onRefresh = remember { { refreshFileListFromPull() } }
-                    val thumbnail: @Composable (FileListItemUiModel) -> Bitmap? =
-                        remember {
-                            { item ->
-                                val file = filesByIdState.value[item.fileId]?.file
-                                rememberFileListThumbnail(
-                                    file = file?.takeUnless { it.isFolder || it.isVirtualFile() },
-                                    account = accountState.value,
-                                )
-                            }
-                        }
-                    FileList(
-                        content = composeState.content,
-                        layoutMode = composeState.layoutMode,
-                        selectedIds = composeState.selectedIds,
-                        gridColumns = composeState.gridColumns,
-                        listState = listScrollState,
-                        gridState = gridScrollState,
-                        isRefreshing = composeState.isRefreshing,
-                        pullToRefreshEnabled = composeState.pullToRefreshEnabled,
-                        onRefresh = onRefresh,
-                        modifier = Modifier.fillMaxSize(),
-                        thumbnail = thumbnail,
-                        onItemClick = onItemClick,
-                        onItemLongClick = onItemLongClick,
-                        onThreeDotClick = onThreeDotClick,
-                    )
-                }
+        binding.composeViewMainFileList.setFileListContent(
+            uiStateFlow = mainFileListViewModel.composeUiState,
+            account = account,
+            listState = listScrollState,
+            gridState = gridScrollState,
+            onItemClick = ::onComposeItemClick,
+            onItemLongClick = ::onComposeItemLongClick,
+            onThreeDotClick = ::onComposeThreeDotClick,
+            onRefresh = ::refreshFileListFromPull,
+            onSelectionBecameEmpty = { actionModeController.finish() },
+        )
+    }
+
+    private fun setRolesAccessibilityToMenuItems() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val roleAccessibilityDescription = getString(R.string.button_role_accessibility)
+            actionModeController.menu?.apply {
+                findItem(R.id.file_action_select_all)?.contentDescription =
+                    "${getString(R.string.actionbar_select_all)} $roleAccessibilityDescription"
+                findItem(R.id.action_select_inverse)?.contentDescription =
+                    "${getString(R.string.actionbar_select_inverse)} $roleAccessibilityDescription"
+                findItem(R.id.action_open_file_with)?.contentDescription =
+                    "${getString(R.string.actionbar_open_with)} $roleAccessibilityDescription"
+                findItem(R.id.action_rename_file)?.contentDescription =
+                    "${getString(R.string.common_rename)} $roleAccessibilityDescription"
+                findItem(R.id.action_move)?.contentDescription =
+                    "${getString(R.string.actionbar_move)} $roleAccessibilityDescription"
+                findItem(R.id.action_copy)?.contentDescription =
+                    "${getString(R.string.copy)} $roleAccessibilityDescription"
+                findItem(R.id.action_send_file)?.contentDescription =
+                    "${getString(R.string.actionbar_send_file)} $roleAccessibilityDescription"
+                findItem(R.id.action_set_available_offline)?.contentDescription =
+                    "${getString(R.string.set_available_offline)} $roleAccessibilityDescription"
+                findItem(R.id.action_unset_available_offline)?.contentDescription =
+                    "${getString(R.string.unset_available_offline)} $roleAccessibilityDescription"
+                findItem(R.id.action_see_details)?.contentDescription =
+                    "${getString(R.string.actionbar_see_details)} $roleAccessibilityDescription"
+                findItem(R.id.action_remove_file)?.contentDescription =
+                    "${getString(R.string.common_remove)} $roleAccessibilityDescription"
             }
         }
     }
@@ -683,19 +584,20 @@ class MainFileListFragment : FileFragment(),
 
     private fun observeMenuOptions() {
         collectLatestLifecycleFlow(mainFileListViewModel.menuOptions) { menuOptions ->
+            val checkedFiles = actionModeController.checkedFiles
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
             } else {
                 false
             }
-            menu?.filterMenuOptions(menuOptions, hasWritePermission)
+            actionModeController.menu?.filterMenuOptions(menuOptions, hasWritePermission)
         }
     }
 
     private fun observeAppRegistryMimeType() {
         collectLatestLifecycleFlow(mainFileListViewModel.appRegistryMimeType) { appRegistryMimeType ->
             val appProviders = appRegistryMimeType?.appProviders
-            menu?.let {
+            actionModeController.menu?.let {
                 openInWebProviders = addOpenInWebMenuOptions(it, openInWebProviders, appProviders)
             }
         }
@@ -985,7 +887,7 @@ class MainFileListFragment : FileFragment(),
             binding.spaceHeader.spaceHeaderName.text = fileListUiState.space?.name
             binding.spaceHeader.spaceHeaderSubtitle.text = fileListUiState.space?.description
 
-            actionMode?.invalidate()
+            actionModeController.invalidate()
         }
     }
 
@@ -1124,7 +1026,7 @@ class MainFileListFragment : FileFragment(),
         } else {
             mainFileListViewModel.setGridModeAsPreferred()
             mainFileListViewModel.updateGridColumns(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
             )
         }
     }
@@ -1138,7 +1040,7 @@ class MainFileListFragment : FileFragment(),
     fun onContentWidthChanged() {
         if (mainFileListViewModel.isGridModeSetAsPreferred()) {
             mainFileListViewModel.updateGridColumns(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
             )
         }
     }
@@ -1148,8 +1050,8 @@ class MainFileListFragment : FileFragment(),
         return args != null && args.getBoolean(ARG_PICKING_A_FOLDER, false)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onDestroyView() {
+        super.onDestroyView()
         _binding = null
     }
 
@@ -1694,23 +1596,16 @@ class MainFileListFragment : FileFragment(),
      * Update or remove the actionMode after applying any change to the selected items.
      */
     private fun updateActionModeAfterTogglingSelected() {
-        val selectedItems = mainFileListViewModel.composeUiState.value.selectedItemCount
-        if (selectedItems == 0) {
-            actionMode?.finish()
-        } else {
-            if (actionMode == null) {
-                actionMode = (requireActivity() as AppCompatActivity).startSupportActionMode(actionModeCallback)
-            }
-            // Title is set in onPrepareActionMode via quantity string.
-            actionMode?.invalidate()
-        }
+        actionModeController.syncWithSelectionCount(
+            mainFileListViewModel.composeUiState.value.selectedItemCount,
+        )
     }
 
     private fun onComposeItemClick(fileId: Long) {
         val ocFileWithSyncInfo = findFileWithSyncInfo(fileId) ?: return
         val ocFile = ocFileWithSyncInfo.file
 
-        // Match FileListAdapter: virtual files always use their own click path (never selection toggle).
+        // Virtual files always use their own click path (never selection toggle).
         if (ocFile.isVirtualFile()) {
             if (ocFile.isUploadVirtualFile()) {
                 showVirtualFilePopupMenu(ocFileWithSyncInfo, binding.composeViewMainFileList)
@@ -1718,7 +1613,7 @@ class MainFileListFragment : FileFragment(),
             return
         }
 
-        if (actionMode != null) {
+        if (actionModeController.isActive) {
             toggleSelection(fileId)
             return
         }
@@ -1736,12 +1631,10 @@ class MainFileListFragment : FileFragment(),
         if (requireContext().isLandscapeMode && !requireContext().isTablet) return
 
         val file = findFileWithSyncInfo(fileId)?.file ?: return
-        // Match FileListAdapter: virtual files are not selectable via long-press.
+        // Virtual files are not selectable via long-press.
         if (file.isVirtualFile()) return
 
-        if (actionMode == null) {
-            actionMode = (requireActivity() as AppCompatActivity).startSupportActionMode(actionModeCallback)
-        }
+        actionModeController.startIfNeeded()
         toggleSelection(fileId)
     }
 

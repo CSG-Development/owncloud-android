@@ -6,7 +6,7 @@ import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 
 /**
  * Aggregated file/folder count label shown in the file-list footer.
- * Shared by [FileListAdapter] and Compose [com.owncloud.android.presentation.files.filelist.compose.FileList] hosts.
+ * Used by Compose [com.owncloud.android.presentation.files.filelist.compose.FileList] hosts.
  */
 object FileListFooterText {
 
