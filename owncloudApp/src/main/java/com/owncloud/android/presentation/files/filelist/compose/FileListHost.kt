@@ -3,8 +3,8 @@ package com.owncloud.android.presentation.files.filelist.compose
 import android.accounts.Account
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,7 +17,9 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.utils.PreferenceUtils
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * Shared Compose host for file-list screens: theme, state collection, thumbnails, callbacks.
@@ -29,9 +31,8 @@ import kotlinx.coroutines.flow.StateFlow
 fun FileListHost(
     uiStateFlow: StateFlow<FileListComposeUiState>,
     account: Account?,
-    listState: LazyListState,
-    gridState: LazyGridState,
     modifier: Modifier = Modifier,
+    scrollToTopEvents: Flow<Unit> = emptyFlow(),
     onItemClick: (fileId: Long) -> Unit,
     onItemLongClick: (fileId: Long) -> Unit = {},
     onThreeDotClick: (fileId: Long) -> Unit = {},
@@ -39,11 +40,23 @@ fun FileListHost(
     onSelectionBecameEmpty: (() -> Unit)? = null,
 ) {
     val composeState by uiStateFlow.collectAsState()
+    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
+    val layoutModeState = rememberUpdatedState(composeState.layoutMode)
     val onSelectionBecameEmptyState = rememberUpdatedState(onSelectionBecameEmpty)
 
     LaunchedEffect(composeState.hasSelection) {
         if (!composeState.hasSelection) {
             onSelectionBecameEmptyState.value?.invoke()
+        }
+    }
+
+    LaunchedEffect(scrollToTopEvents) {
+        scrollToTopEvents.collect {
+            when (layoutModeState.value) {
+                FileListLayoutMode.List -> listState.scrollToItem(0)
+                FileListLayoutMode.Grid -> gridState.scrollToItem(0)
+            }
         }
     }
 
@@ -93,13 +106,12 @@ fun FileListHost(
 fun ComposeView.setFileListContent(
     uiStateFlow: StateFlow<FileListComposeUiState>,
     account: Account?,
-    listState: LazyListState,
-    gridState: LazyGridState,
     onItemClick: (fileId: Long) -> Unit,
     onItemLongClick: (fileId: Long) -> Unit = {},
     onThreeDotClick: (fileId: Long) -> Unit = {},
     onRefresh: (() -> Unit)? = null,
     onSelectionBecameEmpty: (() -> Unit)? = null,
+    scrollToTopEvents: Flow<Unit> = emptyFlow(),
 ) {
     filterTouchesWhenObscured =
         PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
@@ -108,8 +120,7 @@ fun ComposeView.setFileListContent(
         FileListHost(
             uiStateFlow = uiStateFlow,
             account = account,
-            listState = listState,
-            gridState = gridState,
+            scrollToTopEvents = scrollToTopEvents,
             onItemClick = onItemClick,
             onItemLongClick = onItemLongClick,
             onThreeDotClick = onThreeDotClick,

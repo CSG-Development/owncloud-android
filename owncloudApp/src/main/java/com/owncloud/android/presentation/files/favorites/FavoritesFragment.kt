@@ -8,11 +8,8 @@ import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.owncloud.android.R
 import com.owncloud.android.databinding.FavoritesFragmentBinding
 import com.owncloud.android.domain.files.model.OCFile
@@ -32,14 +29,12 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import com.owncloud.android.presentation.files.filelist.FileListActionModeController
-import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -59,9 +54,6 @@ class FavoritesFragment : Fragment(),
             AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name
         )
     }
-
-    private val listScrollState = LazyListState()
-    private val gridScrollState = LazyGridState()
 
     private val actionModeController = FileListActionModeController(
         object : FileListActionModeController.Host {
@@ -144,8 +136,7 @@ class FavoritesFragment : Fragment(),
         binding.composeViewFavorites.setFileListContent(
             uiStateFlow = favoritesViewModel.composeUiState,
             account = account,
-            listState = listScrollState,
-            gridState = gridScrollState,
+            scrollToTopEvents = favoritesViewModel.scrollToTopEvents,
             onItemClick = ::onComposeItemClick,
             onItemLongClick = ::onComposeItemLongClick,
             onSelectionBecameEmpty = { actionModeController.finish() },
@@ -165,19 +156,6 @@ class FavoritesFragment : Fragment(),
 
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
             disableSelectionMode()
-        }
-
-        collectLatestLifecycleFlow(favoritesViewModel.scrollToTopEvents) {
-            scrollFileListToTop()
-        }
-    }
-
-    private fun scrollFileListToTop() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            when (favoritesViewModel.composeUiState.value.layoutMode) {
-                FileListLayoutMode.List -> listScrollState.scrollToItem(0)
-                FileListLayoutMode.Grid -> gridScrollState.scrollToItem(0)
-            }
         }
     }
 

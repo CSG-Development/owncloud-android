@@ -8,12 +8,9 @@ import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.view.forEach
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GlobalSearchFragmentBinding
 import com.owncloud.android.domain.files.model.OCFile
@@ -35,7 +32,6 @@ import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import com.owncloud.android.presentation.files.filelist.FileListActionModeController
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
-import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
@@ -45,7 +41,6 @@ import com.owncloud.android.ui.activity.BaseActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -66,9 +61,6 @@ class GlobalSearchFragment : Fragment(),
             AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name
         )
     }
-
-    private val listScrollState = LazyListState()
-    private val gridScrollState = LazyGridState()
 
     private val actionModeController = FileListActionModeController(
         object : FileListActionModeController.Host {
@@ -153,8 +145,7 @@ class GlobalSearchFragment : Fragment(),
         binding.composeViewGlobalSearch.setFileListContent(
             uiStateFlow = globalSearchViewModel.composeUiState,
             account = account,
-            listState = listScrollState,
-            gridState = gridScrollState,
+            scrollToTopEvents = globalSearchViewModel.scrollToTopEvents,
             onItemClick = ::onComposeItemClick,
             onItemLongClick = ::onComposeItemLongClick,
             onThreeDotClick = ::onComposeThreeDotClick,
@@ -367,19 +358,6 @@ class GlobalSearchFragment : Fragment(),
 
         collectLatestLifecycleFlow(globalSearchViewModel.openTagsBottomSheetEvent) { tags ->
             showTagFilterBottomSheet(tags)
-        }
-
-        collectLatestLifecycleFlow(globalSearchViewModel.scrollToTopEvents) {
-            scrollFileListToTop()
-        }
-    }
-
-    private fun scrollFileListToTop() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            when (globalSearchViewModel.composeUiState.value.layoutMode) {
-                FileListLayoutMode.List -> listScrollState.scrollToItem(0)
-                FileListLayoutMode.Grid -> gridScrollState.scrollToItem(0)
-            }
         }
     }
 

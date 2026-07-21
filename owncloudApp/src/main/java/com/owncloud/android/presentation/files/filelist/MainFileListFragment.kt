@@ -47,14 +47,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.bumptech.glide.Glide
 import com.getbase.floatingactionbutton.AddFloatingActionButton
@@ -108,7 +105,6 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.createfolder.CreateFolderDialogFragment
 import com.owncloud.android.presentation.files.createshortcut.CreateShortcutDialogFragment
-import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
@@ -130,7 +126,6 @@ import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
@@ -174,10 +169,6 @@ class MainFileListFragment : FileFragment(),
     private val binding get() = _binding!!
 
     private lateinit var viewType: ViewType
-
-    /** Scroll positions stay in the view layer; list/selection/refresh state lives in the ViewModel. */
-    private val listScrollState = LazyListState()
-    private val gridScrollState = LazyGridState()
 
     var fileActions: FileActions? = null
     var uploadActions: UploadActions? = null
@@ -367,8 +358,7 @@ class MainFileListFragment : FileFragment(),
         binding.composeViewMainFileList.setFileListContent(
             uiStateFlow = mainFileListViewModel.composeUiState,
             account = account,
-            listState = listScrollState,
-            gridState = gridScrollState,
+            scrollToTopEvents = mainFileListViewModel.scrollToTopEvents,
             onItemClick = ::onComposeItemClick,
             onItemLongClick = ::onComposeItemLongClick,
             onThreeDotClick = ::onComposeThreeDotClick,
@@ -430,15 +420,6 @@ class MainFileListFragment : FileFragment(),
     private fun findFileWithSyncInfo(fileId: Long): OCFileWithSyncInfo? =
         mainFileListViewModel.composeUiState.value.findFile(fileId)
 
-    private fun scrollFileListToTop() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            when (mainFileListViewModel.composeUiState.value.layoutMode) {
-                FileListLayoutMode.List -> listScrollState.scrollToItem(0)
-                FileListLayoutMode.Grid -> gridScrollState.scrollToItem(0)
-            }
-        }
-    }
-
     private fun setViewTypeSelector(additionalView: SortOptionsView.AdditionalView) {
         if (isPickingAFolder()) {
             binding.optionsLayout.onCreateFolderListener = this
@@ -475,7 +456,6 @@ class MainFileListFragment : FileFragment(),
 
         // Observe the file list UI state
         observeFileListUiState()
-        observeScrollToTop()
 
         /* FileOperationsViewModel observables */
         // Observe the refresh folder operation
@@ -849,12 +829,6 @@ class MainFileListFragment : FileFragment(),
                 .submit()
                 .get()
         }
-
-    private fun observeScrollToTop() {
-        collectLatestLifecycleFlow(mainFileListViewModel.scrollToTopEvents) {
-            scrollFileListToTop()
-        }
-    }
 
     private fun observeFileListUiState() {
         collectLatestLifecycleFlow(mainFileListViewModel.fileListUiState) { fileListUiState ->

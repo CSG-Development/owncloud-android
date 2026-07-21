@@ -6,11 +6,8 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.owncloud.android.R
 import com.owncloud.android.databinding.TagFilesFragmentBinding
 import com.owncloud.android.domain.files.model.OCFile
@@ -26,14 +23,12 @@ import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
-import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -49,9 +44,6 @@ class TagFilesFragment : Fragment(),
 
     private var fileSingleFile: OCFileWithSyncInfo? = null
     private var filesToRemove: List<OCFile> = emptyList()
-
-    private val listScrollState = LazyListState()
-    private val gridScrollState = LazyGridState()
 
     private val serverTagId: String by lazy { arguments?.getString(ARG_SERVER_TAG_ID).orEmpty() }
     val tagName: String by lazy { "“${arguments?.getString(ARG_TAG_NAME).orEmpty()}”" }
@@ -102,8 +94,7 @@ class TagFilesFragment : Fragment(),
         binding.composeViewTagFiles.setFileListContent(
             uiStateFlow = tagFilesViewModel.composeUiState,
             account = account,
-            listState = listScrollState,
-            gridState = gridScrollState,
+            scrollToTopEvents = tagFilesViewModel.scrollToTopEvents,
             onItemClick = ::onComposeItemClick,
             onThreeDotClick = ::onComposeThreeDotClick,
             onRefresh = ::reloadFiles,
@@ -150,18 +141,6 @@ class TagFilesFragment : Fragment(),
                 is UIResult.Error -> {
                     fileActivity.dismissLoadingDialog()
                 }
-            }
-        }
-        collectLatestLifecycleFlow(tagFilesViewModel.scrollToTopEvents) {
-            scrollFileListToTop()
-        }
-    }
-
-    private fun scrollFileListToTop() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            when (tagFilesViewModel.composeUiState.value.layoutMode) {
-                FileListLayoutMode.List -> listScrollState.scrollToItem(0)
-                FileListLayoutMode.Grid -> gridScrollState.scrollToItem(0)
             }
         }
     }
