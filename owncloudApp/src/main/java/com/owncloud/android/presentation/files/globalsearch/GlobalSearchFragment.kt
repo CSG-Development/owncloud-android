@@ -1,28 +1,21 @@
 package com.owncloud.android.presentation.files.globalsearch
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.ActionMode
 import androidx.core.view.forEach
-import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GlobalSearchFragmentBinding
-import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.files.model.OCFile
-import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.tags.model.OCTag
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
@@ -37,8 +30,9 @@ import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.filelist.ColumnQuantity
-import com.owncloud.android.presentation.files.filelist.FileListAdapter
+import com.owncloud.android.presentation.files.filelist.FileListActionModeController
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
+import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -53,7 +47,6 @@ import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 
 class GlobalSearchFragment : Fragment(),
-    FileListAdapter.FileListAdapterListener,
     SortBottomSheetFragment.SortDialogListener,
     SortOptionsView.SortOptionsListener {
 
@@ -69,99 +62,45 @@ class GlobalSearchFragment : Fragment(),
         )
     }
 
-    private val layoutManager: StaggeredGridLayoutManager by lazy {
-        if (globalSearchViewModel.isGridModeSetAsPreferred()) {
-            StaggeredGridLayoutManager(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root),
-                RecyclerView.VERTICAL
-            )
-        } else {
-            StaggeredGridLayoutManager(1, RecyclerView.VERTICAL)
-        }
-    }
-    private val fileListAdapter: FileListAdapter by lazy {
-        FileListAdapter(
-            context = requireContext(),
-            layoutManager = layoutManager,
-            isPickerMode = false,
-            listener = this,
-            isMultiPersonal = isMultiPersonal
-        )
-    }
-    private var isMultiPersonal = false
+    private val actionModeController = FileListActionModeController(
+        object : FileListActionModeController.Host {
+            override fun requireAppCompatActivity(): AppCompatActivity =
+                requireActivity() as AppCompatActivity
 
-    private var actionMode: ActionMode? = null
-    private var statusBarColor: Int? = null
-    private var menu: Menu? = null
-    private var checkedFiles: List<OCFile> = emptyList()
+            override fun getCheckedItems(): List<OCFileWithSyncInfo> =
+                this@GlobalSearchFragment.getCheckedItems()
 
-    private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
+            override fun clearSelection() {
+                globalSearchViewModel.clearSelection()
+            }
 
-        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            setDrawerStatus(enabled = false)
-            actionMode = mode
+            override fun onActionItemClicked(itemId: Int?): Boolean =
+                onFileActionChosen(itemId)
 
-            val inflater = requireActivity().menuInflater
-            inflater.inflate(R.menu.file_actions_menu, menu)
-            this@GlobalSearchFragment.menu = menu
-
-            mode?.invalidate()
-
-            val window = activity?.window
-            statusBarColor = window?.statusBarColor ?: -1
-
-            (requireActivity() as? MainFileListFragment.FileActions)?.setBottomBarVisibility(false)
-
-            binding.optionsLayout.visibility = View.GONE
-
-            return true
-        }
-
-        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            val checkedFilesWithSyncInfo = fileListAdapter.getCheckedItems()
-            val checkedCount = checkedFilesWithSyncInfo.size
-            val title = resources.getQuantityString(
-                R.plurals.items_selected_count,
-                checkedCount,
-                checkedCount
-            )
-            mode?.title = title
-
-            checkedFiles = checkedFilesWithSyncInfo.map { it.file }
-
-            val checkedFilesSync = checkedFilesWithSyncInfo.map {
-                OCFileSyncInfo(
-                    fileId = it.file.id!!,
-                    uploadWorkerUuid = it.uploadWorkerUuid,
-                    downloadWorkerUuid = it.downloadWorkerUuid,
-                    isSynchronizing = it.isSynchronizing
+            override fun onPrepareMultiSelect(checkedItems: List<OCFileWithSyncInfo>, menu: Menu?) {
+                val displaySelectAll =
+                    checkedItems.size != globalSearchViewModel.composeUiState.value.selectableFileIds().size
+                globalSearchViewModel.filterMenuOptions(
+                    checkedItems.map { it.file },
+                    FileListActionModeController.toSyncInfoList(checkedItems),
+                    displaySelectAll,
+                    isMultiselection = true,
                 )
             }
 
-            val displaySelectAll = checkedCount != fileListAdapter.itemCount - 1 // -1 because one of them is the footer
-            globalSearchViewModel.filterMenuOptions(
-                checkedFiles, checkedFilesSync,
-                displaySelectAll, isMultiselection = true
-            )
-            return true
+            override fun onEnterMultiSelect() {
+                setDrawerStatus(enabled = false)
+                (requireActivity() as? MainFileListFragment.FileActions)?.setBottomBarVisibility(false)
+                binding.optionsLayout.visibility = View.GONE
+            }
+
+            override fun onExitMultiSelect() {
+                setDrawerStatus(enabled = true)
+                (requireActivity() as? MainFileListFragment.FileActions)?.setBottomBarVisibility(true)
+                binding.optionsLayout.visibility = View.VISIBLE
+            }
         }
-
-        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean =
-            onFileActionChosen(item?.itemId)
-
-        override fun onDestroyActionMode(mode: ActionMode?) {
-            setDrawerStatus(enabled = true)
-            actionMode = null
-
-            statusBarColor?.let { requireActivity().window.statusBarColor = it }
-
-            (requireActivity() as? MainFileListFragment.FileActions)?.setBottomBarVisibility(true)
-
-            binding.optionsLayout.visibility = View.VISIBLE
-
-            fileListAdapter.clearSelection()
-        }
-    }
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = GlobalSearchFragmentBinding.inflate(inflater, container, false)
@@ -171,7 +110,7 @@ class GlobalSearchFragment : Fragment(),
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-        isMultiPersonal = capabilityViewModel.checkMultiPersonal()
+        globalSearchViewModel.setMultiPersonal(capabilityViewModel.checkMultiPersonal())
         initViews()
         subscribeToViewModels()
     }
@@ -182,31 +121,43 @@ class GlobalSearchFragment : Fragment(),
     }
 
     private fun initViews() {
-        binding.optionsLayout.viewTypeSelected =
-            if (globalSearchViewModel.isGridModeSetAsPreferred()) ViewType.VIEW_TYPE_GRID else ViewType.VIEW_TYPE_LIST
+        if (globalSearchViewModel.isGridModeSetAsPreferred()) {
+            binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_GRID
+            globalSearchViewModel.setGridModeAsPreferred()
+            globalSearchViewModel.updateGridColumns(
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
+            )
+        } else {
+            binding.optionsLayout.viewTypeSelected = ViewType.VIEW_TYPE_LIST
+            globalSearchViewModel.setListModeAsPreferred()
+        }
         binding.optionsLayout.sortTypeSelected = globalSearchViewModel.getSortType()
         binding.optionsLayout.sortOrderSelected = globalSearchViewModel.getSortOrder()
-
-        binding.recyclerViewMainFileList.layoutManager = layoutManager
-        binding.recyclerViewMainFileList.adapter = fileListAdapter
-
         binding.optionsLayout.onSortOptionsListener = this
         binding.optionsLayout.selectAdditionalView(SortOptionsView.AdditionalView.VIEW_TYPE)
 
         setupFilterButtons()
-        showInitialState()
+        setupComposeFileList()
+    }
+
+    private fun setupComposeFileList() {
+        val account = AccountUtils.getCurrentOwnCloudAccount(requireContext())
+        binding.composeViewGlobalSearch.setFileListContent(
+            uiStateFlow = globalSearchViewModel.composeUiState,
+            account = account,
+            scrollToTopEvents = globalSearchViewModel.scrollToTopEvents,
+            onItemClick = ::onComposeItemClick,
+            onItemLongClick = ::onComposeItemLongClick,
+            onThreeDotClick = ::onComposeThreeDotClick,
+            onSelectionBecameEmpty = { actionModeController.finish() },
+        )
     }
 
     private fun setupFilterButtons() {
-        val filterTypeButton = binding.searchFilters.filterTypeButton
-        val filterDateButton = binding.searchFilters.filterDateButton
-        val filterSizeButton = binding.searchFilters.filterSizeButton
-        val filterTagsButton = binding.searchFilters.filterTagsButton
-
-        filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
-        filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
-        filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
-        filterTagsButton.setOnClickListener { loadTags() }
+        binding.searchFilters.filterTypeButton.setOnClickListener { showTypeFilterBottomSheet() }
+        binding.searchFilters.filterDateButton.setOnClickListener { showDateFilterBottomSheet() }
+        binding.searchFilters.filterSizeButton.setOnClickListener { showSizeFilterBottomSheet() }
+        binding.searchFilters.filterTagsButton.setOnClickListener { loadTags() }
     }
 
     private fun loadTags() {
@@ -378,37 +329,14 @@ class GlobalSearchFragment : Fragment(),
     }
 
     private fun subscribeToViewModels() {
-        collectLatestLifecycleFlow(globalSearchViewModel.searchUiState) { uiState ->
-            when (uiState) {
-                is GlobalSearchViewModel.SearchUiState.Initial -> {
-                    showInitialState()
-                }
-
-                is GlobalSearchViewModel.SearchUiState.Loading -> {
-                    showLoading()
-                }
-
-                is GlobalSearchViewModel.SearchUiState.Success -> {
-                    showResults(uiState.results)
-                }
-
-                is GlobalSearchViewModel.SearchUiState.Empty -> {
-                    showEmptyState()
-                }
-
-                is GlobalSearchViewModel.SearchUiState.Error -> {
-                    showError(uiState.message)
-                }
-            }
-        }
-
         collectLatestLifecycleFlow(globalSearchViewModel.menuOptions) { menuOptions ->
+            val checkedFiles = actionModeController.checkedFiles
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
             } else {
                 false
             }
-            menu?.filterMenuOptions(menuOptions, hasWritePermission)
+            actionModeController.menu?.filterMenuOptions(menuOptions, hasWritePermission)
         }
 
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
@@ -433,80 +361,70 @@ class GlobalSearchFragment : Fragment(),
         }
     }
 
-    private fun showInitialState() {
-        binding.recyclerViewMainFileList.isVisible = false
-        binding.transfersListEmpty.root.isVisible = true
-        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search_2)
-        binding.transfersListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_global_search_initial_title)
-        binding.transfersListEmpty.listEmptyDatasetSubTitle.text = ""
-    }
-
-    private fun showLoading() {
-        binding.recyclerViewMainFileList.isVisible = false
-        binding.transfersListEmpty.root.isVisible = false
-    }
-
-    private fun showResults(results: List<OCFileWithSyncInfo>) {
-        binding.recyclerViewMainFileList.isVisible = true
-        binding.transfersListEmpty.root.isVisible = false
-
-        fileListAdapter.updateFileList(
-            filesToAdd = results,
-            fileListOption = FileListOption.GLOBAL_SEARCH,
-        ) {
-            binding.recyclerViewMainFileList.post { binding.recyclerViewMainFileList.scrollToPosition(0) }
-        }
-    }
-
-    private fun showEmptyState() {
-        binding.recyclerViewMainFileList.isVisible = false
-        binding.transfersListEmpty.root.isVisible = true
-        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search_2)
-        binding.transfersListEmpty.listEmptyDatasetTitle.setText(R.string.homecloud_global_search_empty_title)
-        binding.transfersListEmpty.listEmptyDatasetSubTitle.setText(R.string.homecloud_global_search_empty_subtitle)
-    }
-
-    private fun showError(message: String) {
-        binding.recyclerViewMainFileList.isVisible = false
-        binding.transfersListEmpty.root.isVisible = true
-        binding.transfersListEmpty.listEmptyDatasetIcon.setImageResource(R.drawable.ic_search)
-        binding.transfersListEmpty.listEmptyDatasetTitle.text = message
-        binding.transfersListEmpty.listEmptyDatasetSubTitle.text = ""
-    }
-
     private fun setDrawerStatus(enabled: Boolean) {
         (activity as? FileActivity)?.setDrawerLockMode(
             if (enabled) DrawerLayout.LOCK_MODE_UNLOCKED else DrawerLayout.LOCK_MODE_LOCKED_CLOSED
         )
     }
 
-    private fun toggleSelection(position: Int) {
-        fileListAdapter.toggleSelection(position)
+    private fun getCheckedItems(): List<OCFileWithSyncInfo> =
+        globalSearchViewModel.composeUiState.value.checkedItems()
+
+    private fun findFileWithSyncInfo(fileId: Long): OCFileWithSyncInfo? =
+        globalSearchViewModel.composeUiState.value.findFile(fileId)
+
+    private fun toggleSelection(fileId: Long) {
+        globalSearchViewModel.toggleSelection(fileId)
         updateActionModeAfterTogglingSelected()
     }
 
     private fun updateActionModeAfterTogglingSelected() {
-        val selectedItems = fileListAdapter.selectedItemCount
-        if (selectedItems == 0) {
-            actionMode?.finish()
-        } else {
-            if (actionMode == null) {
-                actionMode = (requireActivity() as AppCompatActivity).startSupportActionMode(actionModeCallback)
-            }
-            actionMode?.apply {
-                title = selectedItems.toString()
-                invalidate()
-            }
-        }
+        actionModeController.syncWithSelectionCount(
+            globalSearchViewModel.composeUiState.value.selectedItemCount,
+        )
     }
 
     private fun disableSelectionMode() {
-        fileListAdapter.clearSelection()
+        globalSearchViewModel.clearSelection()
         updateActionModeAfterTogglingSelected()
     }
 
+    private fun onComposeItemClick(fileId: Long) {
+        val ocFileWithSyncInfo = findFileWithSyncInfo(fileId) ?: return
+        val file = ocFileWithSyncInfo.file
+
+        if (file.isVirtualFile()) return
+
+        if (actionModeController.isActive) {
+            toggleSelection(fileId)
+            return
+        }
+
+        val fileDisplayActivity = requireActivity() as? FileDisplayActivity
+        if (file.isFolder) {
+            fileDisplayActivity?.startFolderPreview(file)
+        } else {
+            fileDisplayActivity?.onFileClicked(file)
+        }
+    }
+
+    private fun onComposeItemLongClick(fileId: Long) {
+        if (requireContext().isLandscapeMode && !requireContext().isTablet) return
+
+        val file = findFileWithSyncInfo(fileId)?.file ?: return
+        if (file.isVirtualFile()) return
+
+        actionModeController.startIfNeeded()
+        toggleSelection(fileId)
+    }
+
+    private fun onComposeThreeDotClick(fileId: Long) {
+        val file = findFileWithSyncInfo(fileId)?.file ?: return
+        (requireActivity() as? MainFileListFragment.FileActions)?.showDetails(file)
+    }
+
     private fun onFileActionChosen(menuId: Int?): Boolean {
-        val checkedFilesWithSyncInfo = fileListAdapter.getCheckedItems()
+        val checkedFilesWithSyncInfo = getCheckedItems()
 
         if (checkedFilesWithSyncInfo.isEmpty()) {
             return false
@@ -595,13 +513,13 @@ class GlobalSearchFragment : Fragment(),
 
         return when (menuId) {
             R.id.file_action_select_all -> {
-                fileListAdapter.selectAll()
+                globalSearchViewModel.selectAll()
                 updateActionModeAfterTogglingSelected()
                 true
             }
 
             R.id.action_select_inverse -> {
-                fileListAdapter.selectInverse()
+                globalSearchViewModel.selectInverse()
                 updateActionModeAfterTogglingSelected()
                 true
             }
@@ -683,60 +601,23 @@ class GlobalSearchFragment : Fragment(),
         }
     }
 
-    // FileListAdapterListener implementation
-    override fun onItemClick(ocFileWithSyncInfo: OCFileWithSyncInfo, position: Int) {
-        if (actionMode != null) {
-            toggleSelection(position)
-            return
-        }
-
-        val file = ocFileWithSyncInfo.file
-        val fileDisplayActivity = requireActivity() as? FileDisplayActivity
-        if (file.isFolder) {
-            fileDisplayActivity?.startFolderPreview(file)
-        } else {
-            fileDisplayActivity?.onFileClicked(file)
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun onLongItemClick(position: Int): Boolean {
-        if (requireContext().isLandscapeMode && !requireContext().isTablet) return false
-
-        if (actionMode == null) {
-            actionMode = (requireActivity() as AppCompatActivity).startSupportActionMode(actionModeCallback)
-            // Notify all when enabling multiselection for the first time to show checkboxes on every single item.
-            fileListAdapter.notifyDataSetChanged()
-        }
-        toggleSelection(position)
-        return true
-    }
-
-    override fun onThreeDotButtonClick(fileWithSyncInfo: OCFileWithSyncInfo) {
-        val fileActions = requireActivity() as? MainFileListFragment.FileActions
-        fileActions?.showDetails(fileWithSyncInfo.file)
-    }
-
-    // SortOptionsListener implementation
     override fun onSortTypeListener(sortType: SortType, sortOrder: SortOrder) {
         val sortBottomSheetFragment = SortBottomSheetFragment.newInstance(sortType, sortOrder)
         sortBottomSheetFragment.sortDialogListener = this
         sortBottomSheetFragment.show(childFragmentManager, SortBottomSheetFragment.TAG)
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     override fun onViewTypeListener(viewType: ViewType) {
         binding.optionsLayout.viewTypeSelected = viewType
 
         if (viewType == ViewType.VIEW_TYPE_LIST) {
             globalSearchViewModel.setListModeAsPreferred()
-            layoutManager.spanCount = 1
         } else {
             globalSearchViewModel.setGridModeAsPreferred()
-            layoutManager.spanCount = ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root)
+            globalSearchViewModel.updateGridColumns(
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root)
+            )
         }
-
-        fileListAdapter.notifyDataSetChanged()
     }
 
     override fun onSortSelected(sortType: SortType) {

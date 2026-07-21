@@ -23,12 +23,12 @@ package com.owncloud.android.presentation.files.filelist
 import android.content.Context
 import android.util.DisplayMetrics
 import android.view.View
+import com.owncloud.android.R
 
 /**
- * This class dynamically calculates the number of columns
- * based on the device screen for the RecyclerView Grid mode.
+ * Dynamically calculates the number of columns for grid mode from grid cell dimens.
  */
-class ColumnQuantity(context: Context, viewId: Int) {
+class ColumnQuantity(context: Context) {
 
     private var width: Int = 0
     private var height: Int = 0
@@ -36,11 +36,12 @@ class ColumnQuantity(context: Context, viewId: Int) {
     private var displayMetrics: DisplayMetrics
 
     init {
-        val view: View = View.inflate(context, viewId, null)
-        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        width = view.measuredWidth
-        height = view.measuredHeight
-        displayMetrics = context.resources.displayMetrics
+        val res = context.resources
+        val cell = res.getDimensionPixelSize(R.dimen.item_file_grid_width)
+        val margin = res.getDimensionPixelSize(R.dimen.item_file_grid_margin)
+        width = cell + margin * 2
+        height = cell + margin * 2
+        displayMetrics = res.displayMetrics
     }
 
     fun calculateNoOfColumns(parentView: View): Int {
@@ -53,5 +54,4 @@ class ColumnQuantity(context: Context, viewId: Int) {
         }
         return numberOfColumns
     }
-
 }
