@@ -169,18 +169,6 @@ object FileListItemUiModelFixtures {
         isProgressIndeterminate = false,
     )
 
-    val virtualArchive = file.copy(
-        fileId = 17L,
-        name = "archive.zip",
-        virtualKind = FileListVirtualKind.Archive,
-        uploadProgress = 70,
-        isProgressIndeterminate = false,
-        showThreeDotMenu = false,
-        showCheckbox = false,
-        thumbnailRemoteId = null,
-        needsThumbnail = false,
-    )
-
     val folderMultiPersonal = folder.copy(
         fileId = 18L,
         name = "KW Folder",
@@ -206,7 +194,6 @@ object FileListItemUiModelFixtures {
         withPersonalSpacePath,
         virtualUploadIndeterminate,
         virtualUploadProgress,
-        virtualArchive,
         folderMultiPersonal,
     )
 }

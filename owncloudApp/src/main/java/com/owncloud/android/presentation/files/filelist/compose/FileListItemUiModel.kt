@@ -54,7 +54,6 @@ enum class FileListLocalPin {
 enum class FileListVirtualKind {
     None,
     Upload,
-    Archive,
 }
 
 /**

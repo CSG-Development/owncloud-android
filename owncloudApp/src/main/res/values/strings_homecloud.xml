@@ -203,6 +203,14 @@
     <string name="homecloud_filelist_virtual_file_cancel_upload">Cancel upload</string>
     <string name="homecloud_filelist_compress">Compress</string>
     <string name="homecloud_filelist_extract">Extract</string>
+    <string name="homecloud_filelist_activity_in_progress_title">Activity in progress</string>
+    <plurals name="homecloud_filelist_activity_in_progress_subtitle">
+        <item quantity="one">%d file operation in progress</item>
+        <item quantity="other">%d file operations in progress</item>
+    </plurals>
+    <string name="homecloud_filelist_compressing_status">Compressing…</string>
+    <string name="homecloud_filelist_extracting_status">Extracting…</string>
+    <string name="homecloud_filelist_archive_cancel">Cancel</string>
     <string name="homecloud_filelist_compress_enqueued">Compressing %1$s</string>
     <string name="homecloud_filelist_extract_enqueued">Extracting %1$s</string>
     <string name="homecloud_filelist_compress_succeeded_ticker">Compression succeeded</string>

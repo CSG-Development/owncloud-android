@@ -22,7 +22,7 @@ data class FileListComposeUiState(
     val hasSelection: Boolean
         get() = selectedIds.isNotEmpty()
 
-    /** Ids that participate in select-all / inverse (excludes virtual upload/archive rows). */
+    /** Ids that participate in select-all / inverse (excludes virtual upload rows). */
     fun selectableFileIds(): List<Long> =
         folderContent.mapNotNull { info ->
             info.file.id?.takeUnless { info.file.isVirtualFile() }

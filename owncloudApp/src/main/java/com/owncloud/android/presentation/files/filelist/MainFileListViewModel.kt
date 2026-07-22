@@ -58,6 +58,8 @@ import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIS
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
 import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModel
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModelMapper
 import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
@@ -81,7 +83,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -191,6 +195,9 @@ class MainFileListViewModel(
                 initialValue = emptyList(),
             )
 
+    private val _archiveActivity = MutableStateFlow<ArchiveActivityUiModel?>(null)
+    val archiveActivity: StateFlow<ArchiveActivityUiModel?> = _archiveActivity.asStateFlow()
+
     /** File list ui state combines the other fields and generate a new state whenever any of them changes */
     val fileListUiState: StateFlow<FileListUiState> =
         combine(
@@ -243,6 +250,25 @@ class MainFileListViewModel(
 
     fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
         _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+        refreshArchiveActivity()
+    }
+
+    fun cancelArchiveWork(workId: UUID) {
+        workManagerProvider.cancelWorkById(workId)
+        _archiveWorkMetadata.update { it - workId }
+        refreshArchiveActivity()
+    }
+
+    private fun refreshArchiveActivity() {
+        val pendingWorks = pendingArchiveWorkInfos.value
+        val activeMetadata = _archiveWorkMetadata.value.filterKeys { workId ->
+            pendingWorks.any { it.id == workId }
+        }
+        _archiveActivity.value = ArchiveActivityUiModelMapper.fromPendingWorks(
+            accountName = currentFolderDisplayed.value.owner,
+            pendingWorks = pendingWorks,
+            workMetadata = activeMetadata,
+        )
     }
 
     init {
@@ -262,6 +288,16 @@ class MainFileListViewModel(
             )
         }
         startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
+
+        viewModelScope.launch {
+            pendingArchiveWorkInfos.collect { refreshArchiveActivity() }
+        }
+        viewModelScope.launch {
+            currentFolderDisplayed
+                .map { it.owner }
+                .distinctUntilChanged()
+                .collect { refreshArchiveActivity() }
+        }
 
         viewModelScope.launch {
             var previousContent: List<OCFileWithSyncInfo> = emptyList()
@@ -656,21 +692,10 @@ class MainFileListViewModel(
     ) = combine(
         this,
         uploadProgressByTransferId,
-        pendingArchiveWorkInfos,
-        _archiveWorkMetadata,
-    ) { folderContent, progressByTransferId, pendingWorks, workMetadata ->
-        val activeMetadata = workMetadata.filterKeys { workId ->
-            pendingWorks.any { it.id == workId }
+    ) { folderContent, progressByTransferId ->
+        folderContent.map { fileWithSyncInfo ->
+            fileWithSyncInfo.withUploadProgress(progressByTransferId)
         }
-        folderContent
-            .map { fileWithSyncInfo ->
-                fileWithSyncInfo.withUploadProgress(progressByTransferId)
-            }
-            .withArchiveVirtualFiles(
-                currentFolder = currentFolderDisplayed,
-                pendingWorks = pendingWorks,
-                workMetadata = activeMetadata,
-            )
     }.map { folderContentWithProgress ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,

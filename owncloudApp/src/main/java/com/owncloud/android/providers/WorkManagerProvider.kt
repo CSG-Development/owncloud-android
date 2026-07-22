@@ -45,6 +45,7 @@ import com.owncloud.android.workers.TagsSyncPeriodicWorker
 import com.owncloud.android.workers.TagsSyncPeriodicWorker.Companion.TAGS_SYNC_PERIODIC_WORKER
 import com.owncloud.android.workers.UploadFileFromContentUriWorker
 import com.owncloud.android.workers.UploadFileFromFileSystemWorker
+import java.util.UUID
 
 class WorkManagerProvider(
     val context: Context
@@ -155,5 +156,7 @@ class WorkManagerProvider(
         )
 
     fun cancelAllWorkByTag(tag: String) = WorkManager.getInstance(context).cancelAllWorkByTag(tag)
+
+    fun cancelWorkById(id: UUID) = WorkManager.getInstance(context).cancelWorkById(id)
 
 }
