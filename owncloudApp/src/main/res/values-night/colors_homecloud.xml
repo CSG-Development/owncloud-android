@@ -91,5 +91,14 @@
     <color name="homecloud_snackbar_background">#B8B8B8</color>
     <color name="homecloud_snackbar_action">@color/homecloud_blue_darken_2</color>
 
+    <!-- HomeCloudBanner -->
+    <color name="homecloud_banner_error_background">#3B100D</color>
+    <color name="homecloud_banner_error_border">@color/homecloud_error</color>
+    <color name="homecloud_banner_error_text">@color/homecloud_white_87</color>
+    <color name="homecloud_banner_error_action">@color/homecloud_error</color>
+    <color name="homecloud_banner_info_background">#1A3347</color>
+    <color name="homecloud_banner_info_border">@color/homecloud_blue_lighten_2</color>
+    <color name="homecloud_banner_info_text">@color/homecloud_white_87</color>
+    <color name="homecloud_banner_info_action">@color/homecloud_blue_lighten_2</color>
 
 </resources>

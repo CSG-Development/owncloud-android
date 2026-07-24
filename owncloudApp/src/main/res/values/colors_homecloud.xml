@@ -120,4 +120,14 @@
     <color name="homecloud_snackbar_text">@color/homecloud_primary_inverted</color>
     <color name="homecloud_snackbar_action">@color/homecloud_blue_lighten_2</color>
 
+    <!-- HomeCloudBanner -->
+    <color name="homecloud_banner_error_background">#FEE8E7</color>
+    <color name="homecloud_banner_error_border">@color/homecloud_error</color>
+    <color name="homecloud_banner_error_text">@color/homecloud_black_87</color>
+    <color name="homecloud_banner_error_action">@color/homecloud_error</color>
+    <color name="homecloud_banner_info_background">#E3F2FD</color>
+    <color name="homecloud_banner_info_border">@color/homecloud_blue_lighten_2</color>
+    <color name="homecloud_banner_info_text">@color/homecloud_black_87</color>
+    <color name="homecloud_banner_info_action">@color/homecloud_blue_darken_2</color>
+
 </resources>

@@ -229,4 +229,15 @@
     <string name="homecloud_filelist_archive_path_traversal">The archive contains an unsafe path: %1$s</string>
     <string name="homecloud_filelist_archive_duplicate_entry">The archive contains duplicate entries</string>
     <string name="homecloud_filelist_archive_unsupported_format">This archive format is not supported</string>
+    <string name="homecloud_filelist_extract_error_corrupt">The archive is corrupted or incomplete and cannot be extracted.</string>
+    <string name="homecloud_filelist_extract_error_insufficient_storage">There isn\'t enough available storage to extract the archive. Free up space and try again.</string>
+    <string name="homecloud_filelist_extract_error_invalid_names">The archive contains files with unsupported names or characters.</string>
+    <string name="homecloud_filelist_extract_error_unexpected">An unexpected error occurred during extraction. Please try again.</string>
+    <string name="homecloud_filelist_extract_error_network">The operation was interrupted due to a network issue. Check your connection and try again.</string>
+    <string name="homecloud_filelist_compress_error_generic">Unable to complete the file compression. Try again later.</string>
+    <string name="homecloud_filelist_compress_error_network_timeout">The request timed out while processing the ZIP file. Check your connection and try again.</string>
+    <string name="homecloud_filelist_compress_error_storage_limit">There is not enough space on Personal Cloud to complete this action. Free up storage space by deleting unwanted files before trying again.</string>
+    <string name="homecloud_filelist_compress_error_invalid_names">One or more file names include a slash or a backslash, which are unsupported characters. Update the names and try again.</string>
+    <string name="homecloud_filelist_compress_error_corrupt">The archive appears to be corrupted or incomplete.</string>
+    <string name="homecloud_filelist_compress_error_file_access">Some files couldn\'t be accessed for the compression. Verify permissions for all the files and try again.</string>
 </resources>

@@ -388,6 +388,7 @@ class FileOperationsViewModel(
                 ),
                 spaceId = fileOperation.parentFolder.spaceId,
                 accountName = fileOperation.accountName,
+                sourceFileIds = fileOperation.files.mapNotNull { it.id },
             )
             _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
@@ -414,6 +415,7 @@ class FileOperationsViewModel(
                 remotePath = remotePath,
                 spaceId = zipFile.spaceId,
                 accountName = fileOperation.accountName,
+                zipFileId = zipFile.id,
             )
             _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)

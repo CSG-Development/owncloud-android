@@ -11,4 +11,6 @@ data class ArchiveWorkEnqueued(
     val remotePath: String,
     val spaceId: String?,
     val accountName: String,
+    val sourceFileIds: List<Long> = emptyList(),
+    val zipFileId: Long? = null,
 )

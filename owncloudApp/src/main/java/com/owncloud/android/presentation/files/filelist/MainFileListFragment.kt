@@ -47,6 +47,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
@@ -96,6 +101,8 @@ import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.BottomSheetFragmentItemView
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudBanner
+import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.Companion.newInstance
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.SortDialogListener
@@ -328,6 +335,7 @@ class MainFileListFragment : FileFragment(),
         binding.optionsLayout.viewTypeSelected = viewType
 
         setupComposeFileList()
+        setupArchiveErrorBanner()
 
         // Set Refresh FAB and its listener
         binding.fabRefresh.setOnClickListener {
@@ -367,6 +375,25 @@ class MainFileListFragment : FileFragment(),
             onRefresh = ::refreshFileListFromPull,
             onSelectionBecameEmpty = { actionModeController.finish() },
         )
+    }
+
+    private fun setupArchiveErrorBanner() {
+        binding.archiveErrorBanner.apply {
+            filterTouchesWhenObscured =
+                PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val banner by mainFileListViewModel.archiveErrorBanner.collectAsState()
+                HomeCloudTheme {
+                    HomeCloudBanner(
+                        model = banner,
+                        onAction = { mainFileListViewModel.retryArchiveError() },
+                        onDismiss = { mainFileListViewModel.dismissArchiveErrorBanner() },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
     }
 
     private fun setRolesAccessibilityToMenuItems() {
@@ -478,6 +505,7 @@ class MainFileListFragment : FileFragment(),
 
         observeArchiveWorkEnqueued()
         observeArchiveWorkCompleted()
+        observeArchiveRetryOperations()
     }
 
     private fun observeArchiveWorkEnqueued() {
@@ -489,6 +517,12 @@ class MainFileListFragment : FileFragment(),
                 R.string.homecloud_filelist_extract_enqueued
             }
             showMessageInSnackbar(getString(messageResId, archiveWork.displayName))
+        }
+    }
+
+    private fun observeArchiveRetryOperations() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveRetryOperations) { operation ->
+            fileOperationsViewModel.performOperation(operation)
         }
     }
 

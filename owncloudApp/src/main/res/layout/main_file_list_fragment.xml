@@ -169,4 +169,14 @@
             fab:fab_title="@string/fab_new_shortcut" />
 
     </com.getbase.floatingactionbutton.FloatingActionsMenu>
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/archive_error_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="@dimen/standard_half_margin"
+        android:layout_marginBottom="@dimen/standard_half_margin"
+        android:elevation="16dp"
+        android:visibility="visible" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
