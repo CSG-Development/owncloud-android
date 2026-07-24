@@ -477,6 +477,7 @@ class MainFileListFragment : FileFragment(),
         observeClearSelectionEvents()
 
         observeArchiveWorkEnqueued()
+        observeArchiveWorkCompleted()
     }
 
     private fun observeArchiveWorkEnqueued() {
@@ -488,6 +489,27 @@ class MainFileListFragment : FileFragment(),
                 R.string.homecloud_filelist_extract_enqueued
             }
             showMessageInSnackbar(getString(messageResId, archiveWork.displayName))
+        }
+    }
+
+    private fun observeArchiveWorkCompleted() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveWorkCompleted) { completed ->
+            val message = if (completed.isCompress) {
+                resources.getQuantityString(
+                    R.plurals.homecloud_filelist_compress_completed,
+                    completed.itemCount,
+                    completed.itemCount,
+                )
+            } else {
+                getString(R.string.homecloud_filelist_extract_completed)
+            }
+            showMessageInSnackbar(
+                message = message,
+                actionLabel = getString(R.string.homecloud_filelist_archive_view),
+                anchorViewId = R.id.bottom_nav_view,
+            ) {
+                navigateToFolderId(completed.viewFolderId)
+            }
         }
     }
 

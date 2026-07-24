@@ -380,6 +380,7 @@ class FileOperationsViewModel(
                 workId = workId,
                 displayName = displayName,
                 isCompress = true,
+                itemCount = fileOperation.files.size,
                 parentFolderId = fileOperation.parentFolder.id!!,
                 remotePath = ArchiveNameResolver.resolveRemoteZipPath(
                     parentFolder = fileOperation.parentFolder,
@@ -408,6 +409,7 @@ class FileOperationsViewModel(
                 workId = workId,
                 displayName = displayName,
                 isCompress = false,
+                itemCount = 1,
                 parentFolderId = zipFile.parentId!!,
                 remotePath = remotePath,
                 spaceId = zipFile.spaceId,

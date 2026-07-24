@@ -213,6 +213,12 @@
     <string name="homecloud_filelist_archive_cancel">Cancel</string>
     <string name="homecloud_filelist_compress_enqueued">Compressing %1$s</string>
     <string name="homecloud_filelist_extract_enqueued">Extracting %1$s</string>
+    <plurals name="homecloud_filelist_compress_completed">
+        <item quantity="one">%d item compressed</item>
+        <item quantity="other">%d items compressed</item>
+    </plurals>
+    <string name="homecloud_filelist_extract_completed">Archive extracted successfully</string>
+    <string name="homecloud_filelist_archive_view">View</string>
     <string name="homecloud_filelist_compress_succeeded_ticker">Compression succeeded</string>
     <string name="homecloud_filelist_compress_succeeded_content">Created %1$s</string>
     <string name="homecloud_filelist_compress_failed_ticker">Compression of %1$s failed</string>

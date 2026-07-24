@@ -65,6 +65,7 @@ import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMo
 import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
 import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
 import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyUiModel
+import com.owncloud.android.presentation.files.operations.ArchiveWorkCompleted
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
@@ -75,6 +76,7 @@ import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase.SyncFolderMode.SYNC_CONTENTS
 import com.owncloud.android.usecases.synchronization.UpdateFoldersRecursivelyUseCase
 import com.owncloud.android.workers.DownloadFileWorker
+import com.owncloud.android.workers.UnzipFileWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -86,6 +88,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -94,6 +98,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -198,6 +203,9 @@ class MainFileListViewModel(
     private val _archiveActivity = MutableStateFlow<ArchiveActivityUiModel?>(null)
     val archiveActivity: StateFlow<ArchiveActivityUiModel?> = _archiveActivity.asStateFlow()
 
+    private val _archiveWorkCompleted = MutableSharedFlow<ArchiveWorkCompleted>(extraBufferCapacity = 1)
+    val archiveWorkCompleted: SharedFlow<ArchiveWorkCompleted> = _archiveWorkCompleted.asSharedFlow()
+
     /** File list ui state combines the other fields and generate a new state whenever any of them changes */
     val fileListUiState: StateFlow<FileListUiState> =
         combine(
@@ -250,6 +258,7 @@ class MainFileListViewModel(
 
     fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
         _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+        observeArchiveWorkUntilFinished(enqueued)
         refreshArchiveActivity()
     }
 
@@ -269,6 +278,56 @@ class MainFileListViewModel(
             pendingWorks = pendingWorks,
             workMetadata = activeMetadata,
         )
+    }
+
+    private fun observeArchiveWorkUntilFinished(enqueued: ArchiveWorkEnqueued) {
+        viewModelScope.launch {
+            val workInfo = workManagerProvider.getWorkInfoByIdFlow(enqueued.workId)
+                .filterNotNull()
+                .first { it.state.isFinished }
+
+            if (workInfo.state == WorkInfo.State.SUCCEEDED &&
+                _archiveWorkMetadata.value.containsKey(enqueued.workId)
+            ) {
+                val viewFolderId = resolveArchiveViewFolderId(enqueued, workInfo)
+                _archiveWorkCompleted.emit(
+                    ArchiveWorkCompleted(
+                        isCompress = enqueued.isCompress,
+                        itemCount = enqueued.itemCount,
+                        viewFolderId = viewFolderId,
+                    ),
+                )
+            }
+            _archiveWorkMetadata.update { it - enqueued.workId }
+            refreshArchiveActivity()
+        }
+    }
+
+    private suspend fun resolveArchiveViewFolderId(
+        metadata: ArchiveWorkEnqueued,
+        workInfo: WorkInfo,
+    ): Long {
+        if (metadata.isCompress) {
+            return metadata.parentFolderId
+        }
+
+        val targetRemotePath = workInfo.outputData.getString(UnzipFileWorker.KEY_TARGET_REMOTE_PATH)
+            ?: metadata.remotePath
+
+        val targetFile = withContext(coroutinesDispatcherProvider.io) {
+            getFileByRemotePathUseCase(
+                GetFileByRemotePathUseCase.Params(
+                    owner = metadata.accountName,
+                    remotePath = targetRemotePath,
+                    spaceId = metadata.spaceId,
+                ),
+            ).getDataOrNull()
+        } ?: return metadata.parentFolderId
+
+        return when {
+            targetFile.isFolder -> targetFile.id ?: metadata.parentFolderId
+            else -> targetFile.parentId ?: metadata.parentFolderId
+        }
     }
 
     init {

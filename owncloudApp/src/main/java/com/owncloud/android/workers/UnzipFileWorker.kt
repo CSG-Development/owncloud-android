@@ -216,7 +216,14 @@ class UnzipFileWorker(
         }
 
         return when {
-            throwable == null -> Result.success()
+            throwable == null -> {
+                val targetPath = targetRemotePath
+                if (targetPath != null) {
+                    Result.success(workDataOf(KEY_TARGET_REMOTE_PATH to targetPath))
+                } else {
+                    Result.success()
+                }
+            }
             throwable is NoNetworkConnectionException -> Result.retry()
             else -> Result.failure()
         }
