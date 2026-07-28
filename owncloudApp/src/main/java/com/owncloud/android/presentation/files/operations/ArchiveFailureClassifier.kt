@@ -13,6 +13,7 @@ import com.owncloud.android.domain.exceptions.LocalStorageNotCopiedException
 import com.owncloud.android.domain.exceptions.NetworkErrorException
 import com.owncloud.android.domain.exceptions.NoConnectionWithServerException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
+import com.owncloud.android.domain.exceptions.PasswordProtectedArchiveException
 import com.owncloud.android.domain.exceptions.QuotaExceededException
 import com.owncloud.android.domain.exceptions.ServerConnectionTimeoutException
 import com.owncloud.android.domain.exceptions.ServerNotReachableException
@@ -27,6 +28,8 @@ object ArchiveFailureClassifier {
         if (throwable is CancelledException) return null
 
         return when (throwable) {
+            is PasswordProtectedArchiveException -> ArchiveFailureType.PASSWORD_PROTECTED
+
             is InvalidArchiveException,
             is UnsupportedArchiveFormatException,
             -> ArchiveFailureType.CORRUPT

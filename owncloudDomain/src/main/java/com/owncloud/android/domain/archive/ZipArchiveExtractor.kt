@@ -3,6 +3,7 @@ package com.owncloud.android.domain.archive
 import com.owncloud.android.domain.exceptions.ArchivePathTraversalException
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
+import com.owncloud.android.domain.exceptions.PasswordProtectedArchiveException
 import com.owncloud.android.domain.exceptions.UnsupportedArchiveFormatException
 import timber.log.Timber
 import java.io.File
@@ -114,6 +115,9 @@ object ZipArchiveExtractor {
         try {
             return ZipFile(zipFile).use(block)
         } catch (exception: ZipException) {
+            if (ZipEncryptionDetector.containsEncryptedEntries(zipFile)) {
+                throw PasswordProtectedArchiveException()
+            }
             throw UnsupportedArchiveFormatException()
         } catch (exception: InvalidArchiveException) {
             throw exception

@@ -215,6 +215,9 @@ class MainFileListViewModel(
     private val _archiveWorkCompleted = MutableSharedFlow<ArchiveWorkCompleted>(extraBufferCapacity = 1)
     val archiveWorkCompleted: SharedFlow<ArchiveWorkCompleted> = _archiveWorkCompleted.asSharedFlow()
 
+    private val _archiveUnsupportedDialog = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val archiveUnsupportedDialog: SharedFlow<Unit> = _archiveUnsupportedDialog.asSharedFlow()
+
     private val _archiveErrors = MutableStateFlow<List<ArchiveErrorUiModel>>(emptyList())
 
     val archiveErrorBanner: StateFlow<HomeCloudBannerUiModel?> = _archiveErrors
@@ -379,22 +382,27 @@ class MainFileListViewModel(
                     )
                 }
                 workInfo.state == WorkInfo.State.FAILED && stillTracked -> {
-                    val failed = ArchiveWorkFailed(
-                        failureType = resolveArchiveFailureType(workInfo),
-                        isCompress = enqueued.isCompress,
-                        displayName = enqueued.displayName,
-                        sourceFileIds = enqueued.sourceFileIds,
-                        zipFileId = enqueued.zipFileId,
-                        parentFolderId = enqueued.parentFolderId,
-                        spaceId = enqueued.spaceId,
-                        accountName = enqueued.accountName,
-                    )
-                    _archiveErrors.update { errors ->
-                        errors + ArchiveErrorUiModel(
-                            failure = failed,
-                            messageRes = failed.failureType.messageRes(failed.isCompress),
-                            showRetry = failed.failureType.showRetry,
+                    val failureType = resolveArchiveFailureType(workInfo)
+                    if (failureType == ArchiveFailureType.PASSWORD_PROTECTED) {
+                        _archiveUnsupportedDialog.emit(Unit)
+                    } else {
+                        val failed = ArchiveWorkFailed(
+                            failureType = failureType,
+                            isCompress = enqueued.isCompress,
+                            displayName = enqueued.displayName,
+                            sourceFileIds = enqueued.sourceFileIds,
+                            zipFileId = enqueued.zipFileId,
+                            parentFolderId = enqueued.parentFolderId,
+                            spaceId = enqueued.spaceId,
+                            accountName = enqueued.accountName,
                         )
+                        _archiveErrors.update { errors ->
+                            errors + ArchiveErrorUiModel(
+                                failure = failed,
+                                messageRes = failed.failureType.messageRes(failed.isCompress),
+                                showRetry = failed.failureType.showRetry,
+                            )
+                        }
                     }
                 }
             }

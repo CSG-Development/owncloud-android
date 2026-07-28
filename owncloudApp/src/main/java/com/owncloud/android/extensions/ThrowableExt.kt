@@ -44,6 +44,7 @@ import com.owncloud.android.domain.exceptions.NoConnectionWithServerException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
 import com.owncloud.android.domain.exceptions.OAuth2ErrorAccessDeniedException
 import com.owncloud.android.domain.exceptions.OAuth2ErrorException
+import com.owncloud.android.domain.exceptions.PasswordProtectedArchiveException
 import com.owncloud.android.domain.exceptions.QuotaExceededException
 import com.owncloud.android.domain.exceptions.RedirectToNonSecureException
 import com.owncloud.android.domain.exceptions.ResourceLockedException
@@ -108,6 +109,7 @@ fun Throwable.parseError(
             is ServiceUnavailableException -> resources.getString(R.string.service_unavailable)
             is SpecificForbiddenException -> resources.getString(R.string.uploads_view_upload_status_failed_permission_error)
             is UnauthorizedException -> resources.getString(R.string.homecloud_login_auth_unauthorized)
+            is PasswordProtectedArchiveException -> resources.getString(R.string.homecloud_filelist_unsupported_archive_message)
             is UnsupportedArchiveFormatException -> resources.getString(R.string.homecloud_filelist_archive_unsupported_format)
             is NetworkErrorException -> resources.getString(R.string.network_error_message)
             is ResourceLockedException -> resources.getString(R.string.resource_locked_error_message)

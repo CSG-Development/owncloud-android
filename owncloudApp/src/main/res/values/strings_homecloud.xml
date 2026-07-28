@@ -229,6 +229,8 @@
     <string name="homecloud_filelist_archive_path_traversal">The archive contains an unsafe path: %1$s</string>
     <string name="homecloud_filelist_archive_duplicate_entry">The archive contains duplicate entries</string>
     <string name="homecloud_filelist_archive_unsupported_format">This archive format is not supported</string>
+    <string name="homecloud_filelist_unsupported_archive_title">Unsupported Archive</string>
+    <string name="homecloud_filelist_unsupported_archive_message">This app does not support password protected or encrypted ZIP files yet. Please use a desktop file manager to extract this file.</string>
     <string name="homecloud_filelist_extract_error_corrupt">The archive is corrupted or incomplete and cannot be extracted.</string>
     <string name="homecloud_filelist_extract_error_insufficient_storage">There isn\'t enough available storage to extract the archive. Free up space and try again.</string>
     <string name="homecloud_filelist_extract_error_invalid_names">The archive contains files with unsupported names or characters.</string>

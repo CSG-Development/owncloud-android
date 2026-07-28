@@ -51,7 +51,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
@@ -86,6 +88,7 @@ import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.addOpenInWebMenuOptions
+import com.owncloud.android.extensions.avoidScreenshotsIfNeeded
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.isLandscapeMode
@@ -101,6 +104,7 @@ import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.BottomSheetFragmentItemView
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudAlertDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
@@ -506,6 +510,7 @@ class MainFileListFragment : FileFragment(),
         observeArchiveWorkEnqueued()
         observeArchiveWorkCompleted()
         observeArchiveRetryOperations()
+        observeArchiveUnsupportedDialog()
     }
 
     private fun observeArchiveWorkEnqueued() {
@@ -524,6 +529,35 @@ class MainFileListFragment : FileFragment(),
         collectLatestLifecycleFlow(mainFileListViewModel.archiveRetryOperations) { operation ->
             fileOperationsViewModel.performOperation(operation)
         }
+    }
+
+    private fun observeArchiveUnsupportedDialog() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveUnsupportedDialog) {
+            showUnsupportedArchiveDialog()
+        }
+    }
+
+    private fun showUnsupportedArchiveDialog() {
+        val composeView = ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        }
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(composeView)
+            .create()
+
+        composeView.setContent {
+            HomeCloudTheme {
+                HomeCloudAlertDialog(
+                    title = stringResource(R.string.homecloud_filelist_unsupported_archive_title),
+                    message = stringResource(R.string.homecloud_filelist_unsupported_archive_message),
+                    confirmLabel = stringResource(R.string.homecloud_ok),
+                    onConfirm = { dialog.dismiss() },
+                )
+            }
+        }
+
+        dialog.show()
+        dialog.avoidScreenshotsIfNeeded()
     }
 
     private fun observeArchiveWorkCompleted() {
