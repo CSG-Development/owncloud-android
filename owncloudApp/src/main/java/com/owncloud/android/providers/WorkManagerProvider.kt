@@ -23,6 +23,7 @@ package com.owncloud.android.providers
 
 import android.content.Context
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.asFlow
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -45,6 +46,8 @@ import com.owncloud.android.workers.TagsSyncPeriodicWorker
 import com.owncloud.android.workers.TagsSyncPeriodicWorker.Companion.TAGS_SYNC_PERIODIC_WORKER
 import com.owncloud.android.workers.UploadFileFromContentUriWorker
 import com.owncloud.android.workers.UploadFileFromFileSystemWorker
+import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 class WorkManagerProvider(
     val context: Context
@@ -154,6 +157,11 @@ class WorkManagerProvider(
             listOf(ARCHIVE_TAG_ZIP, ARCHIVE_TAG_UNZIP),
         )
 
+    fun getWorkInfoByIdFlow(id: UUID): Flow<WorkInfo?> =
+        WorkManager.getInstance(context).getWorkInfoByIdLiveData(id).asFlow()
+
     fun cancelAllWorkByTag(tag: String) = WorkManager.getInstance(context).cancelAllWorkByTag(tag)
+
+    fun cancelWorkById(id: UUID) = WorkManager.getInstance(context).cancelWorkById(id)
 
 }

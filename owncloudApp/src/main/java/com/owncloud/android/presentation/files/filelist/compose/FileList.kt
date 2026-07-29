@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.owncloud.android.R
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import java.util.UUID
 
 enum class FileListLayoutMode {
     List,
@@ -40,6 +42,7 @@ enum class FileListLayoutMode {
  * Hosts own selection and callbacks; fragments supply [FileListContent] and chrome.
  *
  * When [onRefresh] is non-null and [pullToRefreshEnabled] is true, content is wrapped in [PullToRefreshBox].
+ * Optional [archiveActivity] is rendered as the first full-width scrollable item (list and grid).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +57,8 @@ fun FileList(
     isRefreshing: Boolean = false,
     pullToRefreshEnabled: Boolean = true,
     onRefresh: (() -> Unit)? = null,
+    archiveActivity: ArchiveActivityUiModel? = null,
+    onArchiveActivityCancel: (UUID) -> Unit = {},
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap? = { null },
     onItemClick: (FileListItemUiModel) -> Unit = {},
     onItemLongClick: (FileListItemUiModel) -> Unit = {},
@@ -90,6 +95,8 @@ fun FileList(
                         selectedIds = selectedIds,
                         footerText = content.footerText,
                         listState = listState,
+                        archiveActivity = archiveActivity,
+                        onArchiveActivityCancel = onArchiveActivityCancel,
                         thumbnail = thumbnail,
                         onItemClick = onItemClick,
                         onItemLongClick = onItemLongClick,
@@ -103,6 +110,8 @@ fun FileList(
                         footerText = content.footerText,
                         gridColumns = gridColumns.coerceAtLeast(1),
                         gridState = gridState,
+                        archiveActivity = archiveActivity,
+                        onArchiveActivityCancel = onArchiveActivityCancel,
                         thumbnail = thumbnail,
                         onItemClick = onItemClick,
                         onItemLongClick = onItemLongClick,
@@ -134,6 +143,8 @@ private fun FileListLazyColumn(
     selectedIds: Set<Long>,
     footerText: String?,
     listState: LazyListState,
+    archiveActivity: ArchiveActivityUiModel?,
+    onArchiveActivityCancel: (UUID) -> Unit,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
@@ -144,6 +155,20 @@ private fun FileListLazyColumn(
         modifier = modifier,
         state = listState,
     ) {
+        if (archiveActivity != null) {
+            item(
+                key = ARCHIVE_ACTIVITY_KEY,
+                contentType = CONTENT_TYPE_ARCHIVE_ACTIVITY,
+            ) {
+                ArchiveActivityCard(
+                    activity = archiveActivity,
+                    onCancel = onArchiveActivityCancel,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimensionResource(R.dimen.standard_half_margin)),
+                )
+            }
+        }
         items(
             items = items,
             key = { it.fileId },
@@ -179,6 +204,8 @@ private fun FileListLazyGrid(
     footerText: String?,
     gridColumns: Int,
     gridState: LazyGridState,
+    archiveActivity: ArchiveActivityUiModel?,
+    onArchiveActivityCancel: (UUID) -> Unit,
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
@@ -189,6 +216,21 @@ private fun FileListLazyGrid(
         modifier = modifier,
         state = gridState,
     ) {
+        if (archiveActivity != null) {
+            item(
+                key = ARCHIVE_ACTIVITY_KEY,
+                contentType = CONTENT_TYPE_ARCHIVE_ACTIVITY,
+                span = { GridItemSpan(maxLineSpan) },
+            ) {
+                ArchiveActivityCard(
+                    activity = archiveActivity,
+                    onCancel = onArchiveActivityCancel,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimensionResource(R.dimen.standard_half_margin)),
+                )
+            }
+        }
         items(
             items = items,
             key = { it.fileId },
@@ -286,10 +328,12 @@ private fun FileListItemUiModel.lazyContentType(): String = when {
 
 private const val FOOTER_KEY = "file_list_footer"
 private const val EMPTY_CONTENT_KEY = "file_list_empty"
+private const val ARCHIVE_ACTIVITY_KEY = "archive_activity"
 private const val CONTENT_TYPE_VIRTUAL = "virtual"
 private const val CONTENT_TYPE_FOLDER = "folder"
 private const val CONTENT_TYPE_IMAGE = "image"
 private const val CONTENT_TYPE_FILE = "file"
+private const val CONTENT_TYPE_ARCHIVE_ACTIVITY = "archive_activity"
 
 private fun previewItems(count: Int): List<FileListItemUiModel> {
     val base = FileListItemUiModelFixtures.all
@@ -403,6 +447,7 @@ private fun FileListEmptyContentPreview() {
                     ),
                 ),
                 layoutMode = FileListLayoutMode.List,
+                archiveActivity = ArchiveActivityUiModelFixtures.threeOperationsMixed,
                 pullToRefreshEnabled = false,
                 modifier = Modifier
                     .fillMaxWidth()

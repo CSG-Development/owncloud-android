@@ -2,7 +2,6 @@ package com.owncloud.android.presentation.files.filelist.compose
 
 import com.owncloud.android.R
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
-import com.owncloud.android.domain.files.model.isArchiveVirtualFile
 import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.utils.MimetypeIconUtil
@@ -20,10 +19,10 @@ fun OCFileWithSyncInfo.toFileListItemUiModel(
     val isFolder = file.isFolder
     val hideSizeAndSeparator = isMultiPersonal && isFolder
 
-    val virtualKind = when {
-        file.isUploadVirtualFile() -> FileListVirtualKind.Upload
-        file.isArchiveVirtualFile() -> FileListVirtualKind.Archive
-        else -> FileListVirtualKind.None
+    val virtualKind = if (file.isUploadVirtualFile()) {
+        FileListVirtualKind.Upload
+    } else {
+        FileListVirtualKind.None
     }
 
     val localPin = when {

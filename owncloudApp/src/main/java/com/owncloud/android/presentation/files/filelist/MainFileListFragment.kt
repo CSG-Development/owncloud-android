@@ -47,6 +47,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
@@ -81,6 +88,7 @@ import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.addOpenInWebMenuOptions
+import com.owncloud.android.extensions.avoidScreenshotsIfNeeded
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.isLandscapeMode
@@ -96,6 +104,9 @@ import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.BottomSheetFragmentItemView
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudAlertDialog
+import com.owncloud.android.presentation.common.compose.HomeCloudBanner
+import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.Companion.newInstance
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.SortDialogListener
@@ -328,6 +339,7 @@ class MainFileListFragment : FileFragment(),
         binding.optionsLayout.viewTypeSelected = viewType
 
         setupComposeFileList()
+        setupArchiveErrorBanner()
 
         // Set Refresh FAB and its listener
         binding.fabRefresh.setOnClickListener {
@@ -359,12 +371,33 @@ class MainFileListFragment : FileFragment(),
             uiStateFlow = mainFileListViewModel.composeUiState,
             account = account,
             scrollToTopEvents = mainFileListViewModel.scrollToTopEvents,
+            archiveActivityFlow = mainFileListViewModel.archiveActivity,
+            onArchiveActivityCancel = mainFileListViewModel::cancelArchiveWork,
             onItemClick = ::onComposeItemClick,
             onItemLongClick = ::onComposeItemLongClick,
             onThreeDotClick = ::onComposeThreeDotClick,
             onRefresh = ::refreshFileListFromPull,
             onSelectionBecameEmpty = { actionModeController.finish() },
         )
+    }
+
+    private fun setupArchiveErrorBanner() {
+        binding.archiveErrorBanner.apply {
+            filterTouchesWhenObscured =
+                PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val banner by mainFileListViewModel.archiveErrorBanner.collectAsState()
+                HomeCloudTheme {
+                    HomeCloudBanner(
+                        model = banner,
+                        onAction = { mainFileListViewModel.retryArchiveError() },
+                        onDismiss = { mainFileListViewModel.dismissArchiveErrorBanner() },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
     }
 
     private fun setRolesAccessibilityToMenuItems() {
@@ -475,6 +508,9 @@ class MainFileListFragment : FileFragment(),
         observeClearSelectionEvents()
 
         observeArchiveWorkEnqueued()
+        observeArchiveWorkCompleted()
+        observeArchiveRetryOperations()
+        observeArchiveUnsupportedDialog()
     }
 
     private fun observeArchiveWorkEnqueued() {
@@ -486,6 +522,62 @@ class MainFileListFragment : FileFragment(),
                 R.string.homecloud_filelist_extract_enqueued
             }
             showMessageInSnackbar(getString(messageResId, archiveWork.displayName))
+        }
+    }
+
+    private fun observeArchiveRetryOperations() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveRetryOperations) { operation ->
+            fileOperationsViewModel.performOperation(operation)
+        }
+    }
+
+    private fun observeArchiveUnsupportedDialog() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveUnsupportedDialog) {
+            showUnsupportedArchiveDialog()
+        }
+    }
+
+    private fun showUnsupportedArchiveDialog() {
+        val composeView = ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        }
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(composeView)
+            .create()
+
+        composeView.setContent {
+            HomeCloudTheme {
+                HomeCloudAlertDialog(
+                    title = stringResource(R.string.homecloud_filelist_unsupported_archive_title),
+                    message = stringResource(R.string.homecloud_filelist_unsupported_archive_message),
+                    confirmLabel = stringResource(R.string.homecloud_ok),
+                    onConfirm = { dialog.dismiss() },
+                )
+            }
+        }
+
+        dialog.show()
+        dialog.avoidScreenshotsIfNeeded()
+    }
+
+    private fun observeArchiveWorkCompleted() {
+        collectLatestLifecycleFlow(mainFileListViewModel.archiveWorkCompleted) { completed ->
+            val message = if (completed.isCompress) {
+                resources.getQuantityString(
+                    R.plurals.homecloud_filelist_compress_completed,
+                    completed.itemCount,
+                    completed.itemCount,
+                )
+            } else {
+                getString(R.string.homecloud_filelist_extract_completed)
+            }
+            showMessageInSnackbar(
+                message = message,
+                actionLabel = getString(R.string.homecloud_filelist_archive_view),
+                anchorViewId = R.id.bottom_nav_view,
+            ) {
+                navigateToFolderId(completed.viewFolderId)
+            }
         }
     }
 

@@ -4,12 +4,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import com.owncloud.android.R
 
 /**
- * Upload/archive progress bar shared by list and grid items.
+ * Upload progress bar for virtual upload items.
  * Colors and thickness match [R.style.Widget_homeCloud_HorizontalProgressBar].
  */
 @Composable
@@ -25,16 +26,21 @@ fun FileListUploadProgress(
             modifier = progressModifier,
             color = indicatorColor,
             trackColor = trackColor,
+            strokeCap = StrokeCap.Square,
+            gapSize = 0.dp,
         )
     } else {
         val progress = ((item.uploadProgress ?: 0).coerceIn(0, 100)) / 100f
         LinearProgressIndicator(
-            progress = progress,
+            progress =  { progress },
             modifier = progressModifier,
             color = indicatorColor,
             trackColor = trackColor,
+            gapSize = 0.dp,
+            strokeCap = StrokeCap.Square,
+            drawStopIndicator = {},
         )
     }
 }
 
-private val UPLOAD_PROGRESS_TRACK_THICKNESS = 8.dp
+private val UPLOAD_PROGRESS_TRACK_THICKNESS = 4.dp

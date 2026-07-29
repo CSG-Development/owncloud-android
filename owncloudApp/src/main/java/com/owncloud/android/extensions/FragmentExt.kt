@@ -25,8 +25,8 @@ import android.content.Context
 import android.content.DialogInterface
 import android.view.Menu
 import android.view.MenuItem.SHOW_AS_ACTION_NEVER
+import android.view.View
 import android.view.inputmethod.InputMethodManager
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -50,6 +50,26 @@ fun Fragment.showMessageInSnackbar(
 ) {
     val requiredView = view ?: return
     Snackbar.make(requiredView, message, duration).show()
+}
+
+fun Fragment.showMessageInSnackbar(
+    message: CharSequence,
+    actionLabel: CharSequence,
+    duration: Int = Snackbar.LENGTH_LONG,
+    anchorViewId: Int? = null,
+    action: () -> Unit,
+) {
+    val requiredView = view ?: return
+    val context = requiredView.context
+    Snackbar.make(requiredView, message, duration).apply {
+        setBackgroundTint(context.getColor(R.color.homecloud_snackbar_background))
+        setTextColor(context.getColor(R.color.homecloud_snackbar_text))
+        setActionTextColor(context.getColor(R.color.homecloud_snackbar_action))
+        setAction(actionLabel) { action() }
+        anchorViewId?.let { id ->
+            activity?.findViewById<View>(id)?.let { setAnchorView(it) }
+        }
+    }.show()
 }
 
 fun Fragment.showAlertDialog(

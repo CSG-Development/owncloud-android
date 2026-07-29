@@ -125,7 +125,6 @@
     <!-- DEFAULT (via Theme.homeCloud), and explicitly used ONCE, in Preference "behaviour" for instant uploads - NO MORE, not needed, it's default -->
     <style name="Theme.homeCloud.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="alertDialogStyle">@style/homeCloud.AlertDialog</item>
-        <item name="shapeAppearance">@style/homeCloud.AlertDialog.ShapeAppearance</item>
         <item name="buttonBarPositiveButtonStyle">@style/Theme.homeCloud.Dialog.ButtonBar.Button</item>
         <item name="buttonBarNegativeButtonStyle">@style/Theme.homeCloud.Dialog.ButtonBar.Button</item>
         <item name="android:background">@color/homecloud_dialog_background</item>
@@ -138,6 +137,7 @@
 
     <style name="homeCloud.AlertDialog" parent="MaterialAlertDialog.Material3">
         <item name="backgroundTint">@color/homecloud_dialog_background</item>
+        <item name="shapeAppearance">@style/homeCloud.AlertDialog.ShapeAppearance</item>
     </style>
 
     <style name="homeCloud.AlertDialog.ShapeAppearance" parent="ShapeAppearance.Material3.LargeComponent">

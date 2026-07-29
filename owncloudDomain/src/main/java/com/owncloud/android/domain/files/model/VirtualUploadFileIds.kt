@@ -11,10 +11,11 @@ object VirtualUploadFileIds {
     fun transferIdFromFileId(fileId: Long?): Long? =
         fileId?.takeIf(::isUploadVirtualFileId)?.let { -it - 1L }
 
-    fun isUploadVirtualFileId(fileId: Long): Boolean =
-        fileId < 0L && !VirtualArchiveFileIds.isArchiveVirtualFileId(fileId)
+    fun isUploadVirtualFileId(fileId: Long): Boolean = fileId < 0L
 }
 
 fun OCFile.isUploadVirtualFile(): Boolean = id?.let(VirtualUploadFileIds::isUploadVirtualFileId) == true
 
 fun OCFile.uploadTransferId(): Long? = VirtualUploadFileIds.transferIdFromFileId(id)
+
+fun OCFile.isVirtualFile(): Boolean = isUploadVirtualFile()

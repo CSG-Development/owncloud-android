@@ -53,26 +53,39 @@ import com.owncloud.android.domain.spaces.usecases.GetSpaceWithSpecialsByIdForAc
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
+import com.owncloud.android.presentation.common.compose.HomeCloudBannerUiModel
 import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
 import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModel
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModelMapper
 import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
 import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
 import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
 import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
 import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyUiModel
+import com.owncloud.android.presentation.files.operations.ArchiveErrorUiModel
+import com.owncloud.android.presentation.files.operations.ArchiveFailureType
+import com.owncloud.android.presentation.files.operations.ArchiveWorkCompleted
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
+import com.owncloud.android.presentation.files.operations.ArchiveWorkFailed
+import com.owncloud.android.presentation.files.operations.FileOperation
+import com.owncloud.android.presentation.files.operations.messageRes
+import com.owncloud.android.presentation.files.operations.showRetry
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
+import com.owncloud.android.usecases.archive.KEY_ARCHIVE_FAILURE_TYPE
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase.SyncFolderMode.SYNC_CONTENTS
 import com.owncloud.android.usecases.synchronization.UpdateFoldersRecursivelyUseCase
 import com.owncloud.android.workers.DownloadFileWorker
+import com.owncloud.android.workers.UnzipFileWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -81,7 +94,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -90,6 +107,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -191,6 +209,28 @@ class MainFileListViewModel(
                 initialValue = emptyList(),
             )
 
+    private val _archiveActivity = MutableStateFlow<ArchiveActivityUiModel?>(null)
+    val archiveActivity: StateFlow<ArchiveActivityUiModel?> = _archiveActivity.asStateFlow()
+
+    private val _archiveWorkCompleted = MutableSharedFlow<ArchiveWorkCompleted>(extraBufferCapacity = 1)
+    val archiveWorkCompleted: SharedFlow<ArchiveWorkCompleted> = _archiveWorkCompleted.asSharedFlow()
+
+    private val _archiveUnsupportedDialog = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val archiveUnsupportedDialog: SharedFlow<Unit> = _archiveUnsupportedDialog.asSharedFlow()
+
+    private val _archiveErrors = MutableStateFlow<List<ArchiveErrorUiModel>>(emptyList())
+
+    val archiveErrorBanner: StateFlow<HomeCloudBannerUiModel?> = _archiveErrors
+        .map { errors -> errors.firstOrNull()?.toBannerUiModel() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null,
+        )
+
+    private val _archiveRetryOperations = MutableSharedFlow<FileOperation>(extraBufferCapacity = 1)
+    val archiveRetryOperations: SharedFlow<FileOperation> = _archiveRetryOperations.asSharedFlow()
+
     /** File list ui state combines the other fields and generate a new state whenever any of them changes */
     val fileListUiState: StateFlow<FileListUiState> =
         combine(
@@ -243,6 +283,164 @@ class MainFileListViewModel(
 
     fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
         _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+        observeArchiveWorkUntilFinished(enqueued)
+        refreshArchiveActivity()
+    }
+
+    fun cancelArchiveWork(workId: UUID) {
+        workManagerProvider.cancelWorkById(workId)
+        _archiveWorkMetadata.update { it - workId }
+        refreshArchiveActivity()
+    }
+
+    fun dismissArchiveErrorBanner() {
+        _archiveErrors.update { errors -> errors.drop(1) }
+    }
+
+    fun retryArchiveError() {
+        viewModelScope.launch {
+            var head: ArchiveErrorUiModel? = null
+            _archiveErrors.update { errors ->
+                val current = errors.firstOrNull()
+                if (current == null || !current.failure.failureType.showRetry) {
+                    errors
+                } else {
+                    head = current
+                    errors.drop(1)
+                }
+            }
+            val failure = head?.failure ?: return@launch
+            val operation = resolveRetryOperation(failure) ?: return@launch
+            _archiveRetryOperations.emit(operation)
+        }
+    }
+
+    private suspend fun resolveRetryOperation(failure: ArchiveWorkFailed): FileOperation? =
+        withContext(coroutinesDispatcherProvider.io) {
+            if (failure.isCompress) {
+                val parentFolder = getFileByIdUseCase(GetFileByIdUseCase.Params(failure.parentFolderId))
+                    .getDataOrNull()
+                    ?.takeIf { it.isFolder }
+                    ?: return@withContext null
+                val files = failure.sourceFileIds.mapNotNull { fileId ->
+                    getFileByIdUseCase(GetFileByIdUseCase.Params(fileId)).getDataOrNull()
+                }
+                if (files.isEmpty()) return@withContext null
+                FileOperation.CompressOperation(
+                    accountName = failure.accountName,
+                    parentFolder = parentFolder,
+                    files = files,
+                )
+            } else {
+                val zipFileId = failure.zipFileId ?: return@withContext null
+                val zipFile = getFileByIdUseCase(GetFileByIdUseCase.Params(zipFileId))
+                    .getDataOrNull()
+                    ?: return@withContext null
+                FileOperation.ExtractOperation(
+                    accountName = failure.accountName,
+                    zipFile = zipFile,
+                )
+            }
+        }
+
+    private fun ArchiveErrorUiModel.toBannerUiModel(): HomeCloudBannerUiModel =
+        HomeCloudBannerUiModel(
+            messageRes = messageRes,
+            style = HomeCloudBannerStyle.ERROR,
+            actionLabelRes = R.string.homecloud_retry.takeIf { showRetry },
+            contentKey = id,
+        )
+
+    private fun refreshArchiveActivity() {
+        val pendingWorks = pendingArchiveWorkInfos.value
+        val activeMetadata = _archiveWorkMetadata.value.filterKeys { workId ->
+            pendingWorks.any { it.id == workId }
+        }
+        _archiveActivity.value = ArchiveActivityUiModelMapper.fromPendingWorks(
+            accountName = currentFolderDisplayed.value.owner,
+            pendingWorks = pendingWorks,
+            workMetadata = activeMetadata,
+        )
+    }
+
+    private fun observeArchiveWorkUntilFinished(enqueued: ArchiveWorkEnqueued) {
+        viewModelScope.launch {
+            val workInfo = workManagerProvider.getWorkInfoByIdFlow(enqueued.workId)
+                .filterNotNull()
+                .first { it.state.isFinished }
+
+            val stillTracked = _archiveWorkMetadata.value.containsKey(enqueued.workId)
+            when {
+                workInfo.state == WorkInfo.State.SUCCEEDED && stillTracked -> {
+                    val viewFolderId = resolveArchiveViewFolderId(enqueued, workInfo)
+                    _archiveWorkCompleted.emit(
+                        ArchiveWorkCompleted(
+                            isCompress = enqueued.isCompress,
+                            itemCount = enqueued.itemCount,
+                            viewFolderId = viewFolderId,
+                        ),
+                    )
+                }
+                workInfo.state == WorkInfo.State.FAILED && stillTracked -> {
+                    val failureType = resolveArchiveFailureType(workInfo)
+                    if (failureType == ArchiveFailureType.PASSWORD_PROTECTED) {
+                        _archiveUnsupportedDialog.emit(Unit)
+                    } else {
+                        val failed = ArchiveWorkFailed(
+                            failureType = failureType,
+                            isCompress = enqueued.isCompress,
+                            displayName = enqueued.displayName,
+                            sourceFileIds = enqueued.sourceFileIds,
+                            zipFileId = enqueued.zipFileId,
+                            parentFolderId = enqueued.parentFolderId,
+                            spaceId = enqueued.spaceId,
+                            accountName = enqueued.accountName,
+                        )
+                        _archiveErrors.update { errors ->
+                            errors + ArchiveErrorUiModel(
+                                failure = failed,
+                                messageRes = failed.failureType.messageRes(failed.isCompress),
+                                showRetry = failed.failureType.showRetry,
+                            )
+                        }
+                    }
+                }
+            }
+            _archiveWorkMetadata.update { it - enqueued.workId }
+            refreshArchiveActivity()
+        }
+    }
+
+    private fun resolveArchiveFailureType(workInfo: WorkInfo): ArchiveFailureType {
+        val typeName = workInfo.outputData.getString(KEY_ARCHIVE_FAILURE_TYPE) ?: return ArchiveFailureType.UNEXPECTED
+        return runCatching { ArchiveFailureType.valueOf(typeName) }.getOrDefault(ArchiveFailureType.UNEXPECTED)
+    }
+
+    private suspend fun resolveArchiveViewFolderId(
+        metadata: ArchiveWorkEnqueued,
+        workInfo: WorkInfo,
+    ): Long {
+        if (metadata.isCompress) {
+            return metadata.parentFolderId
+        }
+
+        val targetRemotePath = workInfo.outputData.getString(UnzipFileWorker.KEY_TARGET_REMOTE_PATH)
+            ?: metadata.remotePath
+
+        val targetFile = withContext(coroutinesDispatcherProvider.io) {
+            getFileByRemotePathUseCase(
+                GetFileByRemotePathUseCase.Params(
+                    owner = metadata.accountName,
+                    remotePath = targetRemotePath,
+                    spaceId = metadata.spaceId,
+                ),
+            ).getDataOrNull()
+        } ?: return metadata.parentFolderId
+
+        return when {
+            targetFile.isFolder -> targetFile.id ?: metadata.parentFolderId
+            else -> targetFile.parentId ?: metadata.parentFolderId
+        }
     }
 
     init {
@@ -262,6 +460,16 @@ class MainFileListViewModel(
             )
         }
         startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
+
+        viewModelScope.launch {
+            pendingArchiveWorkInfos.collect { refreshArchiveActivity() }
+        }
+        viewModelScope.launch {
+            currentFolderDisplayed
+                .map { it.owner }
+                .distinctUntilChanged()
+                .collect { refreshArchiveActivity() }
+        }
 
         viewModelScope.launch {
             var previousContent: List<OCFileWithSyncInfo> = emptyList()
@@ -656,21 +864,10 @@ class MainFileListViewModel(
     ) = combine(
         this,
         uploadProgressByTransferId,
-        pendingArchiveWorkInfos,
-        _archiveWorkMetadata,
-    ) { folderContent, progressByTransferId, pendingWorks, workMetadata ->
-        val activeMetadata = workMetadata.filterKeys { workId ->
-            pendingWorks.any { it.id == workId }
+    ) { folderContent, progressByTransferId ->
+        folderContent.map { fileWithSyncInfo ->
+            fileWithSyncInfo.withUploadProgress(progressByTransferId)
         }
-        folderContent
-            .map { fileWithSyncInfo ->
-                fileWithSyncInfo.withUploadProgress(progressByTransferId)
-            }
-            .withArchiveVirtualFiles(
-                currentFolder = currentFolderDisplayed,
-                pendingWorks = pendingWorks,
-                workMetadata = activeMetadata,
-            )
     }.map { folderContentWithProgress ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,

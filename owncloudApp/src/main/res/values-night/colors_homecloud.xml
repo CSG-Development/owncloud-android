@@ -32,6 +32,8 @@
     <color name="homecloud_button_borderless_text">@color/homecloud_blue_lighten_2</color>
 
     <color name="homecloud_dialog_background">#262729</color>
+    <color name="homecloud_dialog_title_background">#3DFF9800</color>
+    <color name="homecloud_dialog_accent_border">#FF9800</color>
     <color name="homecloud_dialog_button_disabled">@color/homecloud_blue_darken_2_24</color>
     <color name="homecloud_dialog_button_enabled">@color/homecloud_blue_lighten_2</color>
 
@@ -88,8 +90,17 @@
     <color name="homecloud_tag_content">#B2FFFFFF</color>
 
     <!-- Reconnecting snackbar -->
-    <color name="homecloud_reconnecting_snackbar_background">#B8B8B8</color>
-    <color name="homecloud_reconnecting_snackbar_retry_button">@color/homecloud_blue_darken_2</color>
+    <color name="homecloud_snackbar_background">#B8B8B8</color>
+    <color name="homecloud_snackbar_action">@color/homecloud_blue_darken_2</color>
 
+    <!-- HomeCloudBanner -->
+    <color name="homecloud_banner_error_background">#3B100D</color>
+    <color name="homecloud_banner_error_border">@color/homecloud_error</color>
+    <color name="homecloud_banner_error_text">@color/homecloud_white_87</color>
+    <color name="homecloud_banner_error_action">@color/homecloud_error</color>
+    <color name="homecloud_banner_info_background">#1A3347</color>
+    <color name="homecloud_banner_info_border">@color/homecloud_blue_lighten_2</color>
+    <color name="homecloud_banner_info_text">@color/homecloud_white_87</color>
+    <color name="homecloud_banner_info_action">@color/homecloud_blue_lighten_2</color>
 
 </resources>
