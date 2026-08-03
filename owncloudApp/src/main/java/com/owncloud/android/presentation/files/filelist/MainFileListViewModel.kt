@@ -40,6 +40,7 @@ import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PARENT_ID
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
+import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
@@ -52,20 +53,39 @@ import com.owncloud.android.domain.spaces.usecases.GetSpaceWithSpecialsByIdForAc
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
 import com.owncloud.android.presentation.common.UIResult
+import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
+import com.owncloud.android.presentation.common.compose.HomeCloudBannerUiModel
 import com.owncloud.android.presentation.files.SortOrder
 import com.owncloud.android.presentation.files.SortOrder.Companion.PREF_FILE_LIST_SORT_ORDER
 import com.owncloud.android.presentation.files.SortType
 import com.owncloud.android.presentation.files.SortType.Companion.PREF_FILE_LIST_SORT_TYPE
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModel
+import com.owncloud.android.presentation.files.filelist.compose.ArchiveActivityUiModelMapper
+import com.owncloud.android.presentation.files.filelist.compose.FileListComposeUiState
+import com.owncloud.android.presentation.files.filelist.compose.FileListLayoutMode
+import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
+import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
+import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyUiModel
+import com.owncloud.android.presentation.files.operations.ArchiveErrorUiModel
+import com.owncloud.android.presentation.files.operations.ArchiveFailureType
+import com.owncloud.android.presentation.files.operations.ArchiveWorkCompleted
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
+import com.owncloud.android.presentation.files.operations.ArchiveWorkFailed
+import com.owncloud.android.presentation.files.operations.FileOperation
+import com.owncloud.android.presentation.files.operations.messageRes
+import com.owncloud.android.presentation.files.operations.showRetry
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
+import com.owncloud.android.usecases.archive.KEY_ARCHIVE_FAILURE_TYPE
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase.SyncFolderMode.SYNC_CONTENTS
 import com.owncloud.android.usecases.synchronization.UpdateFoldersRecursivelyUseCase
 import com.owncloud.android.workers.DownloadFileWorker
+import com.owncloud.android.workers.UnzipFileWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -73,7 +93,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -82,6 +107,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -107,6 +133,7 @@ class MainFileListViewModel(
     private val workManagerProvider: WorkManagerProvider,
     initialFolderToDisplay: OCFile,
     fileListOptionParam: FileListOption,
+    private val isPickerMode: Boolean = false,
 ) : ViewModel() {
 
     private val showHiddenFiles: Boolean = sharedPreferencesProvider.getBoolean(PREF_SHOW_HIDDEN_FILES, false)
@@ -116,6 +143,18 @@ class MainFileListViewModel(
     private val searchFilter: MutableStateFlow<String> = MutableStateFlow("")
     private val sortTypeAndOrder = MutableStateFlow(Pair(SortType.SORT_TYPE_BY_NAME, SortOrder.SORT_ORDER_ASCENDING))
     val space: MutableStateFlow<OCSpace?> = MutableStateFlow(null)
+
+    private val selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val layoutMode = MutableStateFlow(
+        if (isGridModeSetAsPreferred()) FileListLayoutMode.Grid else FileListLayoutMode.List
+    )
+    private val gridColumns = MutableStateFlow(3)
+    private val isRefreshing = MutableStateFlow(false)
+    private val isMultiPersonal = MutableStateFlow(false)
+
+    private val _scrollToTopEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val scrollToTopEvents: SharedFlow<Unit> = _scrollToTopEvents.asSharedFlow()
+
     val appRegistryToCreateFiles: StateFlow<List<AppRegistryMimeType>> =
         getAppRegistryWhichAllowCreationAsStreamUseCase(
             GetAppRegistryWhichAllowCreationAsStreamUseCase.Params(
@@ -133,30 +172,6 @@ class MainFileListViewModel(
     private val _appRegistryMimeTypeSingleFile: MutableSharedFlow<AppRegistryMimeType?> = MutableSharedFlow()
     val appRegistryMimeTypeSingleFile: SharedFlow<AppRegistryMimeType?> = _appRegistryMimeTypeSingleFile
 
-    /** File list ui state combines the other fields and generate a new state whenever any of them changes */
-    val fileListUiState: StateFlow<FileListUiState> =
-        combine(
-            currentFolderDisplayed,
-            fileListOption,
-            searchFilter,
-            sortTypeAndOrder,
-            space,
-        ) { currentFolderDisplayed, fileListOption, searchFilter, sortTypeAndOrder, space ->
-            composeFileListUiStateForThisParams(
-                currentFolderDisplayed = currentFolderDisplayed,
-                fileListOption = fileListOption,
-                searchFilter = searchFilter,
-                sortTypeAndOrder = sortTypeAndOrder,
-                space = space,
-            )
-        }
-            .flatMapLatest { it }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = FileListUiState.Loading
-            )
-
     private val _openInWebFlow = MutableStateFlow<Event<UIResult<String>>?>(null)
     val openInWebFlow: StateFlow<Event<UIResult<String>>?> = _openInWebFlow
 
@@ -165,6 +180,8 @@ class MainFileListViewModel(
 
     private val _menuOptionsSingleFile: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptionsSingleFile: SharedFlow<List<FileMenuOption>> = _menuOptionsSingleFile
+
+    // Must be initialized before fileListUiState: toFileListUiState() combines these flows.
     private val uploadProgressByTransferId: StateFlow<Map<Long, Int>> =
         workManagerProvider.getRunningUploadsWorkInfosLiveData()
             .asFlow()
@@ -192,8 +209,238 @@ class MainFileListViewModel(
                 initialValue = emptyList(),
             )
 
+    private val _archiveActivity = MutableStateFlow<ArchiveActivityUiModel?>(null)
+    val archiveActivity: StateFlow<ArchiveActivityUiModel?> = _archiveActivity.asStateFlow()
+
+    private val _archiveWorkCompleted = MutableSharedFlow<ArchiveWorkCompleted>(extraBufferCapacity = 1)
+    val archiveWorkCompleted: SharedFlow<ArchiveWorkCompleted> = _archiveWorkCompleted.asSharedFlow()
+
+    private val _archiveUnsupportedDialog = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val archiveUnsupportedDialog: SharedFlow<Unit> = _archiveUnsupportedDialog.asSharedFlow()
+
+    private val _archiveErrors = MutableStateFlow<List<ArchiveErrorUiModel>>(emptyList())
+
+    val archiveErrorBanner: StateFlow<HomeCloudBannerUiModel?> = _archiveErrors
+        .map { errors -> errors.firstOrNull()?.toBannerUiModel() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null,
+        )
+
+    private val _archiveRetryOperations = MutableSharedFlow<FileOperation>(extraBufferCapacity = 1)
+    val archiveRetryOperations: SharedFlow<FileOperation> = _archiveRetryOperations.asSharedFlow()
+
+    /** File list ui state combines the other fields and generate a new state whenever any of them changes */
+    val fileListUiState: StateFlow<FileListUiState> =
+        combine(
+            currentFolderDisplayed,
+            fileListOption,
+            searchFilter,
+            sortTypeAndOrder,
+            space,
+        ) { currentFolderDisplayed, fileListOption, searchFilter, sortTypeAndOrder, space ->
+            composeFileListUiStateForThisParams(
+                currentFolderDisplayed = currentFolderDisplayed,
+                fileListOption = fileListOption,
+                searchFilter = searchFilter,
+                sortTypeAndOrder = sortTypeAndOrder,
+                space = space,
+            )
+        }
+            .flatMapLatest { it }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = FileListUiState.Loading
+            )
+
+    val composeUiState: StateFlow<FileListComposeUiState> = combine(
+        fileListUiState,
+        selectedIds,
+        layoutMode,
+        gridColumns,
+        isRefreshing,
+    ) { uiState, selected, mode, columns, refreshing ->
+        ComposeUiInputs(uiState, selected, mode, columns, refreshing)
+    }.combine(isMultiPersonal) { inputs, multiPersonal ->
+        toComposeUiState(
+            fileListUiState = inputs.uiState,
+            selectedIds = inputs.selectedIds,
+            layoutMode = inputs.layoutMode,
+            gridColumns = inputs.gridColumns,
+            isRefreshing = inputs.isRefreshing,
+            isMultiPersonal = multiPersonal,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = FileListComposeUiState(
+            layoutMode = layoutMode.value,
+            pullToRefreshEnabled = fileListOptionParam != FileListOption.AV_OFFLINE,
+        ),
+    )
+
     fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
         _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+        observeArchiveWorkUntilFinished(enqueued)
+        refreshArchiveActivity()
+    }
+
+    fun cancelArchiveWork(workId: UUID) {
+        workManagerProvider.cancelWorkById(workId)
+        _archiveWorkMetadata.update { it - workId }
+        refreshArchiveActivity()
+    }
+
+    fun dismissArchiveErrorBanner() {
+        _archiveErrors.update { errors -> errors.drop(1) }
+    }
+
+    fun retryArchiveError() {
+        viewModelScope.launch {
+            var head: ArchiveErrorUiModel? = null
+            _archiveErrors.update { errors ->
+                val current = errors.firstOrNull()
+                if (current == null || !current.failure.failureType.showRetry) {
+                    errors
+                } else {
+                    head = current
+                    errors.drop(1)
+                }
+            }
+            val failure = head?.failure ?: return@launch
+            val operation = resolveRetryOperation(failure) ?: return@launch
+            _archiveRetryOperations.emit(operation)
+        }
+    }
+
+    private suspend fun resolveRetryOperation(failure: ArchiveWorkFailed): FileOperation? =
+        withContext(coroutinesDispatcherProvider.io) {
+            if (failure.isCompress) {
+                val parentFolder = getFileByIdUseCase(GetFileByIdUseCase.Params(failure.parentFolderId))
+                    .getDataOrNull()
+                    ?.takeIf { it.isFolder }
+                    ?: return@withContext null
+                val files = failure.sourceFileIds.mapNotNull { fileId ->
+                    getFileByIdUseCase(GetFileByIdUseCase.Params(fileId)).getDataOrNull()
+                }
+                if (files.isEmpty()) return@withContext null
+                FileOperation.CompressOperation(
+                    accountName = failure.accountName,
+                    parentFolder = parentFolder,
+                    files = files,
+                )
+            } else {
+                val zipFileId = failure.zipFileId ?: return@withContext null
+                val zipFile = getFileByIdUseCase(GetFileByIdUseCase.Params(zipFileId))
+                    .getDataOrNull()
+                    ?: return@withContext null
+                FileOperation.ExtractOperation(
+                    accountName = failure.accountName,
+                    zipFile = zipFile,
+                )
+            }
+        }
+
+    private fun ArchiveErrorUiModel.toBannerUiModel(): HomeCloudBannerUiModel =
+        HomeCloudBannerUiModel(
+            messageRes = messageRes,
+            style = HomeCloudBannerStyle.ERROR,
+            actionLabelRes = R.string.homecloud_retry.takeIf { showRetry },
+            contentKey = id,
+        )
+
+    private fun refreshArchiveActivity() {
+        val pendingWorks = pendingArchiveWorkInfos.value
+        val activeMetadata = _archiveWorkMetadata.value.filterKeys { workId ->
+            pendingWorks.any { it.id == workId }
+        }
+        _archiveActivity.value = ArchiveActivityUiModelMapper.fromPendingWorks(
+            accountName = currentFolderDisplayed.value.owner,
+            pendingWorks = pendingWorks,
+            workMetadata = activeMetadata,
+        )
+    }
+
+    private fun observeArchiveWorkUntilFinished(enqueued: ArchiveWorkEnqueued) {
+        viewModelScope.launch {
+            val workInfo = workManagerProvider.getWorkInfoByIdFlow(enqueued.workId)
+                .filterNotNull()
+                .first { it.state.isFinished }
+
+            val stillTracked = _archiveWorkMetadata.value.containsKey(enqueued.workId)
+            when {
+                workInfo.state == WorkInfo.State.SUCCEEDED && stillTracked -> {
+                    val viewFolderId = resolveArchiveViewFolderId(enqueued, workInfo)
+                    _archiveWorkCompleted.emit(
+                        ArchiveWorkCompleted(
+                            isCompress = enqueued.isCompress,
+                            itemCount = enqueued.itemCount,
+                            viewFolderId = viewFolderId,
+                        ),
+                    )
+                }
+                workInfo.state == WorkInfo.State.FAILED && stillTracked -> {
+                    val failureType = resolveArchiveFailureType(workInfo)
+                    if (failureType == ArchiveFailureType.PASSWORD_PROTECTED) {
+                        _archiveUnsupportedDialog.emit(Unit)
+                    } else {
+                        val failed = ArchiveWorkFailed(
+                            failureType = failureType,
+                            isCompress = enqueued.isCompress,
+                            displayName = enqueued.displayName,
+                            sourceFileIds = enqueued.sourceFileIds,
+                            zipFileId = enqueued.zipFileId,
+                            parentFolderId = enqueued.parentFolderId,
+                            spaceId = enqueued.spaceId,
+                            accountName = enqueued.accountName,
+                        )
+                        _archiveErrors.update { errors ->
+                            errors + ArchiveErrorUiModel(
+                                failure = failed,
+                                messageRes = failed.failureType.messageRes(failed.isCompress),
+                                showRetry = failed.failureType.showRetry,
+                            )
+                        }
+                    }
+                }
+            }
+            _archiveWorkMetadata.update { it - enqueued.workId }
+            refreshArchiveActivity()
+        }
+    }
+
+    private fun resolveArchiveFailureType(workInfo: WorkInfo): ArchiveFailureType {
+        val typeName = workInfo.outputData.getString(KEY_ARCHIVE_FAILURE_TYPE) ?: return ArchiveFailureType.UNEXPECTED
+        return runCatching { ArchiveFailureType.valueOf(typeName) }.getOrDefault(ArchiveFailureType.UNEXPECTED)
+    }
+
+    private suspend fun resolveArchiveViewFolderId(
+        metadata: ArchiveWorkEnqueued,
+        workInfo: WorkInfo,
+    ): Long {
+        if (metadata.isCompress) {
+            return metadata.parentFolderId
+        }
+
+        val targetRemotePath = workInfo.outputData.getString(UnzipFileWorker.KEY_TARGET_REMOTE_PATH)
+            ?: metadata.remotePath
+
+        val targetFile = withContext(coroutinesDispatcherProvider.io) {
+            getFileByRemotePathUseCase(
+                GetFileByRemotePathUseCase.Params(
+                    owner = metadata.accountName,
+                    remotePath = targetRemotePath,
+                    spaceId = metadata.spaceId,
+                ),
+            ).getDataOrNull()
+        } ?: return metadata.parentFolderId
+
+        return when {
+            targetFile.isFolder -> targetFile.id ?: metadata.parentFolderId
+            else -> targetFile.parentId ?: metadata.parentFolderId
+        }
     }
 
     init {
@@ -213,6 +460,32 @@ class MainFileListViewModel(
             )
         }
         startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
+
+        viewModelScope.launch {
+            pendingArchiveWorkInfos.collect { refreshArchiveActivity() }
+        }
+        viewModelScope.launch {
+            currentFolderDisplayed
+                .map { it.owner }
+                .distinctUntilChanged()
+                .collect { refreshArchiveActivity() }
+        }
+
+        viewModelScope.launch {
+            var previousContent: List<OCFileWithSyncInfo> = emptyList()
+            fileListUiState.collect { state ->
+                if (state !is FileListUiState.Success) return@collect
+                val newContent = state.folderContent
+                if (isOnlyListOrderChanged(previousContent, newContent)) {
+                    _scrollToTopEvents.tryEmit(Unit)
+                }
+                previousContent = newContent
+                val selectableIds = newContent.mapNotNull { info ->
+                    info.file.id?.takeUnless { info.file.isVirtualFile() }
+                }.toSet()
+                selectedIds.retainFileSelection(selectableIds)
+            }
+        }
     }
 
     fun navigateToFolderId(folderId: Long) {
@@ -231,18 +504,95 @@ class MainFileListViewModel(
         space.value
 
     fun setGridModeAsPreferred() {
-        savePreferredLayoutManager(true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
+        layoutMode.value = FileListLayoutMode.Grid
     }
 
     fun setListModeAsPreferred() {
-        savePreferredLayoutManager(false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
+        layoutMode.value = FileListLayoutMode.List
     }
 
-    private fun savePreferredLayoutManager(isGridModeSelected: Boolean) {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, isGridModeSelected)
+    fun updateGridColumns(columns: Int) {
+        gridColumns.value = columns.coerceAtLeast(1)
     }
 
-    fun isGridModeSetAsPreferred() = sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+    fun setMultiPersonal(value: Boolean) {
+        isMultiPersonal.value = value
+    }
+
+    fun setRefreshing(refreshing: Boolean) {
+        isRefreshing.value = refreshing
+    }
+
+    fun toggleSelection(fileId: Long) {
+        selectedIds.toggleFileSelection(fileId)
+    }
+
+    fun select(fileId: Long) {
+        selectedIds.selectFile(fileId)
+    }
+
+    fun clearSelection() {
+        selectedIds.clearFileSelection()
+    }
+
+    fun selectAll() {
+        selectedIds.selectAllFiles(composeUiState.value.selectableFileIds())
+    }
+
+    fun selectInverse() {
+        selectedIds.inverseFileSelection(composeUiState.value.selectableFileIds())
+    }
+
+    fun isGridModeSetAsPreferred() =
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
+
+    private fun toComposeUiState(
+        fileListUiState: FileListUiState,
+        selectedIds: Set<Long>,
+        layoutMode: FileListLayoutMode,
+        gridColumns: Int,
+        isRefreshing: Boolean,
+        isMultiPersonal: Boolean,
+    ): FileListComposeUiState {
+        val option = when (fileListUiState) {
+            is FileListUiState.Success -> fileListUiState.fileListOption
+            else -> fileListOption.value
+        }
+        val pullEnabled = option != FileListOption.AV_OFFLINE
+        if (fileListUiState !is FileListUiState.Success) {
+            return fileListLoadingUiState(
+                layoutMode = layoutMode,
+                gridColumns = gridColumns,
+                selectedIds = selectedIds,
+                isRefreshing = isRefreshing,
+                pullToRefreshEnabled = pullEnabled,
+            )
+        }
+
+        val folderContent = fileListUiState.folderContent
+        return fileListItemsUiState(
+            folderContent = folderContent,
+            emptyModel = option.toFileListEmptyUiModel(
+                isSharesSpace = option.isSharedByLink() && fileListUiState.space != null,
+            ),
+            layoutMode = layoutMode,
+            gridColumns = gridColumns,
+            selectedIds = selectedIds,
+            isRefreshing = isRefreshing,
+            pullToRefreshEnabled = pullEnabled,
+            showThreeDotMenu = !option.isFavorites(),
+            isMultiPersonal = isMultiPersonal,
+            showSpacePathForItem = { info ->
+                option.isAvailableOffline() ||
+                    option.isFavorites() ||
+                    (option.isSharedByLink() && info.space == null)
+            },
+            footerContext = contextProvider.getContext(),
+            includeFooter = !isPickerMode,
+        )
+    }
 
     private fun sortList(filesWithSyncInfo: List<OCFileWithSyncInfo>, sortTypeAndOrder: Pair<SortType, SortOrder>): List<OCFileWithSyncInfo> =
         sortFilesWithSyncInfoUseCase(
@@ -514,21 +864,10 @@ class MainFileListViewModel(
     ) = combine(
         this,
         uploadProgressByTransferId,
-        pendingArchiveWorkInfos,
-        _archiveWorkMetadata,
-    ) { folderContent, progressByTransferId, pendingWorks, workMetadata ->
-        val activeMetadata = workMetadata.filterKeys { workId ->
-            pendingWorks.any { it.id == workId }
+    ) { folderContent, progressByTransferId ->
+        folderContent.map { fileWithSyncInfo ->
+            fileWithSyncInfo.withUploadProgress(progressByTransferId)
         }
-        folderContent
-            .map { fileWithSyncInfo ->
-                fileWithSyncInfo.withUploadProgress(progressByTransferId)
-            }
-            .withArchiveVirtualFiles(
-                currentFolder = currentFolderDisplayed,
-                pendingWorks = pendingWorks,
-                workMetadata = activeMetadata,
-            )
     }.map { folderContentWithProgress ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,
@@ -563,8 +902,12 @@ class MainFileListViewModel(
         ) : FileListUiState
     }
 
-    companion object {
-        internal const val RECYCLER_VIEW_PREFERRED = "RECYCLER_VIEW_PREFERRED"
-    }
+    private data class ComposeUiInputs(
+        val uiState: FileListUiState,
+        val selectedIds: Set<Long>,
+        val layoutMode: FileListLayoutMode,
+        val gridColumns: Int,
+        val isRefreshing: Boolean,
+    )
 }
 

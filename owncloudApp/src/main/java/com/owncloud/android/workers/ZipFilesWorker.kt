@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.owncloud.android.R
 import com.owncloud.android.data.executeRemoteOperation
 import com.owncloud.android.domain.UseCaseResult
@@ -27,7 +28,9 @@ import com.owncloud.android.lib.common.network.OnDatatransferProgressListener
 import com.owncloud.android.lib.resources.files.DownloadRemoteFileOperation
 import com.owncloud.android.lib.resources.files.UploadFileFromFileSystemOperation
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.files.operations.ArchiveFailureClassifier
 import com.owncloud.android.ui.errorhandling.ErrorMessageAdapter
+import com.owncloud.android.usecases.archive.KEY_ARCHIVE_FAILURE_TYPE
 import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
@@ -201,7 +204,11 @@ class ZipFilesWorker(
         return when {
             throwable == null -> Result.success()
             throwable is NoNetworkConnectionException -> Result.retry()
-            else -> Result.failure()
+            else -> {
+                val failureType = ArchiveFailureClassifier.classify(throwable)
+                    ?: return Result.failure()
+                Result.failure(workDataOf(KEY_ARCHIVE_FAILURE_TYPE to failureType.name))
+            }
         }
     }
 

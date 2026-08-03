@@ -18,7 +18,7 @@ import com.owncloud.android.domain.trash.usecases.RestoreTrashItemUseCase
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.ViewType
-import com.owncloud.android.presentation.files.filelist.MainFileListViewModel.Companion.RECYCLER_VIEW_PREFERRED
+import com.owncloud.android.presentation.files.ViewType.Companion.PREF_FILE_LIST_GRID
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -236,14 +236,14 @@ class TrashViewModel(
     }
 
     fun isGridModeSetAsPreferred(): Boolean =
-        sharedPreferencesProvider.getBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
     fun setGridModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, true)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, true)
     }
 
     fun setListModeAsPreferred() {
-        sharedPreferencesProvider.putBoolean(RECYCLER_VIEW_PREFERRED, false)
+        sharedPreferencesProvider.putBoolean(PREF_FILE_LIST_GRID, false)
     }
 
     fun getCurrentViewType(): ViewType =

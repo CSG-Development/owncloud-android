@@ -36,4 +36,9 @@ enum class ViewType {
             VIEW_TYPE_LIST -> R.drawable.ic_baseline_view_list
             VIEW_TYPE_GRID -> R.drawable.ic_baseline_view_grid
         }
+
+    companion object {
+        /** Historical SharedPreferences key for list vs grid; do not rename. */
+        const val PREF_FILE_LIST_GRID = "RECYCLER_VIEW_PREFERRED"
+    }
 }

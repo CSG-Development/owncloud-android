@@ -380,6 +380,7 @@ class FileOperationsViewModel(
                 workId = workId,
                 displayName = displayName,
                 isCompress = true,
+                itemCount = fileOperation.files.size,
                 parentFolderId = fileOperation.parentFolder.id!!,
                 remotePath = ArchiveNameResolver.resolveRemoteZipPath(
                     parentFolder = fileOperation.parentFolder,
@@ -387,6 +388,7 @@ class FileOperationsViewModel(
                 ),
                 spaceId = fileOperation.parentFolder.spaceId,
                 accountName = fileOperation.accountName,
+                sourceFileIds = fileOperation.files.mapNotNull { it.id },
             )
             _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
@@ -408,10 +410,12 @@ class FileOperationsViewModel(
                 workId = workId,
                 displayName = displayName,
                 isCompress = false,
+                itemCount = 1,
                 parentFolderId = zipFile.parentId!!,
                 remotePath = remotePath,
                 spaceId = zipFile.spaceId,
                 accountName = fileOperation.accountName,
+                zipFileId = zipFile.id,
             )
             _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)

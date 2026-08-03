@@ -35,7 +35,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
     private val layoutManager: StaggeredGridLayoutManager by lazy {
         if (trashViewModel.isGridModeSetAsPreferred()) {
             StaggeredGridLayoutManager(
-                ColumnQuantity(requireContext(), R.layout.grid_item).calculateNoOfColumns(binding.root),
+                ColumnQuantity(requireContext()).calculateNoOfColumns(binding.root),
                 RecyclerView.VERTICAL,
             )
         } else {
@@ -150,7 +150,7 @@ class TrashFragment : Fragment(), TrashListAdapter.TrashListAdapterListener {
     fun toggleViewType() {
         if (layoutManager.spanCount == 1) {
             trashViewModel.setGridModeAsPreferred()
-            layoutManager.spanCount = ColumnQuantity(requireContext(), R.layout.grid_item)
+            layoutManager.spanCount = ColumnQuantity(requireContext())
                 .calculateNoOfColumns(binding.root)
         } else {
             trashViewModel.setListModeAsPreferred()

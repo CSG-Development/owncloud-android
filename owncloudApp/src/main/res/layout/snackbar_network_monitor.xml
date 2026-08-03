@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:visibility="gone"
-    app:cardBackgroundColor="@color/homecloud_reconnecting_snackbar_background"
+    app:cardBackgroundColor="@color/homecloud_snackbar_background"
     app:cardCornerRadius="4dp"
     app:cardElevation="4dp"
     tools:visibility="visible">
@@ -21,7 +21,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/homecloud_finding_network"
-            android:textColor="@color/homecloud_reconnecting_snackbar_text"
+            android:textColor="@color/homecloud_snackbar_text"
             android:textSize="14sp"
             android:layout_marginEnd="@dimen/standard_margin"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -39,7 +39,7 @@
             android:paddingHorizontal="8dp"
             android:paddingVertical="0dp"
             android:text="@string/homecloud_retry"
-            android:textColor="@color/homecloud_reconnecting_snackbar_retry_button"
+            android:textColor="@color/homecloud_snackbar_action"
             android:visibility="gone"
             android:textAllCaps="false"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -57,7 +57,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/homecloud_reconnecting_snackbar_text" />
+            app:tint="@color/homecloud_snackbar_text" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
