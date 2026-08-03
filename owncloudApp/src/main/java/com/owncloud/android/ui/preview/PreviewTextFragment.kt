@@ -26,7 +26,6 @@
 package com.owncloud.android.ui.preview
 
 import android.accounts.Account
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -34,12 +33,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
-import android.widget.TextView
-import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import com.owncloud.android.R
 import com.owncloud.android.databinding.PreviewTextFragmentBinding
 import com.owncloud.android.domain.files.model.OCFile
@@ -51,23 +45,17 @@ import com.owncloud.android.presentation.files.operations.FileOperationsViewMode
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.previews.PreviewTextViewModel
+import com.owncloud.android.presentation.previews.compose.setTextPreviewContent
 import com.owncloud.android.presentation.tags.TagsActivity
-import com.owncloud.android.ui.dialog.LoadingDialog
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.koin.core.component.getScopeName
 import org.koin.core.parameter.parametersOf
 import timber.log.Timber
-import java.io.BufferedWriter
-import java.io.FileInputStream
-import java.io.IOException
-import java.io.StringWriter
-import java.util.Scanner
 
 class PreviewTextFragment : FileFragment() {
     private var account: Account? = null
-    private lateinit var textLoadTask: TextLoadAsyncTask
+    private var composePreviewBound = false
 
     private val previewTextViewModel by viewModel<PreviewTextViewModel> {
         parametersOf(requireArguments().getParcelable(EXTRA_FILE))
@@ -123,7 +111,6 @@ class PreviewTextFragment : FileFragment() {
             } else {
                 requireActivity().onBackPressed()
             }
-
         }
 
         loadAndShowTextPreview()
@@ -214,10 +201,7 @@ class PreviewTextFragment : FileFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        textLoadTask.apply {
-            cancel(true)
-            dismissLoadingDialog()
-        }
+        composePreviewBound = false
         isOpen = false
         currentFilePreviewing = null
     }
@@ -237,7 +221,7 @@ class PreviewTextFragment : FileFragment() {
     }
 
     override fun onFileContentChanged() {
-        loadAndShowTextPreview()
+        previewTextViewModel.reloadPreview()
     }
 
     override fun updateViewForSyncInProgress() {
@@ -276,14 +260,23 @@ class PreviewTextFragment : FileFragment() {
     }
 
     private fun loadAndShowTextPreview() {
-        textLoadTask = TextLoadAsyncTask(
-            binding.textLayout.textPreview,
-            binding.top,
-            binding.textLayout.root,
-            binding.tabLayout,
-            binding.viewPager
+        bindComposePreviewIfNeeded()
+        previewTextViewModel.loadPreview(file)
+    }
+
+    private fun bindComposePreviewIfNeeded() {
+        if (composePreviewBound) return
+        binding.textPreviewComposeView.setTextPreviewContent(
+            contentUiStateFlow = previewTextViewModel.contentUiState,
+            chunkTextsFlow = previewTextViewModel.chunkTexts,
+            markwon = previewTextViewModel.markwon,
+            chunkSpannedsFlow = previewTextViewModel.chunkSpanneds,
+            isMarkdownFlow = previewTextViewModel.isMarkdownFile,
+            markdownTabFlow = previewTextViewModel.markdownTab,
+            onMarkdownTabSelected = previewTextViewModel::selectMarkdownTab,
+            onVisibleRangeChanged = previewTextViewModel::onVisibleRangeChanged,
         )
-        textLoadTask.execute(file)
+        composePreviewBound = true
     }
 
     private fun openFile() {
@@ -298,140 +291,6 @@ class PreviewTextFragment : FileFragment() {
     private fun finish() {
         requireActivity().onBackPressed()
     }
-
-    private inner class TextLoadAsyncTask(
-        var textViewReference: TextView,
-        var rootView: RelativeLayout,
-        var textLayout: View,
-        var tabLayout: TabLayout,
-        var viewPager: ViewPager2
-    ) : AsyncTask<OCFile, Unit, StringWriter>() {
-
-        private val dialogWaitTag = "DIALOG_WAIT"
-        private lateinit var mimeType: String
-
-        override fun onPreExecute() {
-            showLoadingDialog()
-        }
-
-        override fun doInBackground(vararg params: OCFile?): StringWriter {
-            if (params.size != 1) {
-                throw IllegalArgumentException("The parameter to ${this.getScopeName()} must be (1) the file location")
-            }
-
-            val file = params[0] as OCFile
-            val location = file.storagePath
-            mimeType = file.mimeType
-
-            var inputStream: FileInputStream? = null
-            var scanner: Scanner? = null
-            val source = StringWriter()
-            val bufferedWriter = BufferedWriter(source)
-
-            try {
-                inputStream = FileInputStream(location)
-                scanner = Scanner(inputStream)
-                while (scanner.hasNextLine()) {
-                    bufferedWriter.append(scanner.nextLine())
-                    if (scanner.hasNextLine()) {
-                        bufferedWriter.append("\n")
-                    }
-                }
-                bufferedWriter.close()
-                val exc = scanner.ioException()
-                if (exc != null) {
-                    throw exc
-                }
-            } catch (e: IOException) {
-                Timber.e(e)
-            } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream.close()
-                    } catch (e: IOException) {
-                        Timber.e(e)
-                    }
-                }
-                scanner?.close()
-            }
-            return source
-        }
-
-        override fun onPostExecute(result: StringWriter) {
-            val text = String(result.buffer)
-            showPreviewText(text, mimeType, rootView, textViewReference, textLayout, tabLayout, viewPager)
-
-            try {
-                dismissLoadingDialog()
-            } catch (illegalStateException: java.lang.IllegalStateException) {
-                Timber.w(illegalStateException, "Dismissing dialog not allowed after onSaveInstanceState")
-            }
-        }
-
-        fun showLoadingDialog() {
-            val waitDialogFragment = requireActivity().supportFragmentManager.findFragmentByTag(dialogWaitTag)
-            val loading: LoadingDialog
-
-            if (waitDialogFragment == null) {
-                loading = LoadingDialog.newInstance(R.string.wait_a_moment, false)
-                val fragmentManager = requireActivity().supportFragmentManager
-                val fragmentTransaction = fragmentManager.beginTransaction()
-                loading.show(fragmentTransaction, dialogWaitTag)
-            } else {
-                loading = waitDialogFragment as LoadingDialog
-                loading.showsDialog = true
-            }
-        }
-
-        fun dismissLoadingDialog() {
-            val waitDialogFragment = requireActivity().supportFragmentManager.findFragmentByTag(dialogWaitTag)
-            waitDialogFragment?.let {
-                val loading = waitDialogFragment as LoadingDialog
-                loading.dismiss()
-            }
-        }
-
-        private fun showPreviewText(
-            text: String,
-            mimeType: String,
-            rootView: RelativeLayout,
-            textView: TextView,
-            textLayout: View,
-            tabLayout: TabLayout,
-            viewPager: ViewPager2
-        ) {
-            if (mimeType == "text/markdown") {
-                rootView.removeView(textLayout)
-                showFormatType(text, mimeType, tabLayout, viewPager)
-                tabLayout.visibility = View.VISIBLE
-                viewPager.visibility = View.VISIBLE
-            } else {
-                rootView.removeView(tabLayout)
-                rootView.removeView(viewPager)
-                textView.text = text
-                textLayout.visibility = View.VISIBLE
-            }
-        }
-
-        private fun showFormatType(
-            text: String,
-            mimeType: String,
-            tabLayout: TabLayout,
-            viewPager: ViewPager2
-        ) {
-            val adapter = PreviewFormatTextFragmentStateAdapter(this@PreviewTextFragment, text, mimeType)
-            viewPager.adapter = adapter
-
-            TabLayoutMediator(tabLayout, viewPager) { tab: TabLayout.Tab, position: Int ->
-                if (position == 0) {
-                    tab.text = adapter.formatTypes[mimeType]
-                } else {
-                    tab.text = adapter.formatTypes[PreviewFormatTextFragmentStateAdapter.TYPE_PLAIN]
-                }
-            }.attach()
-        }
-    }
-
 
     companion object {
         private const val EXTRA_FILE = "FILE"
@@ -468,4 +327,3 @@ class PreviewTextFragment : FileFragment() {
         }
     }
 }
-
