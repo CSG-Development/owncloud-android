@@ -242,4 +242,7 @@
     <string name="homecloud_filelist_compress_error_invalid_names">One or more file names include a slash or a backslash, which are unsupported characters. Update the names and try again.</string>
     <string name="homecloud_filelist_compress_error_corrupt">The archive appears to be corrupted or incomplete.</string>
     <string name="homecloud_filelist_compress_error_file_access">Some files couldn\'t be accessed for the compression. Verify permissions for all the files and try again.</string>
+
+    <string name="homecloud_textpreview_loading">Wait a moment</string>
+    <string name="homecloud_textpreview_error">Could not open this file for preview.</string>
 </resources>

@@ -47,6 +47,11 @@ import com.owncloud.android.presentation.previews.PreviewAudioViewModel
 import com.owncloud.android.presentation.previews.PreviewPdfViewModel
 import com.owncloud.android.presentation.previews.PreviewTextViewModel
 import com.owncloud.android.presentation.previews.PreviewVideoViewModel
+import com.owncloud.android.presentation.previews.text.TextPreviewDiskChunkLoader
+import com.owncloud.android.presentation.previews.text.TextPreviewMarkdownChunkIndexer
+import com.owncloud.android.presentation.previews.text.TextPreviewMarkdownChunkRenderer
+import com.owncloud.android.presentation.previews.text.TextPreviewMarkwonFactory
+import com.owncloud.android.presentation.previews.text.TextPreviewPlainChunkIndexer
 import com.owncloud.android.presentation.releasenotes.ReleaseNotesViewModel
 import com.owncloud.android.presentation.security.biometric.BiometricViewModel
 import com.owncloud.android.presentation.security.passcode.PassCodeViewModel
@@ -68,11 +73,23 @@ import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.presentation.trash.TrashViewModel
 import com.owncloud.android.ui.ReceiveExternalFilesViewModel
 import com.owncloud.android.ui.preview.PreviewImageViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelModule = module {
+    factory { TextPreviewPlainChunkIndexer() }
+    factory { TextPreviewMarkdownChunkIndexer() }
+    factory { TextPreviewDiskChunkLoader() }
+    factory {
+        val context = androidContext()
+        TextPreviewMarkdownChunkRenderer(
+            context = context,
+            markwon = TextPreviewMarkwonFactory.create(context),
+        )
+    }
+
     viewModelOf(::AppUpdateViewModel)
     viewModelOf(::ManageAccountsViewModel)
     viewModelOf(::BiometricViewModel)
