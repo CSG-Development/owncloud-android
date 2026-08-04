@@ -72,6 +72,7 @@ import com.owncloud.android.presentation.files.operations.ArchiveFailureType
 import com.owncloud.android.presentation.files.operations.ArchiveWorkCompleted
 import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.presentation.files.operations.ArchiveWorkFailed
+import com.owncloud.android.presentation.files.operations.ArchiveWorkMetadataResolver
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.messageRes
 import com.owncloud.android.presentation.files.operations.showRetry
@@ -199,6 +200,7 @@ class MainFileListViewModel(
             )
 
     private val _archiveWorkMetadata = MutableStateFlow<Map<UUID, ArchiveWorkEnqueued>>(emptyMap())
+    private val observedArchiveWorkIds = mutableSetOf<UUID>()
 
     private val pendingArchiveWorkInfos: StateFlow<List<WorkInfo>> =
         workManagerProvider.getPendingArchiveWorkInfosLiveData()
@@ -282,14 +284,14 @@ class MainFileListViewModel(
     )
 
     fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
-        _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
-        observeArchiveWorkUntilFinished(enqueued)
+        trackAndObserveArchiveWork(enqueued)
         refreshArchiveActivity()
     }
 
     fun cancelArchiveWork(workId: UUID) {
         workManagerProvider.cancelWorkById(workId)
         _archiveWorkMetadata.update { it - workId }
+        observedArchiveWorkIds.remove(workId)
         refreshArchiveActivity()
     }
 
@@ -351,6 +353,35 @@ class MainFileListViewModel(
             contentKey = id,
         )
 
+    private fun trackAndObserveArchiveWork(enqueued: ArchiveWorkEnqueued) {
+        _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
+        if (observedArchiveWorkIds.add(enqueued.workId)) {
+            observeArchiveWorkUntilFinished(enqueued)
+        }
+    }
+
+    private suspend fun hydrateMissingArchiveMetadata(pendingWorks: List<WorkInfo>) {
+        val accountName = currentFolderDisplayed.value.owner
+        val missingWorks = pendingWorks.filter { workInfo ->
+            !_archiveWorkMetadata.value.containsKey(workInfo.id) &&
+                workInfo.tags.contains(accountName)
+        }
+        if (missingWorks.isEmpty()) return
+
+        val resolved = withContext(coroutinesDispatcherProvider.io) {
+            missingWorks.mapNotNull { workInfo ->
+                ArchiveWorkMetadataResolver.resolve(
+                    workInfo = workInfo,
+                    accountName = accountName,
+                    getFileById = { fileId ->
+                        getFileByIdUseCase(GetFileByIdUseCase.Params(fileId)).getDataOrNull()
+                    },
+                )
+            }
+        }
+        resolved.forEach { trackAndObserveArchiveWork(it) }
+    }
+
     private fun refreshArchiveActivity() {
         val pendingWorks = pendingArchiveWorkInfos.value
         val activeMetadata = _archiveWorkMetadata.value.filterKeys { workId ->
@@ -407,6 +438,7 @@ class MainFileListViewModel(
                 }
             }
             _archiveWorkMetadata.update { it - enqueued.workId }
+            observedArchiveWorkIds.remove(enqueued.workId)
             refreshArchiveActivity()
         }
     }
@@ -462,13 +494,19 @@ class MainFileListViewModel(
         startPeriodicalFoldersUpdate(accountName = initialFolderToDisplay.owner)
 
         viewModelScope.launch {
-            pendingArchiveWorkInfos.collect { refreshArchiveActivity() }
+            pendingArchiveWorkInfos.collect { pendingWorks ->
+                hydrateMissingArchiveMetadata(pendingWorks)
+                refreshArchiveActivity()
+            }
         }
         viewModelScope.launch {
             currentFolderDisplayed
                 .map { it.owner }
                 .distinctUntilChanged()
-                .collect { refreshArchiveActivity() }
+                .collect {
+                    hydrateMissingArchiveMetadata(pendingArchiveWorkInfos.value)
+                    refreshArchiveActivity()
+                }
         }
 
         viewModelScope.launch {
