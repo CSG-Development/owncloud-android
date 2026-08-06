@@ -117,6 +117,7 @@ import com.owncloud.android.presentation.files.ViewType
 import com.owncloud.android.presentation.files.createfolder.CreateFolderDialogFragment
 import com.owncloud.android.presentation.files.createshortcut.CreateShortcutDialogFragment
 import com.owncloud.android.presentation.files.filelist.compose.setFileListContent
+import com.owncloud.android.presentation.files.operations.ArchiveEnqueueUiEvent
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -507,21 +508,28 @@ class MainFileListFragment : FileFragment(),
 
         observeClearSelectionEvents()
 
-        observeArchiveWorkEnqueued()
+        observeArchiveEnqueueUiEvents()
         observeArchiveWorkCompleted()
         observeArchiveRetryOperations()
         observeArchiveUnsupportedDialog()
     }
 
-    private fun observeArchiveWorkEnqueued() {
-        collectLatestLifecycleFlow(fileOperationsViewModel.archiveWorkEnqueued) { archiveWork ->
-            mainFileListViewModel.onArchiveWorkEnqueued(archiveWork)
-            val messageResId = if (archiveWork.isCompress) {
-                R.string.homecloud_filelist_compress_enqueued
-            } else {
-                R.string.homecloud_filelist_extract_enqueued
+    private fun observeArchiveEnqueueUiEvents() {
+        collectLatestLifecycleFlow(fileOperationsViewModel.archiveEnqueueUiEvent) { event ->
+            when (event) {
+                is ArchiveEnqueueUiEvent.Enqueued -> {
+                    mainFileListViewModel.onArchiveWorkEnqueued(event.workId)
+                    val messageResId = if (event.isCompress) {
+                        R.string.homecloud_filelist_compress_enqueued
+                    } else {
+                        R.string.homecloud_filelist_extract_enqueued
+                    }
+                    showMessageInSnackbar(getString(messageResId, event.displayName))
+                }
+                ArchiveEnqueueUiEvent.EnqueueFailed -> {
+                    showMessageInSnackbar(getString(R.string.homecloud_filelist_compress_error_generic))
+                }
             }
-            showMessageInSnackbar(getString(messageResId, archiveWork.displayName))
         }
     }
 

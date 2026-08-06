@@ -31,6 +31,8 @@ object RemoteFileUtils {
      *
      * @param ownCloudClient
      * @param remotePath
+     * @param excludedRemotePaths paths already reserved locally (e.g. pending uploads) that must
+     * also be treated as taken even if they do not exist on the server yet
      * @return
      */
     fun getAvailableRemotePath(
@@ -38,14 +40,19 @@ object RemoteFileUtils {
         remotePath: String,
         spaceWebDavUrl: String? = null,
         isUserLogged: Boolean,
+        excludedRemotePaths: Collection<String> = emptyList(),
     ): String {
-        var checkExistsFile = existsFile(
-            ownCloudClient = ownCloudClient,
-            remotePath = remotePath,
-            spaceWebDavUrl = spaceWebDavUrl,
-            isUserLogged = isUserLogged,
-        )
-        if (!checkExistsFile) {
+        val excluded = excludedRemotePaths.toHashSet()
+        fun isTaken(path: String): Boolean =
+            path in excluded ||
+                existsFile(
+                    ownCloudClient = ownCloudClient,
+                    remotePath = path,
+                    spaceWebDavUrl = spaceWebDavUrl,
+                    isUserLogged = isUserLogged,
+                )
+
+        if (!isTaken(remotePath)) {
             return remotePath
         }
         val pos = remotePath.lastIndexOf(".")
@@ -58,30 +65,17 @@ object RemoteFileUtils {
             }
         }
         var count = 1
+        var candidate: String
         do {
             suffix = " ($count)"
-            checkExistsFile = if (pos >= 0) {
-                existsFile(
-                    ownCloudClient = ownCloudClient,
-                    remotePath = "${remotePath.substringBeforeLast('.', "")}$suffix.$extension",
-                    spaceWebDavUrl = spaceWebDavUrl,
-                    isUserLogged = isUserLogged,
-                )
+            candidate = if (pos >= 0) {
+                "${remotePath.substringBeforeLast('.', "")}$suffix.$extension"
             } else {
-                existsFile(
-                    ownCloudClient = ownCloudClient,
-                    remotePath = remotePath + suffix,
-                    spaceWebDavUrl = spaceWebDavUrl,
-                    isUserLogged = isUserLogged,
-                )
+                remotePath + suffix
             }
             count++
-        } while (checkExistsFile)
-        return if (pos >= 0) {
-            "${remotePath.substringBeforeLast('.', "")}$suffix.$extension"
-        } else {
-            remotePath + suffix
-        }
+        } while (isTaken(candidate))
+        return candidate
     }
 
     private fun existsFile(

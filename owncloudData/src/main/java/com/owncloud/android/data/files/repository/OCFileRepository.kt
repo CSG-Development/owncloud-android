@@ -352,6 +352,23 @@ class OCFileRepository(
         return remoteFileDataSource.readFile(remotePath, accountName, spaceWebDavUrl).copy(spaceId = spaceId)
     }
 
+    override fun getAvailableRemotePath(
+        remotePath: String,
+        accountName: String,
+        spaceId: String?,
+        isUserLogged: Boolean,
+        excludedRemotePaths: Collection<String>,
+    ): String {
+        val spaceWebDavUrl = localSpacesDataSource.getWebDavUrlForSpace(spaceId, accountName)
+        return remoteFileDataSource.getAvailableRemotePath(
+            remotePath = remotePath,
+            accountName = accountName,
+            spaceWebDavUrl = spaceWebDavUrl,
+            isUserLogged = isUserLogged,
+            excludedRemotePaths = excludedRemotePaths,
+        )
+    }
+
     override fun refreshFolder(
         remotePath: String,
         accountName: String,
