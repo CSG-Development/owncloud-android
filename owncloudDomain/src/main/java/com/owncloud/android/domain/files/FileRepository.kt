@@ -61,6 +61,13 @@ interface FileRepository {
     // Returns files in conflict
     fun moveFile(listOfFilesToMove: List<OCFile>, targetFolder: OCFile, replace: List<Boolean?> = emptyList(), isUserLogged: Boolean): List<OCFile>
     fun readFile(remotePath: String, accountName: String, spaceId: String? = null): OCFile
+    fun getAvailableRemotePath(
+        remotePath: String,
+        accountName: String,
+        spaceId: String? = null,
+        isUserLogged: Boolean,
+        excludedRemotePaths: Collection<String> = emptyList(),
+    ): String
     fun refreshFolder(
         remotePath: String,
         accountName: String,

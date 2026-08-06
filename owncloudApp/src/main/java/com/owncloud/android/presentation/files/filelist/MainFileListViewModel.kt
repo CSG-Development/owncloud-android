@@ -70,9 +70,7 @@ import com.owncloud.android.presentation.files.filelist.compose.toFileListEmptyU
 import com.owncloud.android.presentation.files.operations.ArchiveErrorUiModel
 import com.owncloud.android.presentation.files.operations.ArchiveFailureType
 import com.owncloud.android.presentation.files.operations.ArchiveWorkCompleted
-import com.owncloud.android.presentation.files.operations.ArchiveWorkEnqueued
 import com.owncloud.android.presentation.files.operations.ArchiveWorkFailed
-import com.owncloud.android.presentation.files.operations.ArchiveWorkMetadataResolver
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.messageRes
 import com.owncloud.android.presentation.files.operations.showRetry
@@ -80,6 +78,9 @@ import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragm
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.providers.WorkManagerProvider
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_UNZIP
+import com.owncloud.android.usecases.archive.ARCHIVE_TAG_ZIP
+import com.owncloud.android.usecases.archive.ArchiveWorkTags
 import com.owncloud.android.usecases.archive.KEY_ARCHIVE_FAILURE_TYPE
 import com.owncloud.android.usecases.files.FilterFileMenuOptionsUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
@@ -199,7 +200,6 @@ class MainFileListViewModel(
                 initialValue = emptyMap(),
             )
 
-    private val _archiveWorkMetadata = MutableStateFlow<Map<UUID, ArchiveWorkEnqueued>>(emptyMap())
     private val observedArchiveWorkIds = mutableSetOf<UUID>()
 
     private val pendingArchiveWorkInfos: StateFlow<List<WorkInfo>> =
@@ -283,14 +283,16 @@ class MainFileListViewModel(
         ),
     )
 
-    fun onArchiveWorkEnqueued(enqueued: ArchiveWorkEnqueued) {
-        trackAndObserveArchiveWork(enqueued)
+    fun onArchiveWorkEnqueued(workId: UUID) {
+        val accountName = currentFolderDisplayed.value.owner
+        if (observedArchiveWorkIds.add(workId)) {
+            observeArchiveWorkUntilFinished(workId, accountName)
+        }
         refreshArchiveActivity()
     }
 
     fun cancelArchiveWork(workId: UUID) {
         workManagerProvider.cancelWorkById(workId)
-        _archiveWorkMetadata.update { it - workId }
         observedArchiveWorkIds.remove(workId)
         refreshArchiveActivity()
     }
@@ -353,92 +355,80 @@ class MainFileListViewModel(
             contentKey = id,
         )
 
-    private fun trackAndObserveArchiveWork(enqueued: ArchiveWorkEnqueued) {
-        _archiveWorkMetadata.update { it + (enqueued.workId to enqueued) }
-        if (observedArchiveWorkIds.add(enqueued.workId)) {
-            observeArchiveWorkUntilFinished(enqueued)
-        }
-    }
-
-    private suspend fun hydrateMissingArchiveMetadata(pendingWorks: List<WorkInfo>) {
+    private fun trackPendingArchiveWorks(pendingWorks: List<WorkInfo>) {
         val accountName = currentFolderDisplayed.value.owner
-        val missingWorks = pendingWorks.filter { workInfo ->
-            !_archiveWorkMetadata.value.containsKey(workInfo.id) &&
-                workInfo.tags.contains(accountName)
-        }
-        if (missingWorks.isEmpty()) return
-
-        val resolved = withContext(coroutinesDispatcherProvider.io) {
-            missingWorks.mapNotNull { workInfo ->
-                ArchiveWorkMetadataResolver.resolve(
-                    workInfo = workInfo,
-                    accountName = accountName,
-                    getFileById = { fileId ->
-                        getFileByIdUseCase(GetFileByIdUseCase.Params(fileId)).getDataOrNull()
-                    },
-                )
+        pendingWorks.forEach { workInfo ->
+            if (!workInfo.tags.contains(accountName)) return@forEach
+            if (!workInfo.tags.contains(ARCHIVE_TAG_ZIP) && !workInfo.tags.contains(ARCHIVE_TAG_UNZIP)) {
+                return@forEach
+            }
+            if (observedArchiveWorkIds.add(workInfo.id)) {
+                observeArchiveWorkUntilFinished(workInfo.id, accountName)
             }
         }
-        resolved.forEach { trackAndObserveArchiveWork(it) }
     }
 
     private fun refreshArchiveActivity() {
-        val pendingWorks = pendingArchiveWorkInfos.value
-        val activeMetadata = _archiveWorkMetadata.value.filterKeys { workId ->
-            pendingWorks.any { it.id == workId }
-        }
         _archiveActivity.value = ArchiveActivityUiModelMapper.fromPendingWorks(
             accountName = currentFolderDisplayed.value.owner,
-            pendingWorks = pendingWorks,
-            workMetadata = activeMetadata,
+            pendingWorks = pendingArchiveWorkInfos.value,
         )
     }
 
-    private fun observeArchiveWorkUntilFinished(enqueued: ArchiveWorkEnqueued) {
+    private fun observeArchiveWorkUntilFinished(workId: UUID, accountName: String) {
         viewModelScope.launch {
-            val workInfo = workManagerProvider.getWorkInfoByIdFlow(enqueued.workId)
+            val workInfo = workManagerProvider.getWorkInfoByIdFlow(workId)
                 .filterNotNull()
                 .first { it.state.isFinished }
 
-            val stillTracked = _archiveWorkMetadata.value.containsKey(enqueued.workId)
-            when {
-                workInfo.state == WorkInfo.State.SUCCEEDED && stillTracked -> {
-                    val viewFolderId = resolveArchiveViewFolderId(enqueued, workInfo)
+            val stillObserved = observedArchiveWorkIds.contains(workId)
+            val isCompress = workInfo.tags.contains(ARCHIVE_TAG_ZIP)
+            val isArchiveWork = isCompress || workInfo.tags.contains(ARCHIVE_TAG_UNZIP)
+            if (!stillObserved || !isArchiveWork || !workInfo.tags.contains(accountName)) {
+                observedArchiveWorkIds.remove(workId)
+                refreshArchiveActivity()
+                return@launch
+            }
+
+            when (workInfo.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    val viewFolderId = resolveArchiveViewFolderId(workInfo, accountName)
+                    val itemCount = ArchiveWorkTags.parseItemCount(workInfo.tags)
+                        ?: if (isCompress) {
+                            ArchiveWorkTags.parseParentFolderId(workInfo.tags)?.let { parentId ->
+                                ArchiveWorkTags.parseSourceFileIds(workInfo.tags, parentId).size
+                            } ?: 1
+                        } else {
+                            1
+                        }
                     _archiveWorkCompleted.emit(
                         ArchiveWorkCompleted(
-                            isCompress = enqueued.isCompress,
-                            itemCount = enqueued.itemCount,
+                            isCompress = isCompress,
+                            itemCount = itemCount,
                             viewFolderId = viewFolderId,
                         ),
                     )
                 }
-                workInfo.state == WorkInfo.State.FAILED && stillTracked -> {
+                WorkInfo.State.FAILED -> {
                     val failureType = resolveArchiveFailureType(workInfo)
                     if (failureType == ArchiveFailureType.PASSWORD_PROTECTED) {
                         _archiveUnsupportedDialog.emit(Unit)
                     } else {
-                        val failed = ArchiveWorkFailed(
-                            failureType = failureType,
-                            isCompress = enqueued.isCompress,
-                            displayName = enqueued.displayName,
-                            sourceFileIds = enqueued.sourceFileIds,
-                            zipFileId = enqueued.zipFileId,
-                            parentFolderId = enqueued.parentFolderId,
-                            spaceId = enqueued.spaceId,
-                            accountName = enqueued.accountName,
-                        )
-                        _archiveErrors.update { errors ->
-                            errors + ArchiveErrorUiModel(
-                                failure = failed,
-                                messageRes = failed.failureType.messageRes(failed.isCompress),
-                                showRetry = failed.failureType.showRetry,
-                            )
+                        val failed = resolveArchiveWorkFailed(workInfo, accountName, isCompress, failureType)
+                        if (failed != null) {
+                            _archiveErrors.update { errors ->
+                                errors + ArchiveErrorUiModel(
+                                    failure = failed,
+                                    messageRes = failed.failureType.messageRes(failed.isCompress),
+                                    showRetry = failed.failureType.showRetry,
+                                )
+                            }
                         }
                     }
                 }
+                else -> Unit
             }
-            _archiveWorkMetadata.update { it - enqueued.workId }
-            observedArchiveWorkIds.remove(enqueued.workId)
+            observedArchiveWorkIds.remove(workId)
             refreshArchiveActivity()
         }
     }
@@ -448,30 +438,73 @@ class MainFileListViewModel(
         return runCatching { ArchiveFailureType.valueOf(typeName) }.getOrDefault(ArchiveFailureType.UNEXPECTED)
     }
 
-    private suspend fun resolveArchiveViewFolderId(
-        metadata: ArchiveWorkEnqueued,
+    private suspend fun resolveArchiveWorkFailed(
         workInfo: WorkInfo,
+        accountName: String,
+        isCompress: Boolean,
+        failureType: ArchiveFailureType,
+    ): ArchiveWorkFailed? {
+        val parentFolderId = ArchiveWorkTags.parseParentFolderId(workInfo.tags) ?: return null
+        val displayName = ArchiveWorkTags.parseDisplayName(workInfo.tags).orEmpty()
+        val spaceId = withContext(coroutinesDispatcherProvider.io) {
+            getFileByIdUseCase(GetFileByIdUseCase.Params(parentFolderId)).getDataOrNull()?.spaceId
+        }
+        return if (isCompress) {
+            ArchiveWorkFailed(
+                failureType = failureType,
+                isCompress = true,
+                displayName = displayName,
+                sourceFileIds = ArchiveWorkTags.parseSourceFileIds(workInfo.tags, parentFolderId),
+                zipFileId = null,
+                parentFolderId = parentFolderId,
+                spaceId = spaceId,
+                accountName = accountName,
+            )
+        } else {
+            ArchiveWorkFailed(
+                failureType = failureType,
+                isCompress = false,
+                displayName = displayName,
+                sourceFileIds = emptyList(),
+                zipFileId = ArchiveWorkTags.parseZipFileId(workInfo.tags, parentFolderId),
+                parentFolderId = parentFolderId,
+                spaceId = spaceId,
+                accountName = accountName,
+            )
+        }
+    }
+
+    private suspend fun resolveArchiveViewFolderId(
+        workInfo: WorkInfo,
+        accountName: String,
     ): Long {
-        if (metadata.isCompress) {
-            return metadata.parentFolderId
+        val parentFolderId = ArchiveWorkTags.parseParentFolderId(workInfo.tags) ?: return currentFolderDisplayed.value.id!!
+        if (workInfo.tags.contains(ARCHIVE_TAG_ZIP)) {
+            return parentFolderId
         }
 
         val targetRemotePath = workInfo.outputData.getString(UnzipFileWorker.KEY_TARGET_REMOTE_PATH)
-            ?: metadata.remotePath
+            ?: workInfo.progress.getString(UnzipFileWorker.KEY_TARGET_REMOTE_PATH)
+            ?: ArchiveWorkTags.parseRemotePath(workInfo.tags)
+            ?: return parentFolderId
+
+        val spaceId = withContext(coroutinesDispatcherProvider.io) {
+            getFileByIdUseCase(GetFileByIdUseCase.Params(parentFolderId)).getDataOrNull()?.spaceId
+        }
 
         val targetFile = withContext(coroutinesDispatcherProvider.io) {
             getFileByRemotePathUseCase(
                 GetFileByRemotePathUseCase.Params(
-                    owner = metadata.accountName,
+                    owner = accountName,
                     remotePath = targetRemotePath,
-                    spaceId = metadata.spaceId,
+                    spaceId = spaceId,
                 ),
             ).getDataOrNull()
-        } ?: return metadata.parentFolderId
+        } ?: return parentFolderId
 
         return when {
-            targetFile.isFolder -> targetFile.id ?: metadata.parentFolderId
-            else -> targetFile.parentId ?: metadata.parentFolderId
+            targetFile.isFolder -> targetFile.id ?: parentFolderId
+            else -> targetFile.parentId ?: parentFolderId
         }
     }
 
@@ -495,7 +528,7 @@ class MainFileListViewModel(
 
         viewModelScope.launch {
             pendingArchiveWorkInfos.collect { pendingWorks ->
-                hydrateMissingArchiveMetadata(pendingWorks)
+                trackPendingArchiveWorks(pendingWorks)
                 refreshArchiveActivity()
             }
         }
@@ -504,7 +537,7 @@ class MainFileListViewModel(
                 .map { it.owner }
                 .distinctUntilChanged()
                 .collect {
-                    hydrateMissingArchiveMetadata(pendingArchiveWorkInfos.value)
+                    trackPendingArchiveWorks(pendingArchiveWorkInfos.value)
                     refreshArchiveActivity()
                 }
         }

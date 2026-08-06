@@ -4,26 +4,30 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.owncloud.android.domain.BaseUseCase
+import com.owncloud.android.domain.archive.ArchiveExtractLayout
+import com.owncloud.android.domain.archive.ArchiveNameResolver
+import com.owncloud.android.domain.archive.ZipArchiveExtractor
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.extensions.PENDING_WORK_STATUS
 import com.owncloud.android.extensions.buildWorkQuery
 import com.owncloud.android.usecases.transfers.MAXIMUM_NUMBER_OF_RETRIES
 import com.owncloud.android.workers.UnzipFileWorker
 import timber.log.Timber
-import java.util.UUID
+import java.io.File
 
 class UnzipFileUseCase(
     private val workManager: WorkManager,
-) : BaseUseCase<UUID?, UnzipFileUseCase.Params>() {
+) : BaseUseCase<ArchiveEnqueueResult?, UnzipFileUseCase.Params>() {
 
-    override fun run(params: Params): UUID? {
+    override fun run(params: Params): ArchiveEnqueueResult? {
         val zipFileId = params.zipFile.id ?: return null
+        val parentFolderId = params.zipFile.parentId ?: return null
 
         if (isUnzipAlreadyEnqueued(params.accountName, zipFileId)) {
             return null
         }
 
-        val parentFolderId = params.zipFile.parentId ?: return null
+        val (displayName, remotePath) = resolveExtractWorkMetadata(params.zipFile)
 
         val inputData = workDataOf(
             UnzipFileWorker.KEY_PARAM_ACCOUNT to params.accountName,
@@ -36,11 +40,47 @@ class UnzipFileUseCase(
             .addTag(ARCHIVE_TAG_UNZIP)
             .addTag(zipFileId.toString())
             .addTag(parentFolderId.toString())
+            .addTag(ArchiveWorkTags.displayNameTag(displayName))
+            .addTag(ArchiveWorkTags.parentTag(parentFolderId))
+            .addTag(ArchiveWorkTags.remotePathTag(remotePath))
+            .addTag(ArchiveWorkTags.itemCountTag(1))
             .build()
 
         workManager.enqueue(unzipWork)
         Timber.i("Unzip operation enqueued for ${params.zipFile.fileName}.")
-        return unzipWork.id
+        return ArchiveEnqueueResult(
+            workId = unzipWork.id,
+            displayName = displayName,
+            isCompress = false,
+        )
+    }
+
+    private fun resolveExtractWorkMetadata(zipFile: OCFile): Pair<String, String> {
+        val localZipFile = zipFile.storagePath
+            ?.let { File(it) }
+            .takeIf { zipFile.isAvailableLocally }
+
+        val layout = localZipFile?.let { zip ->
+            runCatching { ZipArchiveExtractor.peekLayout(zip) }.getOrNull()
+        }
+
+        return when (layout) {
+            is ArchiveExtractLayout.DirectToParent -> {
+                val entryName = if (layout.isTopLevelFolder) {
+                    layout.topLevelRoot + OCFile.PATH_SEPARATOR
+                } else {
+                    layout.topLevelRoot
+                }
+                layout.topLevelRoot to (zipFile.getParentRemotePath() + entryName)
+            }
+
+            else -> {
+                val extractFolderName = zipFile.fileName
+                    .substringBeforeLast('.')
+                    .ifBlank { zipFile.fileName }
+                extractFolderName to ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
+            }
+        }
     }
 
     private fun isUnzipAlreadyEnqueued(accountName: String, zipFileId: Long): Boolean {

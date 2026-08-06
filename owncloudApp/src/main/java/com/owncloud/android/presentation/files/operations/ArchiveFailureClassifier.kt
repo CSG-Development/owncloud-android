@@ -2,7 +2,9 @@ package com.owncloud.android.presentation.files.operations
 
 import com.owncloud.android.domain.exceptions.ArchivePathTraversalException
 import com.owncloud.android.domain.exceptions.CancelledException
+import com.owncloud.android.domain.exceptions.ConflictException
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
+import com.owncloud.android.domain.exceptions.FileAlreadyExistsException
 import com.owncloud.android.domain.exceptions.ForbiddenException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.exceptions.InvalidCharacterException
@@ -58,6 +60,10 @@ object ArchiveFailureClassifier {
             is ForbiddenException,
             is SpecificForbiddenException,
             -> ArchiveFailureType.FILE_ACCESS
+
+            is FileAlreadyExistsException,
+            is ConflictException,
+            -> ArchiveFailureType.CONFLICT
 
             else -> ArchiveFailureType.UNEXPECTED
         }

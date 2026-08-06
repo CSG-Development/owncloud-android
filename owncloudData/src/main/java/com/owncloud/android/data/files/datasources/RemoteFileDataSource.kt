@@ -54,6 +54,7 @@ interface RemoteFileDataSource {
         accountName: String,
         spaceWebDavUrl: String?,
         isUserLogged: Boolean,
+        excludedRemotePaths: Collection<String> = emptyList(),
     ): String
 
     fun moveFile(

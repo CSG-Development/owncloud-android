@@ -26,6 +26,7 @@ package com.owncloud.android.ui.errorhandling
 import android.content.res.Resources
 import com.owncloud.android.R
 import com.owncloud.android.domain.exceptions.CancelledException
+import com.owncloud.android.domain.exceptions.FileAlreadyExistsException
 import com.owncloud.android.domain.exceptions.FileNotFoundException
 import com.owncloud.android.domain.exceptions.ForbiddenException
 import com.owncloud.android.domain.exceptions.InvalidCharacterException
@@ -171,6 +172,9 @@ class ErrorMessageAdapter {
                     R.string.error__upload__local_file_not_copied,
                     displayName,
                     R.string.app_name,
+                )
+                is FileAlreadyExistsException -> formatter.format(
+                    R.string.homecloud_filelist_compress_error_conflict,
                 )
                 else -> throwable.parseError(genericMessage, resources, true).toString()
             }

@@ -20,6 +20,7 @@ val ArchiveFailureType.showRetry: Boolean
         ArchiveFailureType.INSUFFICIENT_STORAGE,
         ArchiveFailureType.UNEXPECTED,
         ArchiveFailureType.FILE_ACCESS,
+        ArchiveFailureType.CONFLICT,
         -> true
 
         ArchiveFailureType.CORRUPT,
@@ -38,6 +39,7 @@ fun ArchiveFailureType.messageRes(isCompress: Boolean): Int =
             ArchiveFailureType.INVALID_NAMES -> R.string.homecloud_filelist_compress_error_invalid_names
             ArchiveFailureType.NETWORK -> R.string.homecloud_filelist_compress_error_network_timeout
             ArchiveFailureType.FILE_ACCESS -> R.string.homecloud_filelist_compress_error_file_access
+            ArchiveFailureType.CONFLICT -> R.string.homecloud_filelist_compress_error_conflict
             ArchiveFailureType.UNEXPECTED -> R.string.homecloud_filelist_compress_error_generic
         }
     } else {
@@ -48,6 +50,7 @@ fun ArchiveFailureType.messageRes(isCompress: Boolean): Int =
             ArchiveFailureType.INVALID_NAMES -> R.string.homecloud_filelist_extract_error_invalid_names
             ArchiveFailureType.NETWORK -> R.string.homecloud_filelist_extract_error_network
             ArchiveFailureType.FILE_ACCESS,
+            ArchiveFailureType.CONFLICT,
             ArchiveFailureType.UNEXPECTED,
             -> R.string.homecloud_filelist_extract_error_unexpected
         }

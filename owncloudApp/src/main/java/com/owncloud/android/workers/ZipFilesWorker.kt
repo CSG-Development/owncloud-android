@@ -14,6 +14,7 @@ import com.owncloud.android.domain.archive.ArchiveNameResolver
 import com.owncloud.android.domain.archive.ZipArchiveBuilder
 import com.owncloud.android.domain.archive.usecases.CollectArchiveFilesUseCase
 import com.owncloud.android.domain.exceptions.CancelledException
+import com.owncloud.android.domain.exceptions.FileAlreadyExistsException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.exceptions.LocalStorageFullException
 import com.owncloud.android.domain.exceptions.NoNetworkConnectionException
@@ -25,6 +26,8 @@ import com.owncloud.android.lib.common.OwnCloudAccount
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.network.OnDatatransferProgressListener
+import com.owncloud.android.lib.common.operations.RemoteOperationResult.ResultCode
+import com.owncloud.android.lib.resources.files.CheckPathExistenceRemoteOperation
 import com.owncloud.android.lib.resources.files.DownloadRemoteFileOperation
 import com.owncloud.android.lib.resources.files.UploadFileFromFileSystemOperation
 import com.owncloud.android.presentation.authentication.AccountUtils
@@ -35,7 +38,6 @@ import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
-import com.owncloud.android.utils.RemoteFileUtils.getAvailableRemotePath
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -77,9 +79,9 @@ class ZipFilesWorker(
             GetWebDavUrlForSpaceUseCase.Params(accountName = account.name, spaceId = parentFolder.spaceId),
         )
 
-        val archiveFileName = ArchiveNameResolver.resolveArchiveBaseName(
-            selectedFiles = selectedFiles,
-        )
+        val archiveFileName = workerParameters.inputData.getString(KEY_PARAM_ARCHIVE_FILE_NAME)
+            ?: ArchiveNameResolver.resolveArchiveBaseName(selectedFiles = selectedFiles)
+        val remoteZipPath = ArchiveNameResolver.resolveRemoteZipPath(parentFolder, archiveFileName)
 
         return try {
             ensureNotCancelled()
@@ -146,13 +148,7 @@ class ZipFilesWorker(
             ensureNotCancelled()
 
             val client = getClient()
-            val remoteZipPath = getAvailableRemotePath(
-                ownCloudClient = client,
-                remotePath = ArchiveNameResolver.resolveRemoteZipPath(parentFolder, archiveFileName),
-                spaceWebDavUrl = spaceWebDavUrl,
-                isUserLogged = AccountUtils.getCurrentOwnCloudAccount(appContext) != null,
-            )
-
+            ensureReservedRemotePathAvailable(client, remoteZipPath)
             uploadZip(client, tempZipFile, remoteZipPath)
             progress.completePhase(ZipPhase.UPLOAD)
             ensureNotCancelled()
@@ -327,6 +323,21 @@ class ZipFilesWorker(
             else -> 1L
         }
 
+    private fun ensureReservedRemotePathAvailable(client: OwnCloudClient, remotePath: String) {
+        val checkPathExistenceOperation = CheckPathExistenceRemoteOperation(
+            remotePath = remotePath,
+            isUserLoggedIn = AccountUtils.getCurrentOwnCloudAccount(appContext) != null,
+            spaceWebDavUrl = spaceWebDavUrl,
+        )
+        val checkPathExistenceResult = checkPathExistenceOperation.execute(client)
+        if (checkPathExistenceResult.isSuccess) {
+            throw FileAlreadyExistsException()
+        }
+        if (checkPathExistenceResult.code != ResultCode.FILE_NOT_FOUND) {
+            executeRemoteOperation { checkPathExistenceResult }
+        }
+    }
+
     private fun uploadZip(client: OwnCloudClient, zipFile: File, remotePath: String) {
         if (FileStorageUtils.getUsableSpace() < zipFile.length()) {
             throw LocalStorageFullException()
@@ -410,6 +421,7 @@ class ZipFilesWorker(
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
         const val KEY_PARAM_FILE_IDS = "KEY_PARAM_FILE_IDS"
+        const val KEY_PARAM_ARCHIVE_FILE_NAME = "KEY_PARAM_ARCHIVE_FILE_NAME"
         private const val ARCHIVE_NOTIFICATION_ID = 14
     }
 }
