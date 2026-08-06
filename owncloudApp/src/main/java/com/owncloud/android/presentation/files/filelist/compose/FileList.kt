@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -42,7 +43,8 @@ enum class FileListLayoutMode {
  * Hosts own selection and callbacks; fragments supply [FileListContent] and chrome.
  *
  * When [onRefresh] is non-null and [pullToRefreshEnabled] is true, content is wrapped in [PullToRefreshBox].
- * Optional [archiveActivity] is rendered as the first full-width scrollable item (list and grid).
+ * Optional [archiveActivity] is rendered as the first full-width scrollable item for Loading, Empty,
+ * and Items (list and grid).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,11 +69,16 @@ fun FileList(
     val listContent: @Composable (Modifier) -> Unit = { contentModifier ->
         when (content) {
             FileListContent.Loading -> {
-                // Empty LazyColumn keeps PullToRefreshBox nested-scroll working while loading.
+                // LazyColumn keeps PullToRefreshBox nested-scroll working while loading.
                 LazyColumn(
                     modifier = contentModifier,
                     state = listState,
-                ) {}
+                ) {
+                    archiveActivityListItem(
+                        archiveActivity = archiveActivity,
+                        onArchiveActivityCancel = onArchiveActivityCancel,
+                    )
+                }
             }
 
             is FileListContent.Empty -> {
@@ -79,6 +86,10 @@ fun FileList(
                     modifier = contentModifier,
                     state = listState,
                 ) {
+                    archiveActivityListItem(
+                        archiveActivity = archiveActivity,
+                        onArchiveActivityCancel = onArchiveActivityCancel,
+                    )
                     item(key = EMPTY_CONTENT_KEY) {
                         FileListEmpty(
                             content = content.model,
@@ -155,20 +166,10 @@ private fun FileListLazyColumn(
         modifier = modifier,
         state = listState,
     ) {
-        if (archiveActivity != null) {
-            item(
-                key = ARCHIVE_ACTIVITY_KEY,
-                contentType = CONTENT_TYPE_ARCHIVE_ACTIVITY,
-            ) {
-                ArchiveActivityCard(
-                    activity = archiveActivity,
-                    onCancel = onArchiveActivityCancel,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(dimensionResource(R.dimen.standard_half_margin)),
-                )
-            }
-        }
+        archiveActivityListItem(
+            archiveActivity = archiveActivity,
+            onArchiveActivityCancel = onArchiveActivityCancel,
+        )
         items(
             items = items,
             key = { it.fileId },
@@ -194,6 +195,25 @@ private fun FileListLazyColumn(
                 )
             }
         }
+    }
+}
+
+private fun LazyListScope.archiveActivityListItem(
+    archiveActivity: ArchiveActivityUiModel?,
+    onArchiveActivityCancel: (UUID) -> Unit,
+) {
+    if (archiveActivity == null) return
+    item(
+        key = ARCHIVE_ACTIVITY_KEY,
+        contentType = CONTENT_TYPE_ARCHIVE_ACTIVITY,
+    ) {
+        ArchiveActivityCard(
+            activity = archiveActivity,
+            onCancel = onArchiveActivityCancel,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(dimensionResource(R.dimen.standard_half_margin)),
+        )
     }
 }
 
