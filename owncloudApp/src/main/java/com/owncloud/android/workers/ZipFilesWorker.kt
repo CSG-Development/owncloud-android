@@ -121,6 +121,7 @@ class ZipFilesWorker(
             }
 
             val localEntries = collectionResult.fileEntries.map { entry ->
+                ensureNotCancelled()
                 ArchiveEntryWithLocalPath(
                     zipEntryPath = entry.zipEntryPath,
                     localFile = resolveLocalFile(entry.ocFile),
