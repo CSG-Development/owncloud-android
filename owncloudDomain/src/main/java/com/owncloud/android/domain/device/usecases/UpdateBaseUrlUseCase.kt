@@ -69,7 +69,7 @@ class UpdateBaseUrlUseCase(
         )
 
         Timber.i(
-            "Base URL update worker has been enqueued (fromBackground=$fromBackground, wifiAvailable=$wifiAvailable)."
+            "Base URL update worker has been enqueued (fromBackground=$fromBackground, wifiAvailable=$wifiAvailable), worker ID: ${baseUrlUpdateWork.id}."
         )
 
         return baseUrlUpdateWork.id
