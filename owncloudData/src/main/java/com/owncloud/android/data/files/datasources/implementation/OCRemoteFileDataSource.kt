@@ -89,51 +89,39 @@ class OCRemoteFileDataSource(
         accountName: String,
         spaceWebDavUrl: String?,
         isUserLogged: Boolean,
+        excludedRemotePaths: Collection<String>,
     ): String {
-        var checkExistsFile = checkPathExistence(
-            path = remotePath,
-            isUserLogged = isUserLogged,
-            accountName = accountName,
-            spaceWebDavUrl = spaceWebDavUrl,
-        )
-        if (!checkExistsFile) {
+        val excluded = excludedRemotePaths.toHashSet()
+        fun isTaken(path: String): Boolean =
+            path in excluded ||
+                checkPathExistence(
+                    path = path,
+                    isUserLogged = isUserLogged,
+                    accountName = accountName,
+                    spaceWebDavUrl = spaceWebDavUrl,
+                )
+
+        if (!isTaken(remotePath)) {
             return remotePath
         }
 
         val pos = remotePath.lastIndexOf(".")
-        var suffix: String
         var extension = ""
         if (pos >= 0) {
             extension = remotePath.substring(pos + 1)
-            remotePath.apply {
-                substring(0, pos)
-            }
         }
         var count = 1
+        var candidate: String
         do {
-            suffix = " ($count)"
-            checkExistsFile = if (pos >= 0) {
-                checkPathExistence(
-                    path = "${remotePath.substringBeforeLast('.', "")}$suffix.$extension",
-                    isUserLogged = isUserLogged,
-                    accountName = accountName,
-                    spaceWebDavUrl = spaceWebDavUrl,
-                )
+            val suffix = " ($count)"
+            candidate = if (pos >= 0) {
+                "${remotePath.substringBeforeLast('.', "")}$suffix.$extension"
             } else {
-                checkPathExistence(
-                    path = "$remotePath$suffix",
-                    isUserLogged = isUserLogged,
-                    accountName = accountName,
-                    spaceWebDavUrl = spaceWebDavUrl,
-                )
+                remotePath + suffix
             }
             count++
-        } while (checkExistsFile)
-        return if (pos >= 0) {
-            "${remotePath.substringBeforeLast('.', "")}$suffix.$extension"
-        } else {
-            remotePath + suffix
-        }
+        } while (isTaken(candidate))
+        return candidate
     }
 
     override fun moveFile(

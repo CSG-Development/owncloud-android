@@ -430,6 +430,7 @@ class UnzipFileWorker(
     }
 
     private fun uploadFile(client: OwnCloudClient, localFile: File, remotePath: String) {
+        ensureNotCancelled()
         if (FileStorageUtils.getUsableSpace() < localFile.length()) {
             throw LocalStorageFullException()
         }

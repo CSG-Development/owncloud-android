@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -91,6 +92,9 @@ class DynamicBaseUrlSwitcher(
                 .debounce(debounceMs)
                 .catch { error ->
                     Timber.e(error, "DynamicBaseUrlSwitcher: error observing network state")
+                }
+                .onEach {
+                    Timber.i("Connectivity update received: $it")
                 }
                 .collect { connectivity -> handleConnectivityChange(connectivity) }
         }

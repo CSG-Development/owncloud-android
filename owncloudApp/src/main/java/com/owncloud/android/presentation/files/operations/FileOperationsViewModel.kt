@@ -31,9 +31,6 @@ import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.BaseUseCaseWithResult
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.appregistry.usecases.CreateFileWithAppProviderUseCase
-import com.owncloud.android.domain.archive.ArchiveExtractLayout
-import com.owncloud.android.domain.archive.ArchiveNameResolver
-import com.owncloud.android.domain.archive.ZipArchiveExtractor
 import com.owncloud.android.domain.availableoffline.usecases.SetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.availableoffline.usecases.UnsetFilesAsAvailableOfflineUseCase
 import com.owncloud.android.domain.device.DeviceConnectionMonitor
@@ -54,11 +51,13 @@ import com.owncloud.android.domain.files.usecases.SetFileFavoriteStatusUseCase
 import com.owncloud.android.domain.files.usecases.SetLastUsageFileUseCase
 import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.ViewModelExt.runUseCaseWithResult
+import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
 import com.owncloud.android.usecases.archive.UnzipFileUseCase
+import com.owncloud.android.usecases.archive.ZipEnqueueOutcome
 import com.owncloud.android.usecases.archive.ZipFilesUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
 import com.owncloud.android.usecases.synchronization.SynchronizeFolderUseCase
@@ -68,7 +67,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
 import java.net.URI
 
 class FileOperationsViewModel(
@@ -131,8 +129,8 @@ class FileOperationsViewModel(
     private val _disableSelectionModeEvent = MutableSharedFlow<Unit>()
     val disableSelectionModeEvent: SharedFlow<Unit> = _disableSelectionModeEvent
 
-    private val _archiveWorkEnqueued = MutableSharedFlow<ArchiveWorkEnqueued>()
-    val archiveWorkEnqueued: SharedFlow<ArchiveWorkEnqueued> = _archiveWorkEnqueued
+    private val _archiveEnqueueUiEvent = MutableSharedFlow<ArchiveEnqueueUiEvent>(extraBufferCapacity = 1)
+    val archiveEnqueueUiEvent: SharedFlow<ArchiveEnqueueUiEvent> = _archiveEnqueueUiEvent
 
     // Used to save the last operation folder
     private var lastTargetFolder: OCFile? = null
@@ -365,88 +363,55 @@ class FileOperationsViewModel(
 
     private fun compressOperation(fileOperation: FileOperation.CompressOperation) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            val workId = zipFilesUseCase(
-                ZipFilesUseCase.Params(
-                    accountName = fileOperation.accountName,
-                    parentFolder = fileOperation.parentFolder,
-                    files = fileOperation.files,
-                ),
-            ) ?: return@launch
-
-            val displayName = ArchiveNameResolver.resolveArchiveBaseName(
-                selectedFiles = fileOperation.files,
-            )
-            val enqueued = ArchiveWorkEnqueued(
-                workId = workId,
-                displayName = displayName,
-                isCompress = true,
-                itemCount = fileOperation.files.size,
-                parentFolderId = fileOperation.parentFolder.id!!,
-                remotePath = ArchiveNameResolver.resolveRemoteZipPath(
-                    parentFolder = fileOperation.parentFolder,
-                    archiveFileName = displayName,
-                ),
-                spaceId = fileOperation.parentFolder.spaceId,
-                accountName = fileOperation.accountName,
-                sourceFileIds = fileOperation.files.mapNotNull { it.id },
-            )
-            _archiveWorkEnqueued.emit(enqueued)
-            _disableSelectionModeEvent.emit(Unit)
+            when (
+                val outcome = zipFilesUseCase(
+                    ZipFilesUseCase.Params(
+                        accountName = fileOperation.accountName,
+                        parentFolder = fileOperation.parentFolder,
+                        files = fileOperation.files,
+                        isUserLogged = AccountUtils.getCurrentOwnCloudAccount(contextProvider.getContext()) != null,
+                    ),
+                )
+            ) {
+                is ZipEnqueueOutcome.Success -> {
+                    _archiveEnqueueUiEvent.emit(
+                        ArchiveEnqueueUiEvent.Enqueued(
+                            workId = outcome.result.workId,
+                            displayName = outcome.result.displayName,
+                            isCompress = outcome.result.isCompress,
+                        ),
+                    )
+                    _disableSelectionModeEvent.emit(Unit)
+                }
+                ZipEnqueueOutcome.SkippedAlreadyEnqueued -> {
+                    _disableSelectionModeEvent.emit(Unit)
+                }
+                ZipEnqueueOutcome.InvalidParams,
+                ZipEnqueueOutcome.NameResolutionFailed,
+                -> {
+                    _archiveEnqueueUiEvent.emit(ArchiveEnqueueUiEvent.EnqueueFailed)
+                }
+            }
         }
     }
 
     private fun extractOperation(fileOperation: FileOperation.ExtractOperation) {
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            val workId = unzipFileUseCase(
+            val result = unzipFileUseCase(
                 UnzipFileUseCase.Params(
                     accountName = fileOperation.accountName,
                     zipFile = fileOperation.zipFile,
                 ),
             ) ?: return@launch
 
-            val zipFile = fileOperation.zipFile
-            val (displayName, remotePath) = resolveExtractWorkMetadata(zipFile)
-            val enqueued = ArchiveWorkEnqueued(
-                workId = workId,
-                displayName = displayName,
-                isCompress = false,
-                itemCount = 1,
-                parentFolderId = zipFile.parentId!!,
-                remotePath = remotePath,
-                spaceId = zipFile.spaceId,
-                accountName = fileOperation.accountName,
-                zipFileId = zipFile.id,
+            _archiveEnqueueUiEvent.emit(
+                ArchiveEnqueueUiEvent.Enqueued(
+                    workId = result.workId,
+                    displayName = result.displayName,
+                    isCompress = result.isCompress,
+                ),
             )
-            _archiveWorkEnqueued.emit(enqueued)
             _disableSelectionModeEvent.emit(Unit)
-        }
-    }
-
-    private fun resolveExtractWorkMetadata(zipFile: OCFile): Pair<String, String> {
-        val localZipFile = zipFile.storagePath
-            ?.let { File(it) }
-            .takeIf { zipFile.isAvailableLocally }
-
-        val layout = localZipFile?.let { zip ->
-            runCatching { ZipArchiveExtractor.peekLayout(zip) }.getOrNull()
-        }
-
-        return when (layout) {
-            is ArchiveExtractLayout.DirectToParent -> {
-                val entryName = if (layout.isTopLevelFolder) {
-                    layout.topLevelRoot + OCFile.PATH_SEPARATOR
-                } else {
-                    layout.topLevelRoot
-                }
-                layout.topLevelRoot to (zipFile.getParentRemotePath() + entryName)
-            }
-
-            else -> {
-                val extractFolderName = zipFile.fileName
-                    .substringBeforeLast('.')
-                    .ifBlank { zipFile.fileName }
-                extractFolderName to ArchiveNameResolver.resolveExtractSubfolderPath(zipFile)
-            }
         }
     }
 

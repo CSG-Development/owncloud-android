@@ -7,5 +7,6 @@ enum class ArchiveFailureType {
     INVALID_NAMES,
     NETWORK,
     FILE_ACCESS,
+    CONFLICT,
     UNEXPECTED,
 }
