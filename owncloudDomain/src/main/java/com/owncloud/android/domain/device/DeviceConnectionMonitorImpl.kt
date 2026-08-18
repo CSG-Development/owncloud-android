@@ -74,9 +74,6 @@ class DeviceConnectionMonitorImpl(
         findBestAvailablePath()
     }
 
-    override suspend fun evaluateConnection() {
-        findBestAvailablePath()
-    }
 
     private suspend fun periodicConnectionCheck() {
         evaluateMutex.withLock {

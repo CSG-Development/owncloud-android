@@ -9,7 +9,7 @@ import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
-import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.mdnsdiscovery.usecases.FindUpdatedAddressOfLocalDeviceUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
 import org.koin.core.component.KoinComponent
@@ -35,7 +35,7 @@ class BaseUrlUpdateWorker(
     workerParameters: WorkerParameters
 ) : CoroutineWorker(appContext, workerParameters), KoinComponent {
 
-    private val discoverLocalNetworkDevicesUseCase: DiscoverLocalNetworkDevicesUseCase by inject()
+    private val findUpdatedAddressOfLocalDeviceUseCase: FindUpdatedAddressOfLocalDeviceUseCase by inject()
     private val getRemoteAvailableDevicesUseCase: GetRemoteAvailableDevicesUseCase by inject()
 
     private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase by inject()
@@ -115,22 +115,18 @@ class BaseUrlUpdateWorker(
         }
         Timber.d("BaseUrlUpdateWorker: syncing device paths from mDNS and Remote API")
 
+        val savedDeviceCertCommonName = currentDeviceRepository.getSavedCertificateCommonName()
         val localDevice = if (wifiAvailable) {
-            try {
-                discoverLocalNetworkDevicesUseCase.oneShot(DiscoverLocalNetworkDevicesUseCase.DEFAULT_MDNS_PARAMS).firstOrNull()
-            } catch (e: Exception) {
-                Timber.w(e, "BaseUrlUpdateWorker: mDNS discovery failed")
-                null
-            }
+            findUpdatedAddressOfLocalDeviceUseCase.execute(savedDeviceCertCommonName)
         } else {
             Timber.d("BaseUrlUpdateWorker: skipping mDNS discovery (wifi unavailable)")
             null
         }
         Timber.d("BaseUrlUpdateWorker: local mDNS device: $localDevice")
 
-        val savedCertCommonName = currentDeviceRepository.getSavedCertificateCommonName()
+
         val mergeKey = localDevice?.certificateCommonName?.takeIf { it.isNotEmpty() }
-            ?: savedCertCommonName
+            ?: savedDeviceCertCommonName
 
         // Always try to enrich with remote data (relay/public/seagateDeviceID).
         val remoteDevice = try {

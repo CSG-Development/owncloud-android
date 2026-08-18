@@ -31,6 +31,14 @@ class HCCurrentDeviceRepository(
         return paths
     }
 
+    override fun getDevicePath(pathType: DevicePathType): String? {
+        return currentDeviceStorage.getDeviceBaseUrl(pathType.name)
+    }
+
+    override fun replacePaths(paths: Map<DevicePathType, String>) {
+        currentDeviceStorage.replacePaths(paths)
+    }
+
     override fun getSavedCertificateCommonName(): String? {
         return currentDeviceStorage.getCertificateCommonName()
     }
@@ -38,6 +46,10 @@ class HCCurrentDeviceRepository(
     override fun getSeagateDeviceId(): String? = currentDeviceStorage.getSeagateDeviceId()
 
     override fun arePathsExpired(): Boolean = currentDeviceStorage.arePathsExpired()
+
+    override fun savePathsTimestamp() {
+        currentDeviceStorage.savePathsTimestamp()
+    }
 
     override fun clearCurrentDevicePaths() {
         currentDeviceStorage.clearDevicePaths()

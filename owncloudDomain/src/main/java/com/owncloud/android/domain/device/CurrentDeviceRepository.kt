@@ -12,6 +12,10 @@ interface CurrentDeviceRepository {
 
     fun getCurrentDevicePaths(): Map<DevicePathType, String>
 
+    fun getDevicePath(pathType: DevicePathType): String?
+
+    fun replacePaths(paths: Map<DevicePathType, String>)
+
     fun getSavedCertificateCommonName(): String?
 
     /**
@@ -25,6 +29,8 @@ interface CurrentDeviceRepository {
      * timestamp is recorded.
      */
     fun arePathsExpired(): Boolean
+
+    fun savePathsTimestamp()
 
     fun clearCurrentDevicePaths()
 }
