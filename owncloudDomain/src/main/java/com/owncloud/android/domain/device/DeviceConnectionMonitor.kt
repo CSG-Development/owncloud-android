@@ -10,8 +10,6 @@ interface DeviceConnectionMonitor {
 
     fun stop()
 
-    suspend fun evaluateConnection()
-
     suspend fun retryConnection()
 
     fun reportUnreachable()

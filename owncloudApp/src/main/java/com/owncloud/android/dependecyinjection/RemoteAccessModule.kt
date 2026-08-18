@@ -117,9 +117,10 @@ val remoteAccessModule = module {
     // Base URL Chooser - selects best available base URL
     single<BaseUrlChooser> {
         HCBaseUrlChooser(
-            currentDeviceStorage = get(),
+            currentDeviceRepository = get(),
             deviceUrlResolver = get(),
-            remoteAccessRepository = get()
+            remoteAccessRepository = get(),
+            mdnsDiscoveryRepository = get(),
         )
     }
 

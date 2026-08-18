@@ -5,8 +5,10 @@ import com.owncloud.android.data.mdnsdiscovery.datasources.LocalMdnsDiscoveryDat
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
 import com.owncloud.android.domain.mdnsdiscovery.MdnsDiscoveryRepository
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 import kotlin.time.Duration
 
@@ -31,6 +33,21 @@ class HCMdnsDiscoveryRepository(
         ).mapNotNull { baseUrl ->
             verifyDeviceBaseUrl(baseUrl)
         }
+    }
+
+    override suspend fun oneShotDiscoverAndVerifyDevices(duration: Duration): List<Device> {
+        val result = mutableListOf<Device>()
+        try {
+            withTimeout(duration) {
+                discoverAndVerifyDevices(
+                    duration = duration
+                )
+                    .collect { result.add(it) }
+            }
+        } catch (_: TimeoutCancellationException) {
+            Timber.d("Local devices found: ${result.size}")
+        }
+        return result.toList()
     }
 
     private suspend fun verifyDeviceBaseUrl(baseUrl: String): Device? {
