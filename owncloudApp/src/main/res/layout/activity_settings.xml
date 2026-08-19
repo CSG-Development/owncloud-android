@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/homecloud_bar_background"
+    android:fitsSystemWindows="true"
     tools:context=".presentation.settings.SettingsActivity">
 
     <include
@@ -17,6 +19,7 @@
         android:id="@+id/settings_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:background="?attr/colorSurface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

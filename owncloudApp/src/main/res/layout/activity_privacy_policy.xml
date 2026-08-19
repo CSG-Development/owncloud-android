@@ -20,6 +20,8 @@
     android:id="@+id/activityPrivacyPolicyLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/homecloud_bar_background"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     android:weightSum="1"
     android:filterTouchesWhenObscured="true"
@@ -34,6 +36,7 @@
     <WebView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="?attr/colorSurface"
         android:id="@+id/privacyPolicyWebview"
         />
 

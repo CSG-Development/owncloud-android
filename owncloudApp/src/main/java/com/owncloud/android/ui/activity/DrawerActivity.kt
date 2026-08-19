@@ -63,6 +63,7 @@ import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.user.model.UserQuota
 import com.owncloud.android.domain.user.model.UserQuotaState
 import com.owncloud.android.domain.utils.Event
+import com.owncloud.android.extensions.applyNavigationBarInsets
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.goToUrl
 import com.owncloud.android.extensions.isBigTablet
@@ -154,6 +155,7 @@ abstract class DrawerActivity : ToolbarActivity() {
 
             override fun onViewDetachedFromWindow(v: View) {}
         })
+        findViewById<View>(R.id.drawer_menu)?.applyNavigationBarInsets()
         setupDrawerContent()
 
         drawerToggle =

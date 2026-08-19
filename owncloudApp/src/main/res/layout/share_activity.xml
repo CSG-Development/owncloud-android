@@ -23,6 +23,8 @@
     android:layout_height="match_parent"
     tools:context=".presentation.sharing.ShareActivity"
     android:filterTouchesWhenObscured="true"
+    android:fitsSystemWindows="true"
+    android:background="@color/homecloud_bar_background"
     android:orientation="vertical"
     >
 
@@ -31,6 +33,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="?attr/colorSurface"
         android:id="@+id/share_fragment_container">
     </FrameLayout>
 

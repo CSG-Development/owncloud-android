@@ -26,6 +26,7 @@ import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
+import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
@@ -74,6 +75,38 @@ fun View.applyStatusBarInsets(usePaddings: Boolean = true) {
                 topMargin = initialMarginTop + statusBarInsets.top
                 leftMargin = initialMarginLeft + statusBarInsets.left
                 rightMargin = initialMarginRight + statusBarInsets.right
+            }
+        }
+        insets
+    }
+}
+
+/**
+ * Applies system navigation bar insets (padding or margin) to this [View].
+ *
+ * This ensures the view is laid out correctly above the navigation bar by
+ * either updating its bottom padding or bottom margin with the navigation bar
+ * inset, while preserving the original values.
+ *
+ * @param usePaddings If `true` (default), navigation bar insets are added to
+ * the view's bottom padding. If `false`, they are added to the view's bottom margin.
+ */
+fun View.applyNavigationBarInsets(usePaddings: Boolean = true) {
+    val initialPaddingBottom = paddingBottom
+    val initialMarginBottom = marginBottom
+
+    ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+        val navigationBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+        if (usePaddings) {
+            view.setPadding(
+                paddingLeft,
+                paddingTop,
+                paddingRight,
+                initialPaddingBottom + navigationBarInset,
+            )
+        } else {
+            (view.layoutParams as? ViewGroup.MarginLayoutParams)?.apply {
+                bottomMargin = initialMarginBottom + navigationBarInset
             }
         }
         insets
