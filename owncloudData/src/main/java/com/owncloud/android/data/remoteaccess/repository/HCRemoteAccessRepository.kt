@@ -138,7 +138,8 @@ class HCRemoteAccessRepository(
                 // Path-aware timeout: LOCAL paths use the local 4s budget, others use 9s.
                 val isLocal = devicePathType == DevicePathType.LOCAL
                 certificateCommonName = deviceVerificationClient
-                    .getCertificateCommonName(baseUrl, isLocal = isLocal)
+                    .getDeviceInfo(baseUrl, isLocal = isLocal)
+                    ?.certificateCommonName
                     .orEmpty()
             }
 

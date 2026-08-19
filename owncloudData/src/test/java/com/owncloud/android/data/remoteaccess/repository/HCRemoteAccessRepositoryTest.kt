@@ -2,6 +2,7 @@ package com.owncloud.android.data.remoteaccess.repository
 
 import com.owncloud.android.data.device.CurrentDeviceStorage
 import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient
+import com.owncloud.android.data.mdnsdiscovery.remote.HCDeviceAboutResponse
 import com.owncloud.android.data.remoteaccess.RemoteAccessTokenStorage
 import com.owncloud.android.data.remoteaccess.datasources.RemoteAccessService
 import com.owncloud.android.data.remoteaccess.remote.RemoteAccessDevicePathsResponse
@@ -68,7 +69,7 @@ class HCRemoteAccessRepositoryTest {
         coEvery { remoteAccessService.getDevices() } returns devices
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1", paths = paths)
         // REMOTE path ⇒ non-local timeout (isLocal = false).
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://test.com:443", isLocal = false) } returns null
+        coEvery { deviceVerificationClient.getDeviceInfo("https://test.com:443", isLocal = false) } returns null
 
         val result = repository.getAvailableDevices()
 
@@ -89,7 +90,7 @@ class HCRemoteAccessRepositoryTest {
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1",  paths = paths)
         // PUBLIC is visited first and fills in the common name; REMOTE lookup is skipped
         // because the cached name is already non-empty.
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://public.com:443", isLocal = false) } returns "test-cert-001"
+        coEvery { deviceVerificationClient.getDeviceInfo("https://public.com:443", isLocal = false) } returns HCDeviceAboutResponse("test-cert-001")
 
         val result = repository.getAvailableDevices()
 
@@ -112,7 +113,7 @@ class HCRemoteAccessRepositoryTest {
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1",  paths = paths)
         // Only the first iteration performs the certificate lookup. Paths are iterated in
         // declaration order, so LOCAL is visited first and the local timeout is used.
-        coEvery { deviceVerificationClient.getCertificateCommonName("https://192.168.1.100", isLocal = true) } returns "test-cert-001"
+        coEvery { deviceVerificationClient.getDeviceInfo("https://192.168.1.100", isLocal = true) } returns HCDeviceAboutResponse("test-cert-001")
 
         val result = repository.getAvailableDevices()
 

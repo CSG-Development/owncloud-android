@@ -60,7 +60,8 @@ class HCMdnsDiscoveryRepository(
             Timber.d("Device verified: $baseUrl")
 
             // Get certificate common name
-            val certificateCommonName = deviceVerificationClient.getCertificateCommonName(baseUrl).orEmpty()
+            val deviceInfo = deviceVerificationClient.getDeviceInfo(baseUrl)
+            val certificateCommonName = deviceInfo?.certificateCommonName
             Timber.d("Device certificate common name: $certificateCommonName")
             val deviceUrl = "$baseUrl/files"
 
@@ -68,11 +69,11 @@ class HCMdnsDiscoveryRepository(
 
             Device(
                 id = deviceUrl,
-                name = deviceUrl,
+                name = certificateCommonName?.takeIf { it.isNotEmpty() } ?: deviceUrl,
                 availablePaths = mapOf(
                     DevicePathType.LOCAL to deviceUrl
                 ),
-                certificateCommonName = certificateCommonName
+                certificateCommonName = certificateCommonName.orEmpty()
             )
         } else {
             Timber.d("Device verification failed, skipping: $baseUrl")
