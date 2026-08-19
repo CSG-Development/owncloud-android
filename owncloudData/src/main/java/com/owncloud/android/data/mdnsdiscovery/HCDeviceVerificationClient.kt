@@ -1,5 +1,7 @@
 package com.owncloud.android.data.mdnsdiscovery
 
+import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient.Companion.LOCAL_TIMEOUT_MS
+import com.owncloud.android.data.mdnsdiscovery.HCDeviceVerificationClient.Companion.NON_LOCAL_TIMEOUT_MS
 import com.owncloud.android.data.mdnsdiscovery.remote.HCDeviceAboutResponse
 import com.owncloud.android.data.mdnsdiscovery.remote.HCDeviceStatusResponse
 import com.squareup.moshi.Moshi
@@ -91,7 +93,7 @@ class HCDeviceVerificationClient(
      * @param isLocal When true, applies the local timeout (4s); otherwise the non-local
      *  timeout (9s).
      */
-    suspend fun getCertificateCommonName(deviceUrl: String, isLocal: Boolean = true): String? {
+    suspend fun getDeviceInfo(deviceUrl: String, isLocal: Boolean = true): HCDeviceAboutResponse? {
         return withContext(Dispatchers.IO) {
             try {
                 val aboutUrl = "$deviceUrl/api/v1/about"
@@ -108,8 +110,7 @@ class HCDeviceVerificationClient(
                     Timber.w("Failed to fetch about info: unable to parse response for: $deviceUrl")
                     return@withContext null
                 }
-
-                aboutResponse.certificateCommonName
+                aboutResponse
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
