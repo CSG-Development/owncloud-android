@@ -130,10 +130,8 @@ class BaseUrlUpdateWorker(
 
         // Always try to enrich with remote data (relay/public/seagateDeviceID).
         val remoteDevice = try {
-            val all = getRemoteAvailableDevicesUseCase.execute()
-            // Prefer the entry that matches our merge key; fall back to currentDevice() helper.
-            all.firstOrNull { it.certificateCommonName.isNotEmpty() && it.certificateCommonName == mergeKey }
-                ?: getRemoteAvailableDevicesUseCase.currentDevice()
+            getRemoteAvailableDevicesUseCase.execute(filterByCertificateCommonName = mergeKey)
+                .firstOrNull { it.certificateCommonName.isNotEmpty() && it.certificateCommonName == mergeKey }
         } catch (e: Exception) {
             Timber.w(e, "BaseUrlUpdateWorker: failed to fetch remote devices")
             null
