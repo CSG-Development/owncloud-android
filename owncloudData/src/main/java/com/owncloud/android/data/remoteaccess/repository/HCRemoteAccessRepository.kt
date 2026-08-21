@@ -118,10 +118,12 @@ class HCRemoteAccessRepository(
         return !tokenStorage.getAccessToken().isNullOrEmpty()
     }
 
-    override suspend fun getAvailableDevices(): List<Device> {
-        return remoteAccessService.getDevices().mapNotNull { deviceResponse ->
-            getVerifiedDevice(deviceResponse)
-        }
+    override suspend fun getAvailableDevices(filterByCertificateCommonName: String?): List<Device> {
+        return remoteAccessService.getDevices()
+            .filter { filterByCertificateCommonName == null || it.certificateCommonName == filterByCertificateCommonName }
+            .mapNotNull { deviceResponse ->
+                getVerifiedDevice(deviceResponse)
+            }
     }
 
     private suspend fun getVerifiedDevice(deviceResponse: RemoteAccessDeviceResponse): Device? {
@@ -156,13 +158,6 @@ class HCRemoteAccessRepository(
         } else {
             null
         }
-    }
-
-    override suspend fun getCurrentDevice(): Device? {
-        val deviceResponse = remoteAccessService.getDevices().firstOrNull { deviceResponse ->
-            deviceResponse.certificateCommonName == currentDeviceStorage.getCertificateCommonName()
-        }
-        return deviceResponse?.let { getVerifiedDevice(deviceResponse = it) }
     }
 
     override suspend fun getDevicePathsById(seagateDeviceId: String): Map<DevicePathType, String>? {

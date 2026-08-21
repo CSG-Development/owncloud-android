@@ -95,8 +95,9 @@ class HCDeviceVerificationClient(
      */
     suspend fun getDeviceInfo(deviceUrl: String, isLocal: Boolean = true): HCDeviceAboutResponse? {
         return withContext(Dispatchers.IO) {
+            val aboutUrl = "$deviceUrl/api/v1/about"
             try {
-                val aboutUrl = "$deviceUrl/api/v1/about"
+
                 Timber.d("Fetching about info from: $aboutUrl (isLocal=$isLocal)")
 
                 val responseBody = makeRequest(aboutUrl, clientFor(isLocal))
@@ -110,8 +111,10 @@ class HCDeviceVerificationClient(
                     Timber.w("Failed to fetch about info: unable to parse response for: $deviceUrl")
                     return@withContext null
                 }
+                Timber.d("Successfully fetched: $aboutUrl is ${aboutResponse.certificateCommonName}")
                 aboutResponse
             } catch (e: CancellationException) {
+                Timber.w("Fetching about info from: $aboutUrl has been cancelled!")
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch about info for: $deviceUrl")

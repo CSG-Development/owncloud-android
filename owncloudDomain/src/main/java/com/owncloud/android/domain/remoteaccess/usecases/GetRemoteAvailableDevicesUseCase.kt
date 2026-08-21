@@ -7,10 +7,7 @@ class GetRemoteAvailableDevicesUseCase(
     private val remoteAccessRepository: RemoteAccessRepository
 ) {
 
-    suspend fun execute(): List<Device> =
-        remoteAccessRepository.getAvailableDevices()
-
-    suspend fun currentDevice(): Device? =
-        remoteAccessRepository.getCurrentDevice()
+    suspend fun execute(filterByCertificateCommonName: String? = null): List<Device> =
+        remoteAccessRepository.getAvailableDevices(filterByCertificateCommonName)
 }
 
