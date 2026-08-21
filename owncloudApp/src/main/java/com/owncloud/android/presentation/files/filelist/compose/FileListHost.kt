@@ -42,6 +42,8 @@ fun FileListHost(
     onItemClick: (fileId: Long) -> Unit,
     onItemLongClick: (fileId: Long) -> Unit = {},
     onThreeDotClick: (fileId: Long) -> Unit = {},
+    onVirtualOpenUploads: () -> Unit = {},
+    onVirtualCancelUpload: (fileId: Long) -> Unit = {},
     onRefresh: (() -> Unit)? = null,
     onSelectionBecameEmpty: (() -> Unit)? = null,
 ) {
@@ -76,6 +78,8 @@ fun FileListHost(
         val onItemClickState = rememberUpdatedState(onItemClick)
         val onItemLongClickState = rememberUpdatedState(onItemLongClick)
         val onThreeDotClickState = rememberUpdatedState(onThreeDotClick)
+        val onVirtualOpenUploadsState = rememberUpdatedState(onVirtualOpenUploads)
+        val onVirtualCancelUploadState = rememberUpdatedState(onVirtualCancelUpload)
         val onRefreshState = rememberUpdatedState(onRefresh)
         val onArchiveActivityCancelState = rememberUpdatedState(onArchiveActivityCancel)
 
@@ -106,6 +110,8 @@ fun FileListHost(
             onItemClick = { onItemClickState.value(it.fileId) },
             onItemLongClick = { onItemLongClickState.value(it.fileId) },
             onThreeDotClick = { onThreeDotClickState.value(it.fileId) },
+            onVirtualOpenUploads = { onVirtualOpenUploadsState.value() },
+            onVirtualCancelUpload = { fileId -> onVirtualCancelUploadState.value(fileId) },
         )
     }
 }
@@ -119,6 +125,8 @@ fun ComposeView.setFileListContent(
     onItemClick: (fileId: Long) -> Unit,
     onItemLongClick: (fileId: Long) -> Unit = {},
     onThreeDotClick: (fileId: Long) -> Unit = {},
+    onVirtualOpenUploads: () -> Unit = {},
+    onVirtualCancelUpload: (fileId: Long) -> Unit = {},
     onRefresh: (() -> Unit)? = null,
     onSelectionBecameEmpty: (() -> Unit)? = null,
     scrollToTopEvents: Flow<Unit> = emptyFlow(),
@@ -138,6 +146,8 @@ fun ComposeView.setFileListContent(
             onItemClick = onItemClick,
             onItemLongClick = onItemLongClick,
             onThreeDotClick = onThreeDotClick,
+            onVirtualOpenUploads = onVirtualOpenUploads,
+            onVirtualCancelUpload = onVirtualCancelUpload,
             onRefresh = onRefresh,
             onSelectionBecameEmpty = onSelectionBecameEmpty,
         )
