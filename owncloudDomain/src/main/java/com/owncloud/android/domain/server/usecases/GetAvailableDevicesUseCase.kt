@@ -41,7 +41,7 @@ class GetAvailableDevicesUseCase(
         remoteAccessDevicesFlow.update { emptyList() }
         val localNetworkDevicesFlow = discoverLocalNetworkDevicesUseCase.execute(discoverLocalNetworkDevicesParams)
             .scan(emptyList<Device>()) { devicesList, newDevice ->
-                (devicesList + newDevice).distinctBy { it.certificateCommonName }
+                (listOf(newDevice) + devicesList).distinctBy { it.certificateCommonName }
             }
 
         return combine(
