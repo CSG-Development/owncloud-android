@@ -95,6 +95,7 @@ import com.owncloud.android.domain.files.usecases.SortFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
 import com.owncloud.android.domain.files.usecases.UpdateAlreadyDownloadedFilesPathUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.mdnsdiscovery.usecases.FindUpdatedAddressOfLocalDeviceUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
@@ -368,6 +369,7 @@ val useCaseModule = module {
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
+    factoryOf(::FindUpdatedAddressOfLocalDeviceUseCase)
 
     // Device / Base URL
     single<UpdateBaseUrlUseCase>{ UpdateBaseUrlUseCase(get()) }
