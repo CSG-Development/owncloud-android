@@ -35,7 +35,7 @@ class HCBaseUrlChooser(
             return null
         }
 
-        if (cachedPaths.size == 1 && cachedPaths.containsKey(DevicePathType.LOCAL)) {
+        if (wifiAvailable && cachedPaths.containsKey(DevicePathType.LOCAL)) {
             val currentDeviceCertName = currentDeviceRepository.getSavedCertificateCommonName()
             val updatedLocalDevice = mdnsDiscoveryRepository.oneShotDiscoverAndVerifyDevices()
                 .firstOrNull { foundDevice ->
@@ -46,8 +46,12 @@ class HCBaseUrlChooser(
                 deviceUrlResolver.testSinglePath(localPath, isLocal = true)
             }
             if (newBaseUrl != null) {
-                currentDeviceRepository.replacePaths(updatedLocalDevice.availablePaths)
-                Timber.d("Saved new paths: ${updatedLocalDevice.availablePaths}")
+                val updatedPaths = cachedPaths.toMutableMap().apply {
+                    this[DevicePathType.LOCAL] = newBaseUrl
+                }
+                Timber.d("Replaced LOCAL path ${cachedPaths.get(DevicePathType.LOCAL)} -> ${updatedPaths.get(DevicePathType.LOCAL)}")
+                currentDeviceRepository.replacePaths(updatedPaths)
+                Timber.d("Saved new paths: $updatedPaths")
                 return newBaseUrl
             }
         }
