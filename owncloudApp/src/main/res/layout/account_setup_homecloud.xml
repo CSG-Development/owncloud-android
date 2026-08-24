@@ -150,7 +150,7 @@
                     android:layout_height="wrap_content"
                     android:drawablePadding="5dp"
                     android:imeOptions="flagNoExtractUi"
-                    android:inputType="textNoSuggestions"
+                    android:inputType="textEmailAddress"
                     android:hint="@string/homecloud_login_email_hint"
                     android:textColorHint="@color/homecloud_input_placeholder"/>
             </com.google.android.material.textfield.TextInputLayout>
