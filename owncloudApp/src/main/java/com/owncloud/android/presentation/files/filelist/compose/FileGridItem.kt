@@ -21,7 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -60,36 +63,63 @@ fun FileGridItem(
     expandedThumbnail: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
+    onVirtualOpenUploads: () -> Unit = {},
+    onVirtualCancelUpload: () -> Unit = {},
 ) {
     val contentAlpha = if (item.isVirtual) 0.5f else 1f
+    val isUploadVirtual = item.virtualKind == FileListVirtualKind.Upload
+    var virtualMenuExpanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .aspectRatio(1f)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick.takeUnless { item.isVirtual },
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        FileGridItemMedia(
-            item = item,
-            contentAlpha = contentAlpha,
-            thumbnail = thumbnail,
-            expandedThumbnail = expandedThumbnail,
+    Box(modifier = modifier.aspectRatio(1f)) {
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        )
-        if (!expandedThumbnail) {
-            FileGridItemFileName(
-                name = item.name,
+                .fillMaxSize()
+                .combinedClickable(
+                    onClick = {
+                        if (isUploadVirtual) {
+                            virtualMenuExpanded = true
+                        } else {
+                            onClick()
+                        }
+                    },
+                    onLongClick = onLongClick.takeUnless { item.isVirtual },
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            FileGridItemMedia(
+                item = item,
                 contentAlpha = contentAlpha,
+                thumbnail = thumbnail,
+                expandedThumbnail = expandedThumbnail,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .padding(bottom = 4.dp),
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+            if (!expandedThumbnail) {
+                FileGridItemFileName(
+                    name = item.name,
+                    contentAlpha = contentAlpha,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                        .padding(bottom = 4.dp),
+                )
+            }
+        }
+        if (isUploadVirtual) {
+            FileListVirtualUploadMenu(
+                expanded = virtualMenuExpanded,
+                onDismissRequest = { virtualMenuExpanded = false },
+                showCancelUpload = item.uploadProgress != 100,
+                onOpenUploads = {
+                    virtualMenuExpanded = false
+                    onVirtualOpenUploads()
+                },
+                onCancelUpload = {
+                    virtualMenuExpanded = false
+                    onVirtualCancelUpload()
+                },
             )
         }
     }
