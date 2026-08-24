@@ -112,9 +112,10 @@ class VerificationCodeDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = AccountDialogCodeBinding.inflate(requireActivity().layoutInflater)
-
+        isCancelable = false
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(binding.root)
+            .setCancelable(false)
             .create()
 
         dialog.window?.let { window ->
