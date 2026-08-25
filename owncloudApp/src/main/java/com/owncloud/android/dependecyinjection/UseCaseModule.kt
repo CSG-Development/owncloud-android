@@ -57,9 +57,11 @@ import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.ProbeCurrentBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.RefreshRemoteDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.SyncCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
 import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
@@ -377,6 +379,8 @@ val useCaseModule = module {
     factoryOf(::GetAvailableServerInfoUseCase)
     factoryOf(::ProbeCurrentBaseUrlUseCase)
     factoryOf(::SwitchToBestAvailableBaseUrlUseCase)
+    factoryOf(::SyncCurrentDevicePathsUseCase)
+    factoryOf(::RefreshRemoteDevicePathsUseCase)
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)

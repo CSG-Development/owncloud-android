@@ -4,13 +4,16 @@ import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.owncloud.android.domain.device.BaseUrlUpdateWorker
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.util.UUID
 
@@ -75,6 +78,38 @@ class UpdateBaseUrlUseCase(
         return baseUrlUpdateWork.id
     }
 
+    suspend fun executeAndAwait(
+        fromBackground: Boolean = false,
+        wifiAvailable: Boolean = true,
+    ): Boolean {
+        execute(fromBackground, wifiAvailable)
+        val completed = withTimeoutOrNull(AWAIT_TIMEOUT_MS) {
+            pollUntilUniqueWorkFinishes()
+        }
+        if (completed == null) {
+            Timber.w("Base URL update worker did not finish within ${AWAIT_TIMEOUT_MS}ms")
+        }
+        return completed ?: false
+    }
+
+    private suspend fun pollUntilUniqueWorkFinishes(): Boolean {
+        while (true) {
+            val workInfo = workManager
+                .getWorkInfosForUniqueWork(BaseUrlUpdateWorker.BASE_URL_UPDATE_WORKER)
+                .get()
+                .firstOrNull()
+
+            when (workInfo?.state) {
+                WorkInfo.State.SUCCEEDED -> return true
+                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> return false
+                WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> {
+                    delay(WORK_INFO_POLL_INTERVAL_MS)
+                }
+                null -> return false
+            }
+        }
+    }
+
     /**
      * Notifies subscribers that Remote Access re-authentication is required. Used by
      * downstream auth components (e.g. token-refresh interceptor) when the session can no
@@ -86,6 +121,11 @@ class UpdateBaseUrlUseCase(
 
     fun hasScheduled(): Boolean {
         val state = workManager.getWorkInfosForUniqueWork(BaseUrlUpdateWorker.BASE_URL_UPDATE_WORKER).get().firstOrNull()?.state
-        return state == androidx.work.WorkInfo.State.ENQUEUED || state == androidx.work.WorkInfo.State.RUNNING
+        return state == WorkInfo.State.ENQUEUED || state == WorkInfo.State.RUNNING
+    }
+
+    private companion object {
+        const val WORK_INFO_POLL_INTERVAL_MS = 250L
+        const val AWAIT_TIMEOUT_MS = 15_000L
     }
 }
