@@ -20,6 +20,7 @@
 
     <color name="homecloud_button_primary_text">#000000</color>
     <color name="homecloud_button_primary_background_disabled">#4DF6F6F6</color>
+    <color name="homecloud_button_primary_stroke_loading">#D1D1D1</color>
     <color name="homecloud_button_secondary_text_disabled">@color/homecloud_gray_label</color>
     <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_disabled_bg</color>
 
