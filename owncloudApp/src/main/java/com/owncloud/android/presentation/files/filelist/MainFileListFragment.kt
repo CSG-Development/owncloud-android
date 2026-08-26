@@ -94,6 +94,7 @@ import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.parseError
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.toDrawableResId
 import com.owncloud.android.extensions.toResId
@@ -707,6 +708,7 @@ class MainFileListFragment : FileFragment(),
                         fileOperationsViewModel.performOperation(
                             FileOperation.SetFileFavoriteStatus(fileId = fileId, isFavorite = isFavorite)
                         )
+                        fileOptionsBottomSheetSingleFile.showFavoriteStatusSnackbar(isFavorite)
                     }
                 }
 
@@ -877,12 +879,14 @@ class MainFileListFragment : FileFragment(),
                     FileMenuOption.SET_FAVORITE -> {
                         file.id?.let { fileId ->
                             fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                            view?.showFavoriteStatusSnackbar(isFavorite = true, anchorViewId = R.id.bottom_nav_view)
                         }
                     }
 
                     FileMenuOption.UNSET_FAVORITE -> {
                         file.id?.let { fileId ->
                             fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                            view?.showFavoriteStatusSnackbar(isFavorite = false, anchorViewId = R.id.bottom_nav_view)
                         }
                     }
                 }
@@ -1556,6 +1560,7 @@ class MainFileListFragment : FileFragment(),
             R.id.action_set_favorite -> {
                 singleFile.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    view?.showFavoriteStatusSnackbar(isFavorite = true, anchorViewId = R.id.bottom_nav_view)
                 }
                 true
             }
@@ -1563,6 +1568,7 @@ class MainFileListFragment : FileFragment(),
             R.id.action_unset_favorite -> {
                 singleFile.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    view?.showFavoriteStatusSnackbar(isFavorite = false, anchorViewId = R.id.bottom_nav_view)
                 }
                 true
             }

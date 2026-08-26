@@ -15,6 +15,7 @@ import com.owncloud.android.R
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.extensions.toDrawableResId
 import com.owncloud.android.extensions.toResId
 import com.owncloud.android.extensions.toStringResId
@@ -71,6 +72,7 @@ object FileOptionsBottomSheetHelper {
                 fileOperationsViewModel.performOperation(
                     FileOperation.SetFileFavoriteStatus(fileId = fileId, isFavorite = isFavorite)
                 )
+                bottomSheetView.showFavoriteStatusSnackbar(isFavorite)
             }
         }
 
@@ -250,11 +252,13 @@ object FileOptionsBottomSheetHelper {
             FileMenuOption.SET_FAVORITE ->
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(SetFileFavoriteStatus(fileId, isFavorite = true))
+                    fragment.view?.showFavoriteStatusSnackbar(isFavorite = true)
                 }
 
             FileMenuOption.UNSET_FAVORITE ->
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(SetFileFavoriteStatus(fileId, isFavorite = false))
+                    fragment.view?.showFavoriteStatusSnackbar(isFavorite = false)
                 }
 
             FileMenuOption.MANAGE_TAGS -> {
