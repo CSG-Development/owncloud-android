@@ -1,7 +1,6 @@
 package com.owncloud.android.presentation.authentication.homecloud
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
@@ -15,6 +14,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import android.widget.Space
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.owncloud.android.R
 
@@ -79,12 +79,21 @@ class VerificationCodeView @JvmOverloads constructor(
 
         try {
             codeLength = attrs.getInt(R.styleable.VerificationCodeView_codeLength, 6)
-            borderColor = attrs.getColor(R.styleable.VerificationCodeView_borderColor, Color.GRAY)
-            focusBorderColor = attrs.getColor(R.styleable.VerificationCodeView_focusBorderColor, Color.BLUE)
+            borderColor = attrs.getColor(
+                R.styleable.VerificationCodeView_borderColor,
+                ContextCompat.getColor(context, R.color.homecloud_input_stroke_nonfocused)
+            )
+            focusBorderColor = attrs.getColor(
+                R.styleable.VerificationCodeView_focusBorderColor,
+                ContextCompat.getColor(context, R.color.homecloud_input_stroke_focused)
+            )
             borderWidth = attrs.getDimension(R.styleable.VerificationCodeView_borderWidth, 2f)
             focusBorderWidth = attrs.getDimension(R.styleable.VerificationCodeView_focusBorderWidth, 3f)
             cornerRadius = attrs.getDimension(R.styleable.VerificationCodeView_cornerRadius, 12f)
-            errorTextColor = attrs.getColor(R.styleable.VerificationCodeView_errorTextColor, Color.RED)
+            errorTextColor = attrs.getColor(
+                R.styleable.VerificationCodeView_errorTextColor,
+                ContextCompat.getColor(context, R.color.homecloud_error)
+            )
             cursorColor = attrs.getColor(R.styleable.VerificationCodeView_cursorColor, focusBorderColor)
             defaultBorder = createBorderDrawable(borderColor, borderWidth)
             focusedBorder = createBorderDrawable(focusBorderColor, focusBorderWidth)
