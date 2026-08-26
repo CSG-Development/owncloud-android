@@ -26,11 +26,12 @@
     <color name="homecloud_bar_background">#FFFFFE</color>
     <color name="homecloud_transparent_bar_background">#CCFFFFFE</color>
 
-    <color name="homecloud_button_primary_text">#212121</color>
-    <color name="homecloud_button_primary_text_disabled">@color/homecloud_content_grey</color>
+    <color name="homecloud_button_primary_text">#000000</color>
+    <color name="homecloud_button_primary_text_disabled">#191919</color>
     <color name="homecloud_button_primary_background">@color/homecloud_cta</color>
     <color name="homecloud_button_primary_background_loading">@color/homecloud_cta_loading</color>
-    <color name="homecloud_button_primary_background_disabled">#EEEEEE</color>
+    <color name="homecloud_button_primary_background_disabled">#33191919</color>
+    <color name="homecloud_button_primary_loading_indicator">#0C2312</color>
     <color name="homecloud_button_secondary_text">@color/homecloud_link</color>
     <color name="homecloud_button_secondary_text_disabled">@color/homecloud_content_grey</color>
     <color name="homecloud_button_secondary_stroke">@color/homecloud_link</color>
@@ -98,6 +99,7 @@
     <color name="textColor">@color/homecloud_primary</color>
 
     <!-- Palette colors. Don't use them directly -->
+    <color name="homecloud_green_200">#FFA9E196</color>
     <color name="homecloud_green_300">#FF8CD873</color>
     <color name="homecloud_green_400">#FF6EBE49</color>
     <color name="homecloud_green_400_12">#1F6EBE49</color>
@@ -121,7 +123,7 @@
     <color name="homecloud_cta_20">@color/homecloud_green_400_20</color>
     <color name="homecloud_cta_24">@color/homecloud_green_400_24</color>
     <color name="homecloud_cta_50">@color/homecloud_green_400_50</color>
-    <color name="homecloud_cta_loading">@color/homecloud_green_700</color>
+    <color name="homecloud_cta_loading">@color/homecloud_green_200</color>
     <color name="homecloud_link">@color/homecloud_green_700</color>
     <color name="homecloud_icon">@color/homecloud_link</color>
 

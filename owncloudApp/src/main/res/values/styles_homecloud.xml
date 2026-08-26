@@ -366,7 +366,7 @@
     </style>
 
     <style name="Widget.homeCloud.LoadingButton" parent="">
-        <item name="loadingIndicatorColor">@color/homecloud_button_primary_text</item>
+        <item name="loadingIndicatorColor">@color/homecloud_button_primary_loading_indicator</item>
         <item name="loadingIndicatorSize">@dimen/loading_button_indicator_size</item>
         <item name="loadingBackgroundColor">@color/homecloud_button_primary_background_loading</item>
     </style>

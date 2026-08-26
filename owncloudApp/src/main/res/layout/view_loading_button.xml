@@ -30,7 +30,7 @@
         android:layout_gravity="center"
         android:indeterminate="true"
         android:visibility="gone"
-        app:indicatorColor="@color/homecloud_button_primary_text"
+        app:indicatorColor="@color/homecloud_button_primary_loading_indicator"
         app:indicatorSize="24dp"
         app:trackColor="@android:color/transparent"
         app:trackThickness="2dp" />

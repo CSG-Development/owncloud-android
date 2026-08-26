@@ -18,8 +18,8 @@
 
     <color name="homecloud_gray_label">#B2B2B2</color>
 
-    <color name="homecloud_button_primary_text">#212121</color>
-    <color name="homecloud_button_primary_background_disabled">@color/homecloud_content_disabled_bg</color>
+    <color name="homecloud_button_primary_text">#000000</color>
+    <color name="homecloud_button_primary_background_disabled">#4DF6F6F6</color>
     <color name="homecloud_button_secondary_text_disabled">@color/homecloud_gray_label</color>
     <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_disabled_bg</color>
 

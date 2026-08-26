@@ -52,7 +52,7 @@ class LoadingButton @JvmOverloads constructor(
 
                 val indicatorColor = getColor(
                     R.styleable.LoadingButton_loadingIndicatorColor,
-                    ContextCompat.getColor(context, R.color.homecloud_button_primary_text)
+                    ContextCompat.getColor(context, R.color.homecloud_button_primary_loading_indicator)
                 )
                 progressIndicator.setIndicatorColor(indicatorColor)
 
