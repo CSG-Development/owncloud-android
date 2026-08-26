@@ -26,10 +26,10 @@
     <color name="homecloud_bar_background">#FFFFFE</color>
     <color name="homecloud_transparent_bar_background">#CCFFFFFE</color>
 
-    <color name="homecloud_button_primary_text">@color/homecloud_primary_inverted</color>
+    <color name="homecloud_button_primary_text">#212121</color>
     <color name="homecloud_button_primary_text_disabled">@color/homecloud_content_grey</color>
     <color name="homecloud_button_primary_background">@color/homecloud_blue_darken_2</color>
-    <color name="homecloud_button_primary_background_loading">#145CA4</color>
+    <color name="homecloud_button_primary_background_loading">@color/homecloud_green_700</color>
     <color name="homecloud_button_primary_background_disabled">#EEEEEE</color>
     <color name="homecloud_button_secondary_text">@color/homecloud_blue_darken_2</color>
     <color name="homecloud_button_secondary_text_disabled">@color/homecloud_content_grey</color>
@@ -98,24 +98,32 @@
     <color name="textColor">@color/homecloud_primary</color>
 
     <!-- Palette colors. Don't use them directly -->
-    <color name="homecloud_blue_darken_2">#FF1976D2</color>
-    <color name="homecloud_blue_darken_2_12">#1F1976D2</color>
-    <color name="homecloud_blue_darken_2_24">#3D1976D2</color>
-    <color name="homecloud_blue_darken_2_20">#331976D2</color>
-    <color name="homecloud_blue_darken_2_50">#801976D2</color>
+    <color name="homecloud_green_300">#FF8CD873</color>
+    <color name="homecloud_green_400">#FF6EBE49</color>
+    <color name="homecloud_green_400_12">#1F6EBE49</color>
+    <color name="homecloud_green_400_20">#336EBE49</color>
+    <color name="homecloud_green_400_24">#3D6EBE49</color>
+    <color name="homecloud_green_400_50">#806EBE49</color>
+    <color name="homecloud_green_700">#FF2F743C</color>
+    <color name="homecloud_green">@color/homecloud_green_400</color>
+    <!-- Deprecated blue names: aliased to green 400 until semantic CTA/link split -->
+    <color name="homecloud_blue_darken_2">@color/homecloud_green_400</color>
+    <color name="homecloud_blue_darken_2_12">@color/homecloud_green_400_12</color>
+    <color name="homecloud_blue_darken_2_24">@color/homecloud_green_400_24</color>
+    <color name="homecloud_blue_darken_2_20">@color/homecloud_green_400_20</color>
+    <color name="homecloud_blue_darken_2_50">@color/homecloud_green_400_50</color>
     <color name="homecloud_content_grey">#9E9E9E</color>
     <color name="homecloud_content_disabled_bg">#616161</color>
-    <color name="homecloud_blue_lighten_2">#FF64B5F6</color>
-    <color name="homecloud_blue_lighten_2_20">#3364B5F6</color>
-    <color name="homecloud_blue_lighten_2_24">#3D64B5F6</color>
-    <color name="homecloud_blue_lighten_2_50">#8064B5F6</color>
+    <color name="homecloud_blue_lighten_2">@color/homecloud_green_400</color>
+    <color name="homecloud_blue_lighten_2_20">@color/homecloud_green_400_20</color>
+    <color name="homecloud_blue_lighten_2_24">@color/homecloud_green_400_24</color>
+    <color name="homecloud_blue_lighten_2_50">@color/homecloud_green_400_50</color>
     <color name="homecloud_border_gray">#CBCDD3</color>
     <color name="homecloud_grey_2">#7A7A7A</color>
     <color name="homecloud_black_60">#99000000</color>
     <color name="homecloud_white_70">#B2FFFFFF</color>
     <color name="homecloud_white_87">#DEFFFFFF</color>
     <color name="homecloud_black_87">#DE000000</color>
-    <color name="homecloud_green">#6EBD49</color>
 
     <!-- Reconnecting snackbar -->
     <color name="homecloud_snackbar_background">#212121</color>
