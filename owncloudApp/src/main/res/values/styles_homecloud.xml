@@ -162,7 +162,7 @@
 
 
     <style name="homeCloud.Toolbar.ActionMode" parent="@style/homeCloud.Appbar">
-        <item name="colorControlNormal">?attr/colorPrimary</item>
+        <item name="colorControlNormal">@color/homecloud_toolbar_icon_tint</item>
         <item name="background">@color/homecloud_bar_background</item>
         <item name="titleTextStyle">@style/homeCloud.Toolbar.ActionMode.TitleText</item>
         <item name="android:paddingLeft">4dp</item>
@@ -296,8 +296,8 @@
         <item name="boxStrokeWidthFocused">3dp</item>
         <item name="hintTextColor">@color/selector_input_hint</item>
         <item name="shapeAppearance">@style/homeCloud.TextInputLayout.InputShape</item>
-        <item name="endIconTint">?attr/colorPrimary</item>
-        <item name="passwordToggleTint">?attr/colorPrimary</item>
+        <item name="endIconTint">@color/homecloud_icon</item>
+        <item name="passwordToggleTint">@color/homecloud_icon</item>
         <item name="errorIconDrawable">@null</item>
         <item name="errorTextColor">@color/homecloud_error</item>
         <item name="hintAnimationEnabled">false</item>

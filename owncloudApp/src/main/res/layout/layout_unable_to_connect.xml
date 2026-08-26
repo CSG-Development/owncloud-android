@@ -24,7 +24,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/unable_to_connect_title"
             app:layout_constraintBottom_toBottomOf="@id/unable_to_connect_title"
-            app:tint="?attr/colorOnSecondaryContainer" />
+            app:tint="@color/homecloud_icon" />
 
         <TextView
             android:id="@+id/unable_to_connect_title"
