@@ -219,7 +219,7 @@
     </style>
 
     <style name="Theme.homeCloud.BottomNavigation.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/homecloud_blue_darken_2_24</item>
+        <item name="android:color">@color/homecloud_cta_24</item>
     </style>
 
     <!-- MORE styles -->
