@@ -20,6 +20,7 @@ import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.isLandscapeMode
 import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
@@ -341,6 +342,7 @@ class FavoritesFragment : Fragment(),
             R.id.action_set_favorite -> {
                 checkedFiles.firstOrNull()?.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    view?.showFavoriteStatusSnackbar(isFavorite = true)
                 }
                 disableSelectionMode()
                 true
@@ -349,6 +351,7 @@ class FavoritesFragment : Fragment(),
             R.id.action_unset_favorite -> {
                 checkedFiles.firstOrNull()?.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    view?.showFavoriteStatusSnackbar(isFavorite = false)
                 }
                 disableSelectionMode()
                 true

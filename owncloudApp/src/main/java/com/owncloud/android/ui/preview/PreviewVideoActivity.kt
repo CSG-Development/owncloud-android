@@ -65,6 +65,7 @@ import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.operations.FileOperation
@@ -75,8 +76,8 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.newInstance
 import com.owncloud.android.presentation.previews.PreviewVideoViewModel
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
-import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.presentation.tags.TagsActivity
+import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
@@ -463,6 +464,7 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
                     file = file.copy(isFavorite = true)
+                    binding.root.showFavoriteStatusSnackbar(isFavorite = true)
                 }
                 invalidateOptionsMenu()
                 true
@@ -472,6 +474,7 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
                     file = file.copy(isFavorite = false)
+                    binding.root.showFavoriteStatusSnackbar(isFavorite = false)
                 }
                 invalidateOptionsMenu()
                 true
