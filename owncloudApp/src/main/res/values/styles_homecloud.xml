@@ -309,6 +309,7 @@
     </style>
 
     <style name="homeCloud.RadioButton" parent="Widget.Material3.CompoundButton.RadioButton">
+        <item name="useMaterialThemeColors">false</item>
         <item name="buttonTint">@color/selector_homecloud_radiobutton</item>
     </style>
 
@@ -318,6 +319,7 @@
     </style>
 
     <style name="homeCloud.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
+        <item name="useMaterialThemeColors">false</item>
         <item name="buttonTint">@color/selector_homecloud_checkbox</item>
         <item name="buttonIconTint">@color/selector_homecloud_checkbox_icon</item>
     </style>
