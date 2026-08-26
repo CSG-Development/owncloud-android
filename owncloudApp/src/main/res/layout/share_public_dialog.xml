@@ -327,8 +327,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:contentDescription="@string/share_cancel_public_link_button"
-                        android:text="@string/share_cancel_public_link_button"
-                        android:theme="@style/Button.Primary" />
+                        android:text="@string/share_cancel_public_link_button" />
 
                     <Space
                         android:layout_width="8dp"
@@ -340,8 +339,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:contentDescription="@string/share_confirm_public_link_button"
-                        android:text="@string/share_confirm_public_link_button"
-                        android:theme="@style/Button.Primary" />
+                        android:text="@string/share_confirm_public_link_button" />
 
                 </LinearLayout>
 

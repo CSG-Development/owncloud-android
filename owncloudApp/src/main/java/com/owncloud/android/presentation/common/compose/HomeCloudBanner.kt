@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -147,10 +148,10 @@ private fun HomeCloudBannerAction(
     TextButton(
         onClick = onClick,
         modifier = modifier,
+        colors = ButtonDefaults.textButtonColors(contentColor = color),
     ) {
         Text(
             text = label,
-            color = color,
             fontSize = 14.sp,
         )
     }
