@@ -210,6 +210,7 @@
         <item name="backgroundTint">@color/homecloud_bar_background</item>
         <item name="itemTextAppearanceActiveBoldEnabled">false</item>
         <item name="itemActiveIndicatorStyle">@style/Theme.homeCloud.BottomNavigation.Indicator</item>
+        <item name="itemIconTint">@color/selector_bottom_nav_item</item>
     </style>
 
     <style name="Theme.homeCloud.DrawerNavigation" parent="Widget.Material3.NavigationView">
