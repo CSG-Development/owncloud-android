@@ -32,6 +32,7 @@
         <attr name="isLoading" format="boolean" />
         <attr name="loadingIndicatorColor" format="color" />
         <attr name="loadingBackgroundColor" format="color" />
+        <attr name="loadingStrokeColor" format="color" />
         <attr name="loadingIndicatorSize" format="dimension" />
     </declare-styleable>
 

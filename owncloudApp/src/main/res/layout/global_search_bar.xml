@@ -41,7 +41,7 @@
         android:contentDescription="@string/action_upload_clear"
         android:src="@drawable/ic_close"
         android:visibility="gone"
-        app:tint="?attr/colorPrimary"
+        app:tint="@color/homecloud_icon"
         tools:visibility="visible"
         app:layout_constraintBottom_toBottomOf="@id/global_search_edit_text"
         app:layout_constraintEnd_toEndOf="@id/global_search_edit_text"

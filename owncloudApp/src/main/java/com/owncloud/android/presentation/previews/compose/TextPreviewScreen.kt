@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
@@ -161,20 +162,26 @@ private fun TextPreviewMarkdownTabs(
         TextPreviewMarkdownTab.Rendered -> 0
         TextPreviewMarkdownTab.Plain -> 1
     }
+    val ctaColor = colorResource(R.color.homecloud_cta)
+    val unselectedColor = colorResource(R.color.homecloud_primary)
     TabRow(
         selectedTabIndex = selectedIndex,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentColor = ctaColor,
     ) {
         Tab(
             selected = selectedIndex == 0,
             onClick = { onTabSelected(TextPreviewMarkdownTab.Rendered) },
+            selectedContentColor = ctaColor,
+            unselectedContentColor = unselectedColor,
             text = { Text(text = stringResource(R.string.tab_label_markdown)) },
         )
         Tab(
             selected = selectedIndex == 1,
             onClick = { onTabSelected(TextPreviewMarkdownTab.Plain) },
+            selectedContentColor = ctaColor,
+            unselectedContentColor = unselectedColor,
             text = { Text(text = stringResource(R.string.tab_label_ascii)) },
         )
     }

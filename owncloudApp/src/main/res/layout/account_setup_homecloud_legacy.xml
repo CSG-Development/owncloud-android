@@ -153,7 +153,7 @@
                     android:layout_marginVertical="16dp"
                     android:contentDescription="@string/setup_btn_login"
                     android:text="@string/setup_btn_login"
-                    android:theme="@style/Button.Primary" />
+                    style="@style/Button.Primary" />
 
                 <LinearLayout
                     android:id="@+id/loading_layout"

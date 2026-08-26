@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -541,9 +542,10 @@ private fun FileListRowThumbnailMissingPreview() {
 @HomeCloudPreview
 @Composable
 private fun FileListRowThumbnailLoadedPreview() {
-    val thumbnail = remember {
+    val previewThumbnailColor = colorResource(R.color.homecloud_green_400)
+    val thumbnail = remember(previewThumbnailColor) {
         Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { bitmap ->
-            bitmap.eraseColor(android.graphics.Color.parseColor("#1976D2"))
+            bitmap.eraseColor(previewThumbnailColor.toArgb())
         }
     }
     HomeCloudTheme {

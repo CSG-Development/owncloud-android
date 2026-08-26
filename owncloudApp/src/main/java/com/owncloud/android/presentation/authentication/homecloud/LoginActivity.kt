@@ -6,9 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
-import android.text.style.ForegroundColorSpan
 import android.text.style.LeadingMarginSpan
 import android.util.Patterns
 import android.view.MotionEvent
@@ -29,7 +29,6 @@ import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
-import com.owncloud.android.extensions.getAppName
 import com.owncloud.android.extensions.manageOptionLockSelected
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.updateTextIfDiffers
@@ -170,7 +169,7 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
 
     //TODO: The styling of description and text is a subject to change in nearest future. To be defined....
     private fun createUnableToConnectMessage(): SpannableStringBuilder {
-        val linkColor = ContextCompat.getColor(this, R.color.homecloud_color_accent)
+        val linkColor = ContextCompat.getColor(this, R.color.homecloud_link)
         val description = getString(R.string.homecloud_unable_to_connect_description)
         val items = listOf(
             getString(R.string.homecloud_unable_to_connect_item_1),
@@ -222,8 +221,13 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SUPPORT_LINK))
                 startActivity(intent)
             }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = linkColor
+                ds.isUnderlineText = true
+            }
         }, linkStart, builder.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        builder.setSpan(ForegroundColorSpan(linkColor), linkStart, builder.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         builder.append(" ")
         builder.append(supportSuffix)
