@@ -76,7 +76,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:layout_height="wrap_content"
             android:layout_weight="1"
             tools:text="@string/folder_picker_choose_button_text"
-            android:theme="@style/Button.Primary" />
+            style="@style/Button.Primary" />
 
     </LinearLayout>
 
