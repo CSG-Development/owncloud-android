@@ -24,6 +24,9 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
+import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
+import com.owncloud.android.domain.device.usecases.RefreshRemoteDevicePathsUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.sharing.shares.model.OCShare
 import com.owncloud.android.domain.sharing.shares.usecases.CreatePrivateShareAsyncUseCase
 import com.owncloud.android.domain.sharing.shares.usecases.CreatePublicShareAsyncUseCase
@@ -76,6 +79,9 @@ class ShareViewModelTest {
     private lateinit var editPublicShareAsyncUseCase: EditPublicShareAsyncUseCase
     private lateinit var deletePublicShareAsyncUseCase: DeleteShareAsyncUseCase
     private lateinit var getStoredCapabilitiesUseCase: GetStoredCapabilitiesUseCase
+    private lateinit var getCurrentDevicePathsUseCase: GetCurrentDevicePathsUseCase
+    private lateinit var refreshRemoteDevicePathsUseCase: RefreshRemoteDevicePathsUseCase
+    private lateinit var getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase
     private lateinit var ocContextProvider: ContextProvider
 
     private val filePath = "/Photos/image.jpg"
@@ -133,9 +139,14 @@ class ShareViewModelTest {
         editPublicShareAsyncUseCase = spyk(mockkClass(EditPublicShareAsyncUseCase::class))
         deletePublicShareAsyncUseCase = spyk(mockkClass(DeleteShareAsyncUseCase::class))
         getStoredCapabilitiesUseCase = spyk(mockkClass(GetStoredCapabilitiesUseCase::class))
+        getCurrentDevicePathsUseCase = spyk(mockkClass(GetCurrentDevicePathsUseCase::class))
+        refreshRemoteDevicePathsUseCase = spyk(mockkClass(RefreshRemoteDevicePathsUseCase::class))
+        getRemoteAccessTokenUseCase = spyk(mockkClass(GetRemoteAccessTokenUseCase::class))
 
         every { getSharesAsLiveDataUseCase(any()) } returns sharesLiveData
         every { getShareAsLiveDataUseCase(any()) } returns privateShareLiveData
+        every { getCurrentDevicePathsUseCase() } returns emptyMap()
+        every { getRemoteAccessTokenUseCase.hasToken() } returns false
 
         testCoroutineDispatcher.pauseDispatcher()
 
@@ -151,6 +162,9 @@ class ShareViewModelTest {
             editPublicShareAsyncUseCase,
             deletePublicShareAsyncUseCase,
             getStoredCapabilitiesUseCase,
+            getCurrentDevicePathsUseCase,
+            refreshRemoteDevicePathsUseCase,
+            getRemoteAccessTokenUseCase,
             coroutineDispatcherProvider
         )
     }

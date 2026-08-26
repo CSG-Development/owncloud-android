@@ -124,7 +124,7 @@ val viewModelModule = module {
     viewModel { (accountName: String) -> CapabilityViewModel(accountName, get(), get(), get(), get()) }
     viewModel { (action: PasscodeAction) -> PassCodeViewModel(get(), get(), action, get(), get(), get()) }
     viewModel { (filePath: String, accountName: String) ->
-        ShareViewModel(filePath, accountName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ShareViewModel(filePath, accountName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { (initialFolderToDisplay: OCFile, fileListOption: FileListOption, isPickerMode: Boolean) ->
         MainFileListViewModel(

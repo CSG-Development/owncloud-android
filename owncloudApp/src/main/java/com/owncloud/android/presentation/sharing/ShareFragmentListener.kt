@@ -57,6 +57,8 @@ interface ShareFragmentListener {
 
     fun copyOrSendPublicLink(share: OCShare, remoteBaseUrl: String?)
 
+    fun onPublicLinkInteractionWithoutRemoteAccess(onRemoteAccessAvailable: () -> Unit)
+
     /**************************************************************************************************************
      *********************************************** PRIVATE SHARES ***********************************************
      **************************************************************************************************************/

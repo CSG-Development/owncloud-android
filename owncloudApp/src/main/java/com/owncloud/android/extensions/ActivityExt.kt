@@ -31,6 +31,7 @@ import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.text.method.LinkMovementMethod
 import android.util.TypedValue
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
 import android.widget.LinearLayout
@@ -88,6 +89,21 @@ fun Activity.showMessageInSnackbar(
     duration: Int = Snackbar.LENGTH_LONG
 ) {
     Snackbar.make(findViewById(layoutId), message, duration).show()
+}
+
+fun Activity.showHomeCloudMessageInSnackbar(
+    message: CharSequence,
+    layoutId: Int = android.R.id.content,
+    duration: Int = Snackbar.LENGTH_LONG,
+    anchorViewId: Int? = null,
+) {
+    Snackbar.make(findViewById(layoutId), message, duration).apply {
+        setBackgroundTint(getColor(R.color.homecloud_snackbar_background))
+        setTextColor(getColor(R.color.homecloud_snackbar_text))
+        anchorViewId?.let { id ->
+            findViewById<View>(id)?.let { setAnchorView(it) }
+        }
+    }.show()
 }
 
 fun Activity.showErrorInToast(

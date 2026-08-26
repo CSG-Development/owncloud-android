@@ -52,7 +52,6 @@ import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
-import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 import java.util.Locale
@@ -191,7 +190,7 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
         )
     }
 
-    private val shareViewModel: ShareViewModel by viewModel {
+    private val shareViewModel: ShareViewModel by activityViewModel {
         parametersOf(
             file?.remotePath,
             account?.name
@@ -272,8 +271,9 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
 
         //  Add Public Link Button
         binding.addPublicLinkButton.setOnClickListener {
-            // Show Add Public Link Fragment
-            listener?.showAddPublicShare(availableDefaultPublicName)
+            runPublicLinkActionIfRemoteAvailable {
+                listener?.showAddPublicShare(availableDefaultPublicName)
+            }
         }
     }
 
@@ -492,23 +492,30 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
             return
         }
 
-        if (remoteBaseUrl.isNullOrEmpty()) {
-            binding.addPublicLinkButton.visibility = View.INVISIBLE
-            return
-        }
-
         if (!enableMultiplePublicSharing()) {
             if (publicLinks.isNullOrEmpty()) {
                 binding.addPublicLinkButton.visibility = View.VISIBLE
                 return
             }
             binding.addPublicLinkButton.visibility = View.INVISIBLE
+        } else {
+            binding.addPublicLinkButton.visibility = View.VISIBLE
         }
     }
 
     private fun updateShareViaLinkVisibility() {
-        val shouldShowShareViaLinkSection = isShareApiEnabled && isPublicShareEnabled && !remoteBaseUrl.isNullOrEmpty()
-        binding.shareViaLinkSection.isVisible = shouldShowShareViaLinkSection
+        binding.shareViaLinkSection.isVisible = isShareApiEnabled && isPublicShareEnabled
+    }
+
+    private fun runPublicLinkActionIfRemoteAvailable(action: () -> Unit) {
+        if (remoteBaseUrl.isNullOrEmpty()) {
+            listener?.onPublicLinkInteractionWithoutRemoteAccess {
+                remoteBaseUrl = shareViewModel.remoteBaseUrl.value
+                action()
+            }
+        } else {
+            action()
+        }
     }
 
     /**
@@ -539,7 +546,6 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
     }
 
     override fun copyOrSendPublicLink(share: OCShare) {
-        //GetLink from the server and show ShareLinkToDialog
         listener?.copyOrSendPublicLink(share, remoteBaseUrl)
     }
 
@@ -556,7 +562,6 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
     }
 
     override fun removeShare(share: OCShare) {
-        // Remove public link from server
         listener?.showRemoveShare(share)
     }
 

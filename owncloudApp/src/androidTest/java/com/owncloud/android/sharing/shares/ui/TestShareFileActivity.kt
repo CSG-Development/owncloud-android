@@ -64,6 +64,9 @@ class TestShareFileActivity : SingleFragmentActivity(), ShareFragmentListener, C
     override fun copyOrSendPublicLink(share: OCShare, remoteBaseUrl: String?) {
     }
 
+    override fun onPublicLinkInteractionWithoutRemoteAccess(onRemoteAccessAvailable: () -> Unit) {
+    }
+
     override fun showSearchUsersAndGroups() {
     }
 
