@@ -53,7 +53,7 @@ class VerificationCodeViewModel(
         viewModelScope.launch {
             runCatchingException(
                 block = {
-                    _state.update { it.copy(isInitiating = true, error = null) }
+                    _state.update { it.copy(isInitiating = true, error = null, enteredCode = "") }
                     reference = initiateRemoteAccessAuthenticationUseCase.execute(email)
                     _state.update { it.copy(isInitiating = false, isCodeSent = true) }
                 },
@@ -104,6 +104,10 @@ class VerificationCodeViewModel(
         initiateAuthentication()
     }
 
+    fun onCodeChanged(code: String) {
+        _state.update { it.copy(enteredCode = code) }
+    }
+
     /**
      * Called when the user wants to skip verification.
      */
@@ -127,6 +131,7 @@ class VerificationCodeViewModel(
         val isInitiating: Boolean = false,
         val isVerifying: Boolean = false,
         val isCodeSent: Boolean = false,
+        val enteredCode: String = "",
         val error: VerificationCodeError? = null,
     ) {
         val isLoading: Boolean get() = isInitiating || isVerifying
