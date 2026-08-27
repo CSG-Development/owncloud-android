@@ -56,6 +56,8 @@ class VerificationCodeView @JvmOverloads constructor(
 
     var onCodeChangedListener: ((String) -> Unit)? = null
 
+    private var isUpdatingProgrammatically = false
+
     init {
         orientation = VERTICAL
 
@@ -162,6 +164,8 @@ class VerificationCodeView @JvmOverloads constructor(
 
         et.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingProgrammatically) return
+
                 if (errorTextView.isVisible) {
                     clearError()
                 }
@@ -176,7 +180,7 @@ class VerificationCodeView @JvmOverloads constructor(
                         }
                     }
                 }
-                onCodeChangedListener?.invoke(getCode())
+                onCodeChangedListener?.invoke(getDigitSlots())
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -217,11 +221,43 @@ class VerificationCodeView @JvmOverloads constructor(
 
     fun getCode(): String = editTexts.joinToString("") { it.text.toString() }
 
+    /**
+     * Digit per box, same length as [codeLength]. Empty boxes are a non-digit placeholder
+     * so a theme recreation can restore gaps in the middle (e.g. 1 2 _ _ 3 4).
+     */
+    fun getDigitSlots(): String = buildString(codeLength) {
+        editTexts.forEach { et ->
+            val digit = et.text?.singleOrNull()
+            append(if (digit != null && digit.isDigit()) digit else EMPTY_DIGIT)
+        }
+    }
+
     fun isCodeComplete(): Boolean = getCode().length == codeLength
 
+    fun setCode(code: String) {
+        isUpdatingProgrammatically = true
+        try {
+            editTexts.forEachIndexed { index, et ->
+                val char = code.getOrNull(index)
+                val digit = if (char != null && char.isDigit()) char.toString() else ""
+                if (et.text?.toString() != digit) {
+                    et.setText(digit)
+                }
+            }
+        } finally {
+            isUpdatingProgrammatically = false
+        }
+    }
+
     fun clearCode() {
-        editTexts.forEach { it.text?.clear() }
+        isUpdatingProgrammatically = true
+        try {
+            editTexts.forEach { it.text?.clear() }
+        } finally {
+            isUpdatingProgrammatically = false
+        }
         editTexts.firstOrNull()?.requestFocus()
+        onCodeChangedListener?.invoke(getDigitSlots())
     }
 
     fun setError(errorMessage: String) {
@@ -256,5 +292,9 @@ class VerificationCodeView @JvmOverloads constructor(
 
     private fun Int.dpToPx(): Int {
         return (this * context.resources.displayMetrics.density).toInt()
+    }
+
+    companion object {
+        private const val EMPTY_DIGIT = ' '
     }
 }

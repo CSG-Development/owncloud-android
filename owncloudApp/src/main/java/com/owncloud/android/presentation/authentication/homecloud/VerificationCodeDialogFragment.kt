@@ -146,13 +146,16 @@ class VerificationCodeDialogFragment : DialogFragment() {
     }
 
     private fun setupViews() {
+        binding.codeEditVerification.setCode(viewModel.state.value.enteredCode)
         binding.codeEditVerification.onCodeChangedListener = { code ->
+            viewModel.onCodeChanged(code)
             updateAllowButtonState()
             // Clear error when user starts typing
             if (viewModel.state.value.error != null) {
                 viewModel.clearError()
             }
         }
+        updateAllowButtonState()
 
         binding.allowButton.setOnClickListener {
             viewModel.onCodeEntered(binding.codeEditVerification.getCode())
