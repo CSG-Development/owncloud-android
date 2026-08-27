@@ -1,6 +1,7 @@
 package com.owncloud.android.presentation.authentication.homecloud
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,10 +18,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.owncloud.android.BuildConfig
 import com.owncloud.android.R
 import com.owncloud.android.databinding.AccountDialogCodeBinding
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import timber.log.Timber
 
 /**
  * A reusable DialogFragment for verification code input.
@@ -95,13 +98,25 @@ class VerificationCodeDialogFragment : DialogFragment() {
         }
     }
 
-    /**
-     * Sets the listener for dialog events.
-     * Can be chained during dialog creation.
-     */
-    fun setListener(listener: VerificationCodeDialogListener): VerificationCodeDialogFragment {
-        this.listener = listener
-        return this
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (listener == null) {
+            listener = parentFragment as? VerificationCodeDialogListener
+                ?: context as? VerificationCodeDialogListener
+        }
+        if (listener == null) {
+            val error = IllegalStateException("Caller activity or fragment of VerificationCodeDialogFragment must implement " +
+                    "VerificationCodeDialogListener interface")
+            Timber.w(error)
+            if (BuildConfig.DEBUG) {
+                throw error
+            }
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        listener = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

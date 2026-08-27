@@ -62,7 +62,7 @@ import timber.log.Timber
 /**
  * Activity for sharing files
  */
-class ShareActivity : FileActivity(), ShareFragmentListener {
+class ShareActivity : FileActivity(), ShareFragmentListener, VerificationCodeDialogFragment.VerificationCodeDialogListener {
     private val shareViewModel: ShareViewModel by viewModel {
         parametersOf(
             file.remotePath,
@@ -304,24 +304,23 @@ class ShareActivity : FileActivity(), ShareFragmentListener {
         }
 
         VerificationCodeDialogFragment.newInstance(email)
-            .setListener(object : VerificationCodeDialogFragment.VerificationCodeDialogListener {
-                override fun onCodeVerified() {
-                    shareViewModel.onRemoteAccessVerified()
-                }
-
-                override fun onSkipped() {
-                    clearPendingPublicLinkAction()
-                    showPublicLinkUnavailableToast()
-                }
-
-                override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
-                    if (lastError != null) {
-                        clearPendingPublicLinkAction()
-                        showPublicLinkUnavailableToast()
-                    }
-                }
-            })
             .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)
+    }
+
+    override fun onCodeVerified() {
+        shareViewModel.onRemoteAccessVerified()
+    }
+
+    override fun onSkipped() {
+        clearPendingPublicLinkAction()
+        showPublicLinkUnavailableToast()
+    }
+
+    override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
+        if (lastError != null) {
+            clearPendingPublicLinkAction()
+            showPublicLinkUnavailableToast()
+        }
     }
 
     private fun getAccountEmail(): String? {
