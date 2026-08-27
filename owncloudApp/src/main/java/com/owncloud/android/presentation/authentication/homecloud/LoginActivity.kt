@@ -48,7 +48,11 @@ import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrustedCertListener, SecurityEnforced {
+class LoginActivity :
+    AppCompatActivity(),
+    SslUntrustedCertDialog.OnSslUntrustedCertListener,
+    SecurityEnforced,
+    VerificationCodeDialogFragment.VerificationCodeDialogListener {
 
     private val loginViewModel by viewModel<LoginViewModel>()
 
@@ -346,23 +350,25 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     }
 
     private fun showCodeDialog(email: String) {
+        if (supportFragmentManager.findFragmentByTag(VerificationCodeDialogFragment.TAG) != null) {
+            return
+        }
         VerificationCodeDialogFragment.newInstance(email)
-            .setListener(object : VerificationCodeDialogFragment.VerificationCodeDialogListener {
-                override fun onCodeVerified() {
-                    loginViewModel.onRemoteAccessVerified()
-                }
-
-                override fun onSkipped() {
-                    loginViewModel.onRemoteAccessSkipped()
-                }
-
-                override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
-                    if (lastError != null) {
-                        loginViewModel.onRemoteAccessError(lastError)
-                    }
-                }
-            })
             .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)
+    }
+
+    override fun onCodeVerified() {
+        loginViewModel.onRemoteAccessVerified()
+    }
+
+    override fun onSkipped() {
+        loginViewModel.onRemoteAccessSkipped()
+    }
+
+    override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
+        if (lastError != null) {
+            loginViewModel.onRemoteAccessError(lastError)
+        }
     }
 
     private fun updateLoginState(state: LoginScreenState) {
