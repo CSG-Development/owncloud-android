@@ -1,7 +1,6 @@
 package com.owncloud.android.presentation.authentication.homecloud
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.text.Editable
@@ -15,6 +14,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import android.widget.Space
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.owncloud.android.R
 
@@ -56,6 +56,8 @@ class VerificationCodeView @JvmOverloads constructor(
 
     var onCodeChangedListener: ((String) -> Unit)? = null
 
+    private var isUpdatingProgrammatically = false
+
     init {
         orientation = VERTICAL
 
@@ -79,12 +81,21 @@ class VerificationCodeView @JvmOverloads constructor(
 
         try {
             codeLength = attrs.getInt(R.styleable.VerificationCodeView_codeLength, 6)
-            borderColor = attrs.getColor(R.styleable.VerificationCodeView_borderColor, Color.GRAY)
-            focusBorderColor = attrs.getColor(R.styleable.VerificationCodeView_focusBorderColor, Color.BLUE)
+            borderColor = attrs.getColor(
+                R.styleable.VerificationCodeView_borderColor,
+                ContextCompat.getColor(context, R.color.homecloud_input_stroke_nonfocused)
+            )
+            focusBorderColor = attrs.getColor(
+                R.styleable.VerificationCodeView_focusBorderColor,
+                ContextCompat.getColor(context, R.color.homecloud_input_stroke_focused)
+            )
             borderWidth = attrs.getDimension(R.styleable.VerificationCodeView_borderWidth, 2f)
             focusBorderWidth = attrs.getDimension(R.styleable.VerificationCodeView_focusBorderWidth, 3f)
             cornerRadius = attrs.getDimension(R.styleable.VerificationCodeView_cornerRadius, 12f)
-            errorTextColor = attrs.getColor(R.styleable.VerificationCodeView_errorTextColor, Color.RED)
+            errorTextColor = attrs.getColor(
+                R.styleable.VerificationCodeView_errorTextColor,
+                ContextCompat.getColor(context, R.color.homecloud_error)
+            )
             cursorColor = attrs.getColor(R.styleable.VerificationCodeView_cursorColor, focusBorderColor)
             defaultBorder = createBorderDrawable(borderColor, borderWidth)
             focusedBorder = createBorderDrawable(focusBorderColor, focusBorderWidth)
@@ -153,6 +164,8 @@ class VerificationCodeView @JvmOverloads constructor(
 
         et.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingProgrammatically) return
+
                 if (errorTextView.isVisible) {
                     clearError()
                 }
@@ -167,7 +180,7 @@ class VerificationCodeView @JvmOverloads constructor(
                         }
                     }
                 }
-                onCodeChangedListener?.invoke(getCode())
+                onCodeChangedListener?.invoke(getDigitSlots())
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -208,11 +221,43 @@ class VerificationCodeView @JvmOverloads constructor(
 
     fun getCode(): String = editTexts.joinToString("") { it.text.toString() }
 
+    /**
+     * Digit per box, same length as [codeLength]. Empty boxes are a non-digit placeholder
+     * so a theme recreation can restore gaps in the middle (e.g. 1 2 _ _ 3 4).
+     */
+    fun getDigitSlots(): String = buildString(codeLength) {
+        editTexts.forEach { et ->
+            val digit = et.text?.singleOrNull()
+            append(if (digit != null && digit.isDigit()) digit else EMPTY_DIGIT)
+        }
+    }
+
     fun isCodeComplete(): Boolean = getCode().length == codeLength
 
+    fun setCode(code: String) {
+        isUpdatingProgrammatically = true
+        try {
+            editTexts.forEachIndexed { index, et ->
+                val char = code.getOrNull(index)
+                val digit = if (char != null && char.isDigit()) char.toString() else ""
+                if (et.text?.toString() != digit) {
+                    et.setText(digit)
+                }
+            }
+        } finally {
+            isUpdatingProgrammatically = false
+        }
+    }
+
     fun clearCode() {
-        editTexts.forEach { it.text?.clear() }
+        isUpdatingProgrammatically = true
+        try {
+            editTexts.forEach { it.text?.clear() }
+        } finally {
+            isUpdatingProgrammatically = false
+        }
         editTexts.firstOrNull()?.requestFocus()
+        onCodeChangedListener?.invoke(getDigitSlots())
     }
 
     fun setError(errorMessage: String) {
@@ -247,5 +292,9 @@ class VerificationCodeView @JvmOverloads constructor(
 
     private fun Int.dpToPx(): Int {
         return (this * context.resources.displayMetrics.density).toInt()
+    }
+
+    companion object {
+        private const val EMPTY_DIGIT = ' '
     }
 }

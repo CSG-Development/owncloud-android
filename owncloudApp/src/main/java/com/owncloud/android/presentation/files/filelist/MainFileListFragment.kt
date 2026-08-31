@@ -44,7 +44,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,7 +79,6 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFile.Companion.ROOT_PATH
 import com.owncloud.android.domain.files.model.OCFileSyncInfo
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
-import com.owncloud.android.domain.files.model.isUploadVirtualFile
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.domain.files.model.uploadTransferId
 import com.owncloud.android.domain.spaces.model.OCSpace
@@ -96,6 +94,7 @@ import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.parseError
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.toDrawableResId
 import com.owncloud.android.extensions.toResId
@@ -377,6 +376,8 @@ class MainFileListFragment : FileFragment(),
             onItemClick = ::onComposeItemClick,
             onItemLongClick = ::onComposeItemLongClick,
             onThreeDotClick = ::onComposeThreeDotClick,
+            onVirtualOpenUploads = ::onVirtualOpenUploads,
+            onVirtualCancelUpload = ::onVirtualCancelUpload,
             onRefresh = ::refreshFileListFromPull,
             onSelectionBecameEmpty = { actionModeController.finish() },
         )
@@ -707,6 +708,7 @@ class MainFileListFragment : FileFragment(),
                         fileOperationsViewModel.performOperation(
                             FileOperation.SetFileFavoriteStatus(fileId = fileId, isFavorite = isFavorite)
                         )
+                        fileOptionsBottomSheetSingleFile.showFavoriteStatusSnackbar(isFavorite)
                     }
                 }
 
@@ -877,12 +879,14 @@ class MainFileListFragment : FileFragment(),
                     FileMenuOption.SET_FAVORITE -> {
                         file.id?.let { fileId ->
                             fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                            view?.showFavoriteStatusSnackbar(isFavorite = true, anchorViewId = R.id.bottom_nav_view)
                         }
                     }
 
                     FileMenuOption.UNSET_FAVORITE -> {
                         file.id?.let { fileId ->
                             fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                            view?.showFavoriteStatusSnackbar(isFavorite = false, anchorViewId = R.id.bottom_nav_view)
                         }
                     }
                 }
@@ -1556,6 +1560,7 @@ class MainFileListFragment : FileFragment(),
             R.id.action_set_favorite -> {
                 singleFile.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
+                    view?.showFavoriteStatusSnackbar(isFavorite = true, anchorViewId = R.id.bottom_nav_view)
                 }
                 true
             }
@@ -1563,6 +1568,7 @@ class MainFileListFragment : FileFragment(),
             R.id.action_unset_favorite -> {
                 singleFile.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
+                    view?.showFavoriteStatusSnackbar(isFavorite = false, anchorViewId = R.id.bottom_nav_view)
                 }
                 true
             }
@@ -1679,13 +1685,8 @@ class MainFileListFragment : FileFragment(),
         val ocFileWithSyncInfo = findFileWithSyncInfo(fileId) ?: return
         val ocFile = ocFileWithSyncInfo.file
 
-        // Virtual files always use their own click path (never selection toggle).
-        if (ocFile.isVirtualFile()) {
-            if (ocFile.isUploadVirtualFile()) {
-                showVirtualFilePopupMenu(ocFileWithSyncInfo, binding.composeViewMainFileList)
-            }
-            return
-        }
+        // Upload virtual files are handled by the Compose dropdown menu.
+        if (ocFile.isVirtualFile()) return
 
         if (actionModeController.isActive) {
             toggleSelection(fileId)
@@ -1728,29 +1729,16 @@ class MainFileListFragment : FileFragment(),
         )
     }
 
-    private fun showVirtualFilePopupMenu(fileWithSyncInfo: OCFileWithSyncInfo, anchorView: View) {
-        val popupMenu = PopupMenu(requireContext(), anchorView)
-        popupMenu.menuInflater.inflate(R.menu.virtual_file_upload_menu, popupMenu.menu)
-        if (fileWithSyncInfo.uploadProgress == 100) {
-            popupMenu.menu.findItem(R.id.virtual_file_menu_cancel_upload)?.isVisible = false
-        }
-        popupMenu.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.virtual_file_menu_uploads -> {
-                    val activity = requireActivity() as? DrawerActivity ?: return@setOnMenuItemClickListener true
-                    activity.setCheckedItemAtBottomBar(R.id.nav_uploads)
-                    activity.navigateToOption(FileListOption.UPLOADS_LIST)
-                    true
-                }
-                R.id.virtual_file_menu_cancel_upload -> {
-                    val transferId = fileWithSyncInfo.file.uploadTransferId() ?: return@setOnMenuItemClickListener false
-                    transfersViewModel.cancelUploadById(transferId)
-                    true
-                }
-                else -> false
-            }
-        }
-        popupMenu.show()
+    private fun onVirtualOpenUploads() {
+        val activity = requireActivity() as? DrawerActivity ?: return
+        activity.setCheckedItemAtBottomBar(R.id.nav_uploads)
+        activity.navigateToOption(FileListOption.UPLOADS_LIST)
+    }
+
+    private fun onVirtualCancelUpload(fileId: Long) {
+        val file = findFileWithSyncInfo(fileId)?.file ?: return
+        val transferId = file.uploadTransferId() ?: return
+        transfersViewModel.cancelUploadById(transferId)
     }
 
     private fun syncFiles(files: List<OCFile>) {

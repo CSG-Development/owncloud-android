@@ -24,7 +24,9 @@ class LoadingButton @JvmOverloads constructor(
     private var isLoading: Boolean = false
 
     private val loadingBackgroundColor: Int
+    private val loadingStrokeColor: Int
     private val defaultBackgroundTint: ColorStateList?
+    private val defaultStrokeColor: ColorStateList?
 
     enum class State {
         ENABLED,
@@ -40,6 +42,8 @@ class LoadingButton @JvmOverloads constructor(
 
         defaultBackgroundTint = button.backgroundTintList
             ?: ContextCompat.getColorStateList(context, R.color.selector_button_primary_background)
+        defaultStrokeColor = button.strokeColor
+            ?: ContextCompat.getColorStateList(context, R.color.selector_button_primary_stroke)
 
         context.obtainStyledAttributes(attrs, R.styleable.LoadingButton).apply {
             try {
@@ -49,10 +53,14 @@ class LoadingButton @JvmOverloads constructor(
                     R.styleable.LoadingButton_loadingBackgroundColor,
                     ContextCompat.getColor(context, R.color.homecloud_button_primary_background_loading)
                 )
+                loadingStrokeColor = getColor(
+                    R.styleable.LoadingButton_loadingStrokeColor,
+                    ContextCompat.getColor(context, R.color.homecloud_button_primary_stroke_loading)
+                )
 
                 val indicatorColor = getColor(
                     R.styleable.LoadingButton_loadingIndicatorColor,
-                    ContextCompat.getColor(context, R.color.homecloud_button_primary_text)
+                    ContextCompat.getColor(context, R.color.homecloud_button_primary_loading_indicator)
                 )
                 progressIndicator.setIndicatorColor(indicatorColor)
 
@@ -120,12 +128,14 @@ class LoadingButton @JvmOverloads constructor(
             button.isEnabled = true // Keep enabled appearance while loading
             progressIndicator.isVisible = true
             button.backgroundTintList = ColorStateList.valueOf(loadingBackgroundColor)
+            button.strokeColor = ColorStateList.valueOf(loadingStrokeColor)
         } else {
             button.text = buttonText
             button.isClickable = true
             button.isEnabled = isEnabled
             progressIndicator.isVisible = false
             button.backgroundTintList = defaultBackgroundTint
+            button.strokeColor = defaultStrokeColor
         }
     }
 }

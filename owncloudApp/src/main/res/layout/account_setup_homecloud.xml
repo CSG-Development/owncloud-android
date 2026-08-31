@@ -106,7 +106,7 @@
                 android:layout_marginStart="8dp"
                 android:contentDescription="@string/app_name"
                 android:src="@drawable/ic_refresh"
-                app:tint="?attr/colorOnSecondaryContainer"
+                app:tint="@color/homecloud_icon"
                 app:layout_constraintVertical_bias="0.4"
                 app:layout_constraintStart_toEndOf="@id/hostUrlInputLayout"
                 app:layout_constraintEnd_toEndOf="@id/account_password_container"
@@ -150,7 +150,7 @@
                     android:layout_height="wrap_content"
                     android:drawablePadding="5dp"
                     android:imeOptions="flagNoExtractUi"
-                    android:inputType="textNoSuggestions"
+                    android:inputType="textEmailAddress"
                     android:hint="@string/homecloud_login_email_hint"
                     android:textColorHint="@color/homecloud_input_placeholder"/>
             </com.google.android.material.textfield.TextInputLayout>
@@ -312,7 +312,7 @@
         android:padding="@dimen/standard_padding"
         android:src="@drawable/ic_arrow_back"
         android:visibility="gone"
-        app:tint="?attr/colorOnSecondaryContainer" />
+        app:tint="@color/homecloud_icon" />
 
     <ImageButton
         android:id="@+id/settings_link"
@@ -324,7 +324,7 @@
         android:padding="@dimen/standard_padding"
         android:src="@drawable/ic_settings"
         android:text="@string/actionbar_settings"
-        app:tint="?attr/colorOnSecondaryContainer" />
+        app:tint="@color/homecloud_icon" />
 
     <include
         android:id="@+id/unable_to_connect_layout"

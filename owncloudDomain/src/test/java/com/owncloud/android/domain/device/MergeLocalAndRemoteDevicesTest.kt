@@ -2,6 +2,7 @@ package com.owncloud.android.domain.device
 
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.device.usecases.mergeLocalAndRemoteDevices
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

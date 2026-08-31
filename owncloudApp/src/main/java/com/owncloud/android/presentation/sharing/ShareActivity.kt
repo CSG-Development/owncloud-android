@@ -26,6 +26,7 @@
 
 package com.owncloud.android.presentation.sharing
 
+import android.accounts.AccountManager
 import android.app.SearchManager
 import android.content.Intent
 import android.os.Bundle
@@ -33,7 +34,9 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.transaction
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.owncloud.android.R
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.sharing.shares.model.OCShare
@@ -41,7 +44,11 @@ import com.owncloud.android.domain.sharing.shares.model.ShareType
 import com.owncloud.android.domain.utils.Event.EventObserver
 import com.owncloud.android.extensions.showDialogFragment
 import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.extensions.showHomeCloudMessageInSnackbar
+import com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_EMAIL
 import com.owncloud.android.lib.resources.shares.RemoteShare
+import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeDialogFragment
+import com.owncloud.android.presentation.authentication.homecloud.VerificationCodeViewModel
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.sharing.sharees.EditPrivateShareFragment
 import com.owncloud.android.presentation.sharing.sharees.SearchShareesFragment
@@ -55,13 +62,16 @@ import timber.log.Timber
 /**
  * Activity for sharing files
  */
-class ShareActivity : FileActivity(), ShareFragmentListener {
+class ShareActivity : FileActivity(), ShareFragmentListener, VerificationCodeDialogFragment.VerificationCodeDialogListener {
     private val shareViewModel: ShareViewModel by viewModel {
         parametersOf(
             file.remotePath,
             account?.name
         )
     }
+
+    private var pendingPublicLinkAction: (() -> Unit)? = null
+    private var remoteAccessUnavailableDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +99,7 @@ class ShareActivity : FileActivity(), ShareFragmentListener {
         observePrivateShareCreation()
         observePrivateShareEdition()
         observeShareDeletion()
+        observeRemoteAccessResolution()
     }
 
     /**************************************************************************************************************
@@ -252,6 +263,115 @@ class ShareActivity : FileActivity(), ShareFragmentListener {
         showDialogFragment(
             editPublicShareFragment,
             TAG_PUBLIC_SHARE_DIALOG_FRAGMENT
+        )
+    }
+
+    override fun onPublicLinkInteractionWithoutRemoteAccess(onRemoteAccessAvailable: () -> Unit) {
+        pendingPublicLinkAction = onRemoteAccessAvailable
+        showRemoteAccessUnavailableDialog()
+    }
+
+    private fun showRemoteAccessUnavailableDialog() {
+        if (remoteAccessUnavailableDialog?.isShowing == true) {
+            return
+        }
+
+        remoteAccessUnavailableDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.homecloud_share_remote_access_unavailable_title)
+            .setMessage(R.string.homecloud_share_remote_access_unavailable_message)
+            .setNegativeButton(R.string.homecloud_cancel) { dialog, _ ->
+                dialog.dismiss()
+                clearPendingPublicLinkAction()
+                showPublicLinkUnavailableToast()
+            }
+            .setPositiveButton(R.string.homecloud_share_remote_access_enable_button) { dialog, _ ->
+                dialog.dismiss()
+                shareViewModel.resolveRemoteAccessForPublicLink()
+            }
+            .show()
+    }
+
+    private fun startRemoteAccessPairingFlow() {
+        val email = getAccountEmail()
+        if (email.isNullOrEmpty()) {
+            clearPendingPublicLinkAction()
+            showPublicLinkUnavailableToast()
+            return
+        }
+
+        if (supportFragmentManager.findFragmentByTag(VerificationCodeDialogFragment.TAG) != null) {
+            return
+        }
+
+        VerificationCodeDialogFragment.newInstance(email)
+            .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)
+    }
+
+    override fun onCodeVerified() {
+        shareViewModel.onRemoteAccessVerified()
+    }
+
+    override fun onSkipped() {
+        clearPendingPublicLinkAction()
+        showPublicLinkUnavailableToast()
+    }
+
+    override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
+        if (lastError != null) {
+            clearPendingPublicLinkAction()
+            showPublicLinkUnavailableToast()
+        }
+    }
+
+    private fun getAccountEmail(): String? {
+        val currentAccount = account ?: return null
+        return AccountManager.get(this).getUserData(currentAccount, KEY_EMAIL)?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun observeRemoteAccessResolution() {
+        shareViewModel.remoteAccessResolution.observe(
+            this,
+            EventObserver { uiResult ->
+                when (uiResult) {
+                    is UIResult.Loading -> showLoading()
+                    is UIResult.Success -> {
+                        dismissLoading()
+                        when (uiResult.data) {
+                            PublicLinkRemoteAccessResult.Ready -> runPendingPublicLinkAction()
+                            PublicLinkRemoteAccessResult.AuthenticationRequired -> startRemoteAccessPairingFlow()
+                            PublicLinkRemoteAccessResult.Unavailable -> {
+                                clearPendingPublicLinkAction()
+                                showPublicLinkUnavailableToast()
+                            }
+                            null -> {
+                                clearPendingPublicLinkAction()
+                                showPublicLinkUnavailableToast()
+                            }
+                        }
+                    }
+                    is UIResult.Error -> {
+                        dismissLoading()
+                        clearPendingPublicLinkAction()
+                        showPublicLinkUnavailableToast()
+                    }
+                }
+            }
+        )
+    }
+
+    private fun runPendingPublicLinkAction() {
+        pendingPublicLinkAction?.invoke()
+        pendingPublicLinkAction = null
+    }
+
+    private fun clearPendingPublicLinkAction() {
+        pendingPublicLinkAction = null
+    }
+
+    private fun showPublicLinkUnavailableToast() {
+        showHomeCloudMessageInSnackbar(
+            message = getString(R.string.homecloud_share_public_link_unavailable_toast),
+            layoutId = R.id.share_activity_layout,
         )
     }
 

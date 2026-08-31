@@ -66,7 +66,7 @@
         android:layout_margin="@dimen/standard_padding"
         android:padding="@dimen/standard_padding"
         android:text="@string/release_notes_proceed"
-        android:theme="@style/Button.Primary"
+        style="@style/Button.Primary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

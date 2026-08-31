@@ -28,8 +28,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.owncloud.android.domain.capabilities.model.OCCapability
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
-import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
+import com.owncloud.android.domain.device.usecases.RefreshRemoteDevicePathsUseCase
+import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.sharing.shares.model.OCShare
 import com.owncloud.android.domain.sharing.shares.model.ShareType
 import com.owncloud.android.domain.sharing.shares.usecases.CreatePrivateShareAsyncUseCase
@@ -63,6 +65,8 @@ class ShareViewModel(
     private val deletePublicShareUseCase: DeleteShareAsyncUseCase,
     private val getStoredCapabilitiesUseCase: GetStoredCapabilitiesUseCase,
     private val getCurrentDevicePathsUseCase: GetCurrentDevicePathsUseCase,
+    private val refreshRemoteDevicePathsUseCase: RefreshRemoteDevicePathsUseCase,
+    private val getRemoteAccessTokenUseCase: GetRemoteAccessTokenUseCase,
     private val coroutineDispatcherProvider: CoroutinesDispatcherProvider
 ) : ViewModel() {
 
@@ -96,7 +100,8 @@ class ShareViewModel(
     private val _remoteBaseUrl = MutableLiveData<String?>()
     val remoteBaseUrl: LiveData<String?> = _remoteBaseUrl
 
-
+    private val _remoteAccessResolution = MutableLiveData<Event<UIResult<PublicLinkRemoteAccessResult>>>()
+    val remoteAccessResolution: LiveData<Event<UIResult<PublicLinkRemoteAccessResult>>> = _remoteAccessResolution
 
     init {
         _shares.addSource(sharesLiveData) { shares ->
@@ -120,6 +125,36 @@ class ShareViewModel(
         viewModelScope.launch(coroutineDispatcherProvider.io) {
             val remoteBaseUrl = getCurrentDevicePathsUseCase()[DevicePathType.REMOTE]
             _remoteBaseUrl.postValue(remoteBaseUrl)
+        }
+    }
+
+    fun resolveRemoteAccessForPublicLink() {
+        viewModelScope.launch(coroutineDispatcherProvider.io) {
+            refreshRemoteAccessAndEmitResult()
+        }
+    }
+
+    fun onRemoteAccessVerified() {
+        viewModelScope.launch(coroutineDispatcherProvider.io) {
+            refreshRemoteAccessAndEmitResult()
+        }
+    }
+
+    private suspend fun refreshRemoteAccessAndEmitResult() {
+        _remoteAccessResolution.postValue(Event(UIResult.Loading()))
+        try {
+            val hasRemotePath = refreshRemoteDevicePathsUseCase.execute()
+            val remoteBaseUrl = getCurrentDevicePathsUseCase()[DevicePathType.REMOTE]
+            _remoteBaseUrl.postValue(remoteBaseUrl)
+
+            val result = when {
+                hasRemotePath -> PublicLinkRemoteAccessResult.Ready
+                !getRemoteAccessTokenUseCase.hasToken() -> PublicLinkRemoteAccessResult.AuthenticationRequired
+                else -> PublicLinkRemoteAccessResult.Unavailable
+            }
+            _remoteAccessResolution.postValue(Event(UIResult.Success(result)))
+        } catch (exception: Exception) {
+            _remoteAccessResolution.postValue(Event(UIResult.Error(exception)))
         }
     }
 

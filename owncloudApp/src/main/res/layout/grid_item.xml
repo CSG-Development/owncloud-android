@@ -86,7 +86,7 @@
             android:layout_marginLeft="4dp"
             android:layout_marginRight="4dp"
             android:elevation="30dp"
-            android:src="@android:drawable/checkbox_off_background" />
+            android:src="@drawable/ic_checkbox_blank_outline" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/uploadProgressIndicator"

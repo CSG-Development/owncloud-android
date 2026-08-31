@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,11 +49,11 @@ fun HomeCloudAlertDialog(
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = colorResource(R.color.homecloud_dialog_button_enabled),
+            ),
         ) {
-            Text(
-                text = confirmLabel,
-                color = colorResource(R.color.homecloud_dialog_button_enabled),
-            )
+            Text(text = confirmLabel)
         }
     }
 }

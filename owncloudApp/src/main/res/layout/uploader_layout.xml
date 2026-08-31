@@ -102,7 +102,7 @@
                 android:layout_gravity="bottom"
                 android:layout_weight="1"
                 android:text="@android:string/cancel"
-                android:theme="@style/Button.Secondary" />
+                style="@style/Button.Secondary" />
 
             <Space
                 android:layout_width="8dp"
@@ -115,7 +115,7 @@
                 android:layout_gravity="bottom"
                 android:layout_weight="1"
                 android:text="@string/uploader_btn_upload_text"
-                android:theme="@style/Button.Primary" />
+                style="@style/Button.Primary" />
 
         </LinearLayout>
 

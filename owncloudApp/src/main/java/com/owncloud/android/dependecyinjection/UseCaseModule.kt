@@ -57,9 +57,11 @@ import com.owncloud.android.domain.device.usecases.GetCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.GetSavedDeviceCertificateUseCase
 import com.owncloud.android.domain.device.usecases.GetStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.ProbeCurrentBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.RefreshRemoteDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.SaveCurrentDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SaveStaticDeviceUseCase
 import com.owncloud.android.domain.device.usecases.SwitchToBestAvailableBaseUrlUseCase
+import com.owncloud.android.domain.device.usecases.SyncCurrentDevicePathsUseCase
 import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.files.usecases.CleanConflictUseCase
 import com.owncloud.android.domain.files.usecases.CleanWorkersUUIDUseCase
@@ -95,6 +97,7 @@ import com.owncloud.android.domain.files.usecases.SortFilesUseCase
 import com.owncloud.android.domain.files.usecases.SortFilesWithSyncInfoUseCase
 import com.owncloud.android.domain.files.usecases.UpdateAlreadyDownloadedFilesPathUseCase
 import com.owncloud.android.domain.mdnsdiscovery.usecases.DiscoverLocalNetworkDevicesUseCase
+import com.owncloud.android.domain.mdnsdiscovery.usecases.FindUpdatedAddressOfLocalDeviceUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetExistingRemoteAccessUserUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAccessTokenUseCase
 import com.owncloud.android.domain.remoteaccess.usecases.GetRemoteAvailableDevicesUseCase
@@ -368,6 +371,7 @@ val useCaseModule = module {
 
     // mDNS Discovery
     factoryOf(::DiscoverLocalNetworkDevicesUseCase)
+    factoryOf(::FindUpdatedAddressOfLocalDeviceUseCase)
 
     // Device / Base URL
     single<UpdateBaseUrlUseCase>{ UpdateBaseUrlUseCase(get()) }
@@ -375,6 +379,8 @@ val useCaseModule = module {
     factoryOf(::GetAvailableServerInfoUseCase)
     factoryOf(::ProbeCurrentBaseUrlUseCase)
     factoryOf(::SwitchToBestAvailableBaseUrlUseCase)
+    factoryOf(::SyncCurrentDevicePathsUseCase)
+    factoryOf(::RefreshRemoteDevicePathsUseCase)
 
     // Accounts
     factoryOf(::RemoveAccountUseCase)

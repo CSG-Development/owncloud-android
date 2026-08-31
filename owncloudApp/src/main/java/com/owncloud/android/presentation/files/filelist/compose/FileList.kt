@@ -65,6 +65,8 @@ fun FileList(
     onItemClick: (FileListItemUiModel) -> Unit = {},
     onItemLongClick: (FileListItemUiModel) -> Unit = {},
     onThreeDotClick: (FileListItemUiModel) -> Unit = {},
+    onVirtualOpenUploads: () -> Unit = {},
+    onVirtualCancelUpload: (fileId: Long) -> Unit = {},
 ) {
     val listContent: @Composable (Modifier) -> Unit = { contentModifier ->
         when (content) {
@@ -112,6 +114,8 @@ fun FileList(
                         onItemClick = onItemClick,
                         onItemLongClick = onItemLongClick,
                         onThreeDotClick = onThreeDotClick,
+                        onVirtualOpenUploads = onVirtualOpenUploads,
+                        onVirtualCancelUpload = onVirtualCancelUpload,
                         modifier = contentModifier,
                     )
 
@@ -126,6 +130,8 @@ fun FileList(
                         thumbnail = thumbnail,
                         onItemClick = onItemClick,
                         onItemLongClick = onItemLongClick,
+                        onVirtualOpenUploads = onVirtualOpenUploads,
+                        onVirtualCancelUpload = onVirtualCancelUpload,
                         modifier = contentModifier,
                     )
                 }
@@ -160,6 +166,8 @@ private fun FileListLazyColumn(
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
     onThreeDotClick: (FileListItemUiModel) -> Unit,
+    onVirtualOpenUploads: () -> Unit,
+    onVirtualCancelUpload: (fileId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -182,6 +190,8 @@ private fun FileListLazyColumn(
                 onItemClick = onItemClick,
                 onItemLongClick = onItemLongClick,
                 onThreeDotClick = onThreeDotClick,
+                onVirtualOpenUploads = onVirtualOpenUploads,
+                onVirtualCancelUpload = onVirtualCancelUpload,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = dimensionResource(R.dimen.item_file_list_min_height)),
@@ -229,6 +239,8 @@ private fun FileListLazyGrid(
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
+    onVirtualOpenUploads: () -> Unit,
+    onVirtualCancelUpload: (fileId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -262,6 +274,8 @@ private fun FileListLazyGrid(
                 thumbnail = thumbnail,
                 onItemClick = onItemClick,
                 onItemLongClick = onItemLongClick,
+                onVirtualOpenUploads = onVirtualOpenUploads,
+                onVirtualCancelUpload = onVirtualCancelUpload,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -287,6 +301,8 @@ private fun FileListLazyRow(
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
     onThreeDotClick: (FileListItemUiModel) -> Unit,
+    onVirtualOpenUploads: () -> Unit,
+    onVirtualCancelUpload: (fileId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val displayItem = item.withSelection(selectedIds)
@@ -297,6 +313,8 @@ private fun FileListLazyRow(
         onClick = { onItemClick(item) },
         onLongClick = { onItemLongClick(item) },
         onThreeDotClick = { onThreeDotClick(item) },
+        onVirtualOpenUploads = onVirtualOpenUploads,
+        onVirtualCancelUpload = { onVirtualCancelUpload(item.fileId) },
     )
 }
 
@@ -307,6 +325,8 @@ private fun FileListLazyGridCell(
     thumbnail: @Composable (FileListItemUiModel) -> Bitmap?,
     onItemClick: (FileListItemUiModel) -> Unit,
     onItemLongClick: (FileListItemUiModel) -> Unit,
+    onVirtualOpenUploads: () -> Unit,
+    onVirtualCancelUpload: (fileId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val displayItem = item.withSelection(selectedIds)
@@ -318,6 +338,8 @@ private fun FileListLazyGridCell(
         modifier = modifier,
         onClick = { onItemClick(item) },
         onLongClick = { onItemLongClick(item) },
+        onVirtualOpenUploads = onVirtualOpenUploads,
+        onVirtualCancelUpload = { onVirtualCancelUpload(item.fileId) },
     )
 }
 

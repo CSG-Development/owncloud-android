@@ -3,6 +3,7 @@ package com.owncloud.android.domain.mdnsdiscovery
 import com.owncloud.android.domain.device.model.Device
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Repository for discovering and verifying devices via mDNS
@@ -22,6 +23,8 @@ interface MdnsDiscoveryRepository {
     fun discoverAndVerifyDevices(
         duration: Duration
     ): Flow<Device>
+
+    suspend fun oneShotDiscoverAndVerifyDevices(duration: Duration = 5.seconds): List<Device>
 
 }
 

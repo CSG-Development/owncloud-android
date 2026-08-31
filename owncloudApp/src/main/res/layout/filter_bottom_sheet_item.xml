@@ -37,18 +37,19 @@
 
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/filter_item_checkbox"
+        style="@style/homeCloud.CheckBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
         android:focusable="false"
         android:visibility="gone"
-        android:theme="@style/homeCloud.CheckBox"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.radiobutton.MaterialRadioButton
         android:id="@+id/filter_item_radio"
+        style="@style/homeCloud.RadioButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"

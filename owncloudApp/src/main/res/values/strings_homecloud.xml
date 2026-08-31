@@ -35,6 +35,10 @@
 
     <string name="homecloud_share_password_hint">Password</string>
     <string name="homecloud_share_password_edit_text_hint">Enter password</string>
+    <string name="homecloud_share_remote_access_unavailable_title">Remote access unavailable</string>
+    <string name="homecloud_share_remote_access_unavailable_message">Remote access is required to share public links. Tap Enable to turn it on or Cancel to try later.</string>
+    <string name="homecloud_share_remote_access_enable_button">Enable</string>
+    <string name="homecloud_share_public_link_unavailable_toast">Unable to generate a public link at this time. Try again later.</string>
 
     <string name="homecloud_rename_hint">Rename</string>
     <string name="homecloud_rename_edit_text_hint">Enter a new name</string>
@@ -243,6 +247,8 @@
     <string name="homecloud_filelist_compress_error_corrupt">The archive appears to be corrupted or incomplete.</string>
     <string name="homecloud_filelist_compress_error_file_access">Some files couldn\'t be accessed for the compression. Verify permissions for all the files and try again.</string>
     <string name="homecloud_filelist_compress_error_conflict">A file with this name already exists on Personal Cloud. Rename or remove the existing file and try again.</string>
+    <string name="homecloud_filelist_added_to_favorites">Added to Favorites</string>
+    <string name="homecloud_filelist_removed_from_favorites">Removed from Favorites</string>
 
     <string name="homecloud_textpreview_loading">Wait a moment</string>
     <string name="homecloud_textpreview_error">Could not open this file for preview.</string>

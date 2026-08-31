@@ -26,9 +26,12 @@ import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
+import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
+import com.google.android.material.snackbar.Snackbar
+import com.owncloud.android.R
 
 fun View.setAccessibilityRole(className: Class<*>? = null, roleDescription: String? = null) {
     ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
@@ -78,4 +81,65 @@ fun View.applyStatusBarInsets(usePaddings: Boolean = true) {
         }
         insets
     }
+}
+
+/**
+ * Applies system navigation bar insets (padding or margin) to this [View].
+ *
+ * This ensures the view is laid out correctly above the navigation bar by
+ * either updating its bottom padding or bottom margin with the navigation bar
+ * inset, while preserving the original values.
+ *
+ * @param usePaddings If `true` (default), navigation bar insets are added to
+ * the view's bottom padding. If `false`, they are added to the view's bottom margin.
+ */
+fun View.applyNavigationBarInsets(usePaddings: Boolean = true) {
+    val initialPaddingBottom = paddingBottom
+    val initialMarginBottom = marginBottom
+
+    ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+        val navigationBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+        if (usePaddings) {
+            view.setPadding(
+                paddingLeft,
+                paddingTop,
+                paddingRight,
+                initialPaddingBottom + navigationBarInset,
+            )
+        } else {
+            (view.layoutParams as? ViewGroup.MarginLayoutParams)?.apply {
+                bottomMargin = initialMarginBottom + navigationBarInset
+            }
+        }
+        insets
+    }
+}
+
+fun View.showHomeCloudMessageInSnackbar(
+    message: CharSequence,
+    duration: Int = Snackbar.LENGTH_SHORT,
+    anchorViewId: Int? = null,
+) {
+    Snackbar.make(this, message, duration).apply {
+        setBackgroundTint(context.getColor(R.color.homecloud_snackbar_background))
+        setTextColor(context.getColor(R.color.homecloud_snackbar_text))
+        anchorViewId?.let { id ->
+            rootView.findViewById<View>(id)?.let { setAnchorView(it) }
+        }
+    }.show()
+}
+
+fun View.showFavoriteStatusSnackbar(
+    isFavorite: Boolean,
+    anchorViewId: Int? = null,
+) {
+    val messageRes = if (isFavorite) {
+        R.string.homecloud_filelist_added_to_favorites
+    } else {
+        R.string.homecloud_filelist_removed_from_favorites
+    }
+    showHomeCloudMessageInSnackbar(
+        message = context.getString(messageRes),
+        anchorViewId = anchorViewId,
+    )
 }

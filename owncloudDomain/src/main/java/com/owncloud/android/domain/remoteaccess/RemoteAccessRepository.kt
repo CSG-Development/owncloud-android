@@ -37,11 +37,11 @@ interface RemoteAccessRepository {
 
     /**
      * Get all available devices with their access paths
+     * @param filterByCertificateCommonName If non-null then only correspondent devices will be verified
      * @return a list of available devices
      */
-    suspend fun getAvailableDevices(): List<Device>
+    suspend fun getAvailableDevices(filterByCertificateCommonName: String?): List<Device>
 
-    suspend fun getCurrentDevice(): Device?
 
     /**
      * Fetch fresh connection paths for a specific device id. Used by the cache-refresh

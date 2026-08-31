@@ -63,6 +63,7 @@ import com.owncloud.android.domain.files.model.FileListOption
 import com.owncloud.android.domain.user.model.UserQuota
 import com.owncloud.android.domain.user.model.UserQuotaState
 import com.owncloud.android.domain.utils.Event
+import com.owncloud.android.extensions.applyNavigationBarInsets
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.goToUrl
 import com.owncloud.android.extensions.isBigTablet
@@ -91,7 +92,7 @@ import timber.log.Timber
  * Base class to handle setup of the drawer implementation including avatar fetching and fallback
  * generation.
  */
-abstract class DrawerActivity : ToolbarActivity() {
+abstract class DrawerActivity : ToolbarActivity(), VerificationCodeDialogFragment.VerificationCodeDialogListener {
 
     private val drawerViewModel by viewModel<DrawerViewModel>()
     private val capabilitiesViewModel by viewModel<CapabilityViewModel> {
@@ -154,6 +155,7 @@ abstract class DrawerActivity : ToolbarActivity() {
 
             override fun onViewDetachedFromWindow(v: View) {}
         })
+        findViewById<View>(R.id.drawer_menu)?.applyNavigationBarInsets()
         setupDrawerContent()
 
         drawerToggle =
@@ -603,26 +605,22 @@ abstract class DrawerActivity : ToolbarActivity() {
 
     private fun showCodeDialogIfNotShown(email: String) {
        if (supportFragmentManager.findFragmentByTag(VerificationCodeDialogFragment.TAG) == null) {
-           val fragment = VerificationCodeDialogFragment.newInstance(email)
-               .setListener(object : VerificationCodeDialogFragment.VerificationCodeDialogListener {
-                   override fun onCodeVerified() {
-                       Timber.d("onCodeVerified")
-                       drawerViewModel.onCodeVerified()
-                   }
-
-                   override fun onSkipped() {
-                       Timber.d("onSkipped")
-                   }
-
-                   override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
-                       Timber.d("onDismissed")
-                   }
-               })
-           fragment.show(
-               supportFragmentManager,
-               VerificationCodeDialogFragment.TAG
-           )
+           VerificationCodeDialogFragment.newInstance(email)
+               .show(supportFragmentManager, VerificationCodeDialogFragment.TAG)
        }
+    }
+
+    override fun onCodeVerified() {
+        Timber.d("onCodeVerified")
+        drawerViewModel.onCodeVerified()
+    }
+
+    override fun onSkipped() {
+        Timber.d("onSkipped")
+    }
+
+    override fun onDismissed(lastError: VerificationCodeViewModel.VerificationCodeError?) {
+        Timber.d("onDismissed")
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

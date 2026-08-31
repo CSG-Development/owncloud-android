@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     android:id="@+id/filesFolderPickerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="@color/homecloud_bar_background"
     android:orientation="vertical">
 
     <include layout="@layout/owncloud_toolbar" />
@@ -27,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
+        android:background="?attr/colorSurface"
         android:layout_height="0dip"
         android:layout_weight="1" />
 
@@ -48,6 +51,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:src="@drawable/uploader_list_separator" />
 
     <LinearLayout
+        android:id="@+id/folder_picker_bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -60,7 +64,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@android:string/cancel"
-            android:theme="@style/Button.Secondary" />
+            style="@style/Button.Secondary" />
 
         <Space
             android:layout_width="8dp"
@@ -72,7 +76,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:layout_height="wrap_content"
             android:layout_weight="1"
             tools:text="@string/folder_picker_choose_button_text"
-            android:theme="@style/Button.Primary" />
+            style="@style/Button.Primary" />
 
     </LinearLayout>
 

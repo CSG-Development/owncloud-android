@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/virtual_file_menu_uploads"
-        android:title="@string/uploads_view_title" />
-    <item
-        android:id="@+id/virtual_file_menu_cancel_upload"
-        android:title="@string/homecloud_filelist_virtual_file_cancel_upload" />
-</menu>

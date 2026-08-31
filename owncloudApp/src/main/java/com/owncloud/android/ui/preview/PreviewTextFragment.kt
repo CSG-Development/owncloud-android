@@ -40,6 +40,7 @@ import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
+import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -180,6 +181,7 @@ class PreviewTextFragment : FileFragment() {
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = true))
                     file = file.copy(isFavorite = true)
+                    requireView().showFavoriteStatusSnackbar(isFavorite = true)
                 }
                 requireActivity().invalidateOptionsMenu()
                 true
@@ -189,6 +191,7 @@ class PreviewTextFragment : FileFragment() {
                 file.id?.let { fileId ->
                     fileOperationsViewModel.performOperation(FileOperation.SetFileFavoriteStatus(fileId, isFavorite = false))
                     file = file.copy(isFavorite = false)
+                    requireView().showFavoriteStatusSnackbar(isFavorite = false)
                 }
                 requireActivity().invalidateOptionsMenu()
                 true
