@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.Data
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.owncloud.android.R
@@ -42,6 +43,7 @@ import com.owncloud.android.workers.unzip.UnzipWorkerPersistedState
 import com.owncloud.android.workers.unzip.UnzipWorkerStateStore
 import com.owncloud.android.workers.unzip.toDomain
 import com.owncloud.android.workers.unzip.toPersisted
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -72,8 +74,16 @@ class UnzipFileWorker(
     private var filesToUploadCount = 0
     private var uploadedFilesCount = 0
 
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        ArchiveWorkerForeground.createForegroundInfo(
+            context = appContext,
+            notificationId = ArchiveWorkerForeground.notificationIdFor(workerParameters.id),
+            title = foregroundNotificationTitle(),
+        )
+
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
+        setForeground(getForegroundInfo())
 
         stateStore = UnzipWorkerStateStore(
             temporalFolderPath = FileStorageUtils.getTemporalPath(account.name, zipFile.spaceId),
@@ -124,6 +134,7 @@ class UnzipFileWorker(
                         )
                     }
                 },
+                isCancelled = { isStopped },
             )
             val layout = extractState?.layout?.toDomain() ?: extractedLayout
             progress.completePhase(UnzipPhase.EXTRACT)
@@ -181,12 +192,24 @@ class UnzipFileWorker(
             stateStore.clear()
             extractState = null
             notifyUnzipResult(throwable = null, zipFileName = zipFileName)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Unzip operation failed")
             notifyUnzipResult(throwable = throwable, zipFileName = zipFileName)
         } finally {
             cleanupTempFiles()
         }
+    }
+
+    private fun foregroundNotificationTitle(): String {
+        val zipFileName = if (::zipFile.isInitialized) {
+            zipFile.fileName
+        } else {
+            val zipFileId = workerParameters.inputData.getLong(KEY_PARAM_ZIP_FILE_ID, -1)
+            getFileByIdUseCase(GetFileByIdUseCase.Params(zipFileId)).getDataOrNull()?.fileName.orEmpty()
+        }
+        return appContext.getString(R.string.homecloud_filelist_extract_enqueued, zipFileName)
     }
 
     private fun notifyUnzipResult(throwable: Throwable?, zipFileName: String): Result {
@@ -210,7 +233,7 @@ class UnzipFileWorker(
                 context = appContext,
                 contentTitle = contentTitle,
                 notificationChannelId = DOWNLOAD_NOTIFICATION_CHANNEL_ID,
-                notificationId = ARCHIVE_NOTIFICATION_ID,
+                notificationId = ArchiveWorkerForeground.notificationIdFor(workerParameters.id),
                 intent = null,
                 contentText = contentText,
                 timeOut = timeOut,
@@ -571,6 +594,5 @@ class UnzipFileWorker(
         const val KEY_PARAM_ACCOUNT = "KEY_PARAM_ACCOUNT"
         const val KEY_PARAM_ZIP_FILE_ID = "KEY_PARAM_ZIP_FILE_ID"
         const val KEY_TARGET_REMOTE_PATH = "KEY_TARGET_REMOTE_PATH"
-        private const val ARCHIVE_NOTIFICATION_ID = 15
     }
 }

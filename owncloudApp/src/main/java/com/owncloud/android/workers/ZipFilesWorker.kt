@@ -3,6 +3,7 @@ package com.owncloud.android.workers
 import android.accounts.Account
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.owncloud.android.R
@@ -38,6 +39,7 @@ import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.FileStorageUtils
 import com.owncloud.android.utils.NOTIFICATION_TIMEOUT_STANDARD
 import com.owncloud.android.utils.NotificationUtils.createBasicNotification
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -66,8 +68,16 @@ class ZipFilesWorker(
     private var filesToDownloadCount = 0
     private var downloadedFilesCount = 0
 
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        ArchiveWorkerForeground.createForegroundInfo(
+            context = appContext,
+            notificationId = ArchiveWorkerForeground.notificationIdFor(workerParameters.id),
+            title = foregroundNotificationTitle(),
+        )
+
     override suspend fun doWork(): Result {
         if (!areParametersValid()) return Result.failure()
+        setForeground(getForegroundInfo())
 
         progress = ArchiveOperationProgress.forWorker(
             scope = CoroutineScope(coroutineContext),
@@ -144,6 +154,7 @@ class ZipFilesWorker(
                         )
                     }
                 },
+                isCancelled = { isStopped },
             )
             progress.completePhase(ZipPhase.BUILD)
             ensureNotCancelled()
@@ -162,12 +173,24 @@ class ZipFilesWorker(
 
             progress.reportComplete()
             notifyZipResult(throwable = null, archiveFileName = archiveFileName)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (throwable: Throwable) {
             Timber.e(throwable, "Zip operation failed")
             notifyZipResult(throwable = throwable, archiveFileName = archiveFileName)
         } finally {
             cleanupTempFiles()
         }
+    }
+
+    private fun foregroundNotificationTitle(): String {
+        val archiveFileName = workerParameters.inputData.getString(KEY_PARAM_ARCHIVE_FILE_NAME)
+            ?: if (::selectedFiles.isInitialized) {
+                ArchiveNameResolver.resolveArchiveBaseName(selectedFiles = selectedFiles)
+            } else {
+                ""
+            }
+        return appContext.getString(R.string.homecloud_filelist_compress_enqueued, archiveFileName)
     }
 
     private fun notifyZipResult(throwable: Throwable?, archiveFileName: String): Result {
@@ -191,7 +214,7 @@ class ZipFilesWorker(
                 context = appContext,
                 contentTitle = contentTitle,
                 notificationChannelId = DOWNLOAD_NOTIFICATION_CHANNEL_ID,
-                notificationId = ARCHIVE_NOTIFICATION_ID,
+                notificationId = ArchiveWorkerForeground.notificationIdFor(workerParameters.id),
                 intent = null,
                 contentText = contentText,
                 timeOut = timeOut,
@@ -423,6 +446,5 @@ class ZipFilesWorker(
         const val KEY_PARAM_PARENT_FOLDER_ID = "KEY_PARAM_PARENT_FOLDER_ID"
         const val KEY_PARAM_FILE_IDS = "KEY_PARAM_FILE_IDS"
         const val KEY_PARAM_ARCHIVE_FILE_NAME = "KEY_PARAM_ARCHIVE_FILE_NAME"
-        private const val ARCHIVE_NOTIFICATION_ID = 14
     }
 }

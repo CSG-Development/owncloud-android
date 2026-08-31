@@ -1,5 +1,6 @@
 package com.owncloud.android.domain.archive
 
+import com.owncloud.android.domain.exceptions.CancelledException
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import java.io.BufferedInputStream
@@ -16,6 +17,7 @@ object ZipArchiveBuilder {
         emptyDirectoryPaths: Set<String>,
         outputZipFile: File,
         onBytesProcessed: ((processed: Long, total: Long) -> Unit)? = null,
+        isCancelled: () -> Boolean = { false },
     ) {
         outputZipFile.parentFile?.mkdirs()
 
@@ -30,6 +32,7 @@ object ZipArchiveBuilder {
         FileOutputStream(outputZipFile).use { fileOutputStream ->
             ZipOutputStream(fileOutputStream).use { zipOutputStream ->
                 emptyDirectoryPaths.sorted().forEach { directoryPath ->
+                    if (isCancelled()) throw CancelledException()
                     val normalizedPath = ensureDirectoryEntryPath(directoryPath)
                     if (usedEntryPaths.add(normalizedPath)) {
                         zipOutputStream.putNextEntry(ZipEntry(normalizedPath))
@@ -38,6 +41,7 @@ object ZipArchiveBuilder {
                 }
 
                 fileEntries.sortedBy { it.zipEntryPath }.forEach { entry ->
+                    if (isCancelled()) throw CancelledException()
                     val normalizedPath = entry.zipEntryPath.replace('\\', '/').trimStart('/')
                     if (!usedEntryPaths.add(normalizedPath)) {
                         throw DuplicateArchiveEntryException(normalizedPath)

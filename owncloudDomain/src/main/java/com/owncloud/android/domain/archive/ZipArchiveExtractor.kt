@@ -1,6 +1,7 @@
 package com.owncloud.android.domain.archive
 
 import com.owncloud.android.domain.exceptions.ArchivePathTraversalException
+import com.owncloud.android.domain.exceptions.CancelledException
 import com.owncloud.android.domain.exceptions.DuplicateArchiveEntryException
 import com.owncloud.android.domain.exceptions.InvalidArchiveException
 import com.owncloud.android.domain.exceptions.PasswordProtectedArchiveException
@@ -36,6 +37,7 @@ object ZipArchiveExtractor {
         zipFile: File,
         targetDirectory: File,
         onBytesProcessed: ((processed: Long, total: Long) -> Unit)? = null,
+        isCancelled: () -> Boolean = { false },
     ): ArchiveExtractLayout {
         validateZipFile(zipFile)
         targetDirectory.mkdirs()
@@ -48,6 +50,7 @@ object ZipArchiveExtractor {
         return runZipOperation(zipFile) { zip ->
             val entries = zip.entries()
             while (entries.hasMoreElements()) {
+                if (isCancelled()) throw CancelledException()
                 val entry = entries.nextElement()
                 val sanitizedPath = sanitizeEntryPath(entry.name)
                 if (sanitizedPath.isNotEmpty()) {
@@ -126,6 +129,8 @@ object ZipArchiveExtractor {
         } catch (exception: DuplicateArchiveEntryException) {
             throw exception
         } catch (exception: UnsupportedArchiveFormatException) {
+            throw exception
+        } catch (exception: CancelledException) {
             throw exception
         } catch (exception: Exception) {
             throw InvalidArchiveException(exception)
