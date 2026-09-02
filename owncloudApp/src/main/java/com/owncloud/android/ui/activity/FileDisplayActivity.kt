@@ -51,6 +51,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -271,6 +272,10 @@ open class FileDisplayActivity : FileActivity(),
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        onBackPressedDispatcher.addCallback(this) {
+            onBackPressed()
+        }
 
         // setup toolbar
         setupStandardToolbar(
