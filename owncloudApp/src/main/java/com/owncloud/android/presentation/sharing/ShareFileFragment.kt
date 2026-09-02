@@ -322,7 +322,7 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
                     listener?.dismissLoading()
                 }
                 is UIResult.Loading -> {
-                    listener?.showLoading()
+                    event.getContentIfNotHandled()?.let { showLoadingWhenIdle() }
                     capabilities?.let {
                         updateCapabilities(it)
                     }
@@ -352,11 +352,19 @@ class ShareFileFragment : Fragment(), ShareUserListAdapter.ShareUserAdapterListe
                     listener?.dismissLoading()
                 }
                 is UIResult.Loading -> {
-                    listener?.showLoading()
+                    event.getContentIfNotHandled()?.let { showLoadingWhenIdle() }
                     shares?.let {
                         updateShares(it)
                     }
                 }
+            }
+        }
+    }
+
+    private fun showLoadingWhenIdle() {
+        view?.post {
+            if (isAdded) {
+                listener?.showLoading()
             }
         }
     }
