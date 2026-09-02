@@ -50,6 +50,7 @@ mockk = "1.13.3"
 moshi = "1.15.0"
 okhttp = "4.9.2"
 patternlockview = "a90b0d4bf0"
+pdfboxAndroid = "2.0.27.0"
 retrofit = "2.9.0"
 photoView = "2.3.0"
 playServicesMlkitDocumentScanner = "16.0.0"
@@ -141,6 +142,7 @@ patternlockview = { group = "com.github.aritraroy.PatternLockView", name = "patt
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoView" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
 stetho = { group = "com.facebook.stetho", name = "stetho", version.ref = "stetho" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
