@@ -24,7 +24,9 @@
     <color name="homecloud_button_secondary_text_disabled">@color/homecloud_gray_label</color>
     <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_disabled_bg</color>
 
-    <color name="homecloud_dialog_background">#262729</color>
+    <color name="homecloud_card_background">#191919</color>
+
+    <color name="homecloud_dialog_background">#3D3D3D</color>
     <color name="homecloud_dialog_title_background">#3DFF9800</color>
     <color name="homecloud_dialog_accent_border">#FF9800</color>
 
