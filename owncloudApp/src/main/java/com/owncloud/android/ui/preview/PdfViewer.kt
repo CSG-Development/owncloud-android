@@ -56,14 +56,17 @@ class PdfViewer @JvmOverloads constructor(
     private var storagePath: String? = null
     private var pdfRendererManager: PdfRendererManager? = null
     private var loadJob: Job? = null
+    private var extractLinksJob: Job? = null
     private var currentLoadGeneration = 0
     private var targetWidthPx = 0
     private var pageCount = 0
 
     private val pages = mutableListOf<PdfPageUiModel>()
+    private var pageLinks: Array<List<PdfPageLink>> = emptyArray()
     private var baseHeightsPx = IntArray(0)
     private val renderJobs = mutableMapOf<Int, Job>()
     private val renderSemaphore = Semaphore(MAX_CONCURRENT_RENDERS)
+    private val linkExtractor by lazy { PdfLinkAnnotationExtractor(context) }
 
     private var appliedZoomScale = 1f
     private var appliedZoomMode = PdfZoomMode.FitWidth
@@ -247,6 +250,9 @@ class PdfViewer @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         loadJob?.cancel()
+        extractLinksJob?.cancel()
+        extractLinksJob = null
+        pageLinks = emptyArray()
         cancelAllRenderJobs()
         pdfRendererManager?.close()
         pdfRendererManager = null
@@ -358,7 +364,11 @@ class PdfViewer @JvmOverloads constructor(
     private fun reloadPreview(path: String, width: Int) {
         val scope = viewScope ?: return
         loadJob?.cancel()
+        extractLinksJob?.cancel()
+        extractLinksJob = null
         cancelAllRenderJobs()
+        currentLoadGeneration++
+        pageLinks = emptyArray()
         resetZoom()
         targetWidthPx = width
 
@@ -381,8 +391,9 @@ class PdfViewer @JvmOverloads constructor(
                 // From here the field owns the renderer; it is closed on the next reload or detach.
                 pdfRendererManager = openedManager
 
-                currentLoadGeneration++
                 pageCount = openedManager.pageCount
+                val generation = currentLoadGeneration
+                startLinkExtraction(path, pageCount, generation)
                 val pageDisplayDimensions = withContext(Dispatchers.IO) {
                     openedManager.precomputeAllPageDisplayDimensions(width)
                 }
@@ -407,9 +418,51 @@ class PdfViewer @JvmOverloads constructor(
                 throw cancellationException
             } catch (exception: Exception) {
                 Timber.e(exception, "Failed to load PDF preview")
+                extractLinksJob?.cancel()
+                extractLinksJob = null
+                currentLoadGeneration++
+                pageLinks = emptyArray()
                 setLoadState(PdfLoadState.Error)
                 resetPageNavigation()
                 notifyLoadError()
+            }
+        }
+    }
+
+    private fun startLinkExtraction(path: String, expectedPageCount: Int, generation: Int) {
+        val scope = viewScope ?: return
+        extractLinksJob?.cancel()
+        Timber.d("Starting PDF link extraction for %d pages (generation=%d)", expectedPageCount, generation)
+        extractLinksJob = scope.launch(Dispatchers.IO) {
+            val extracted = try {
+                linkExtractor.extract(path, expectedPageCount)
+            } catch (cancellationException: CancellationException) {
+                throw cancellationException
+            } catch (exception: Exception) {
+                Timber.e(exception, "PDF link extraction failed")
+                emptyArray()
+            }
+            if (generation != currentLoadGeneration) {
+                Timber.d("Discarding stale PDF link extraction (generation=%d current=%d)", generation, currentLoadGeneration)
+                return@launch
+            }
+            withContext(Dispatchers.Main.immediate) {
+                if (generation != currentLoadGeneration) {
+                    Timber.d(
+                        "Discarding PDF links; generation changed (%d -> %d)",
+                        generation,
+                        currentLoadGeneration,
+                    )
+                    return@withContext
+                }
+                pageLinks = extracted
+                val pagesWithLinks = pageLinks.count { it.isNotEmpty() }
+                Timber.d(
+                    "Cached PDF links for %d pages (%d with links, generation=%d)",
+                    pageLinks.size,
+                    pagesWithLinks,
+                    generation,
+                )
             }
         }
     }
