@@ -1,6 +1,7 @@
 package com.owncloud.android.ui.preview
 
 import android.accounts.Account
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,6 +18,7 @@ import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
+import com.owncloud.android.extensions.goToUrl
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.files.operations.FileOperation
@@ -29,6 +31,8 @@ import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
+import timber.log.Timber
+import java.util.Locale
 
 class PreviewPdfFragment : FileFragment() {
 
@@ -106,6 +110,10 @@ class PreviewPdfFragment : FileFragment() {
 
             override fun onLoadError() {
                 showPreviewError()
+            }
+
+            override fun onExternalLinkClicked(uri: Uri) {
+                openExternalPdfLink(uri)
             }
         }
 
@@ -392,6 +400,20 @@ class PreviewPdfFragment : FileFragment() {
 
     private fun showPreviewError() {
         Snackbar.make(requireView(), R.string.homecloud_pdf_preview_failed, Snackbar.LENGTH_LONG).show()
+    }
+
+    private fun openExternalPdfLink(uri: Uri) {
+        val scheme = uri.scheme?.lowercase(Locale.US)
+        if (scheme != "http" && scheme != "https") {
+            Timber.w("Ignoring non-http PDF link: %s", uri)
+            return
+        }
+        if (uri.host.isNullOrBlank()) {
+            Timber.w("Ignoring PDF link with empty host: %s", uri)
+            return
+        }
+        Timber.d("Opening PDF link in browser: %s", uri)
+        requireActivity().goToUrl(uri.toString())
     }
 
     private fun openFile() {

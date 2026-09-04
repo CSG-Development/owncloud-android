@@ -30,6 +30,7 @@ class PdfPageAdapter : ListAdapter<PdfPageUiModel, PdfPageAdapter.PdfPageViewHol
         private val pageLoading: ProgressBar = container.findViewById(R.id.pdf_page_loading)
 
         fun bind(model: PdfPageUiModel) {
+            pageContent.foreground = null
             applyPageSize(model.displayWidthPx, model.displayHeightPx)
             when (val content = model.content) {
                 is PdfPageContent.Loading -> {
