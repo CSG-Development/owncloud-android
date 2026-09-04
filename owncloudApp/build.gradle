@@ -101,6 +101,9 @@ dependencies {
     // Timber
     implementation libs.timber
 
+    // PDF Link annotation extraction for in-app preview (not used for rendering)
+    implementation libs.pdfbox.android
+
     // Tests
     testImplementation project(":owncloudTestUtil")
     testImplementation libs.androidx.arch.core.testing

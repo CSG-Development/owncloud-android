@@ -1,6 +1,15 @@
 package com.owncloud.android.ui.preview
 
+import android.animation.ObjectAnimator
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.graphics.RectF
+import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -10,6 +19,8 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.ProgressBar
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -41,6 +53,7 @@ class PdfViewer @JvmOverloads constructor(
         fun onPageChanged(navigation: PdfPageNavigationState)
         fun onZoomChanged(zoom: PdfZoomState)
         fun onLoadError()
+        fun onExternalLinkClicked(uri: Uri) = Unit
     }
 
     var listener: Listener? = null
@@ -56,14 +69,17 @@ class PdfViewer @JvmOverloads constructor(
     private var storagePath: String? = null
     private var pdfRendererManager: PdfRendererManager? = null
     private var loadJob: Job? = null
+    private var extractLinksJob: Job? = null
     private var currentLoadGeneration = 0
     private var targetWidthPx = 0
     private var pageCount = 0
 
     private val pages = mutableListOf<PdfPageUiModel>()
+    private var pageLinks: Array<List<PdfPageLink>> = emptyArray()
     private var baseHeightsPx = IntArray(0)
     private val renderJobs = mutableMapOf<Int, Job>()
     private val renderSemaphore = Semaphore(MAX_CONCURRENT_RENDERS)
+    private val linkExtractor by lazy { PdfLinkAnnotationExtractor(context) }
 
     private var appliedZoomScale = 1f
     private var appliedZoomMode = PdfZoomMode.FitWidth
@@ -82,8 +98,10 @@ class PdfViewer @JvmOverloads constructor(
     private var lastX = 0f
     private var lastY = 0f
     private var isDragging = false
+    private var tapInvalid = false
     private var pinchTargetScale = 1f
     private var velocityTracker: VelocityTracker? = null
+    private var linkHighlightJob: Job? = null
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
 
@@ -99,6 +117,7 @@ class PdfViewer @JvmOverloads constructor(
             scaleGestureDetector.onTouchEvent(event)
             trackVelocity(event)
             if (scaleGestureDetector.isInProgress) {
+                tapInvalid = true
                 rv.parent?.requestDisallowInterceptTouchEvent(true)
                 return true
             }
@@ -109,20 +128,40 @@ class PdfViewer @JvmOverloads constructor(
                     lastX = event.x
                     lastY = event.y
                     isDragging = false
+                    tapInvalid = false
+                }
+
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    tapInvalid = true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
+                    if (!tapInvalid && hasMovedPastTapSlop(event)) {
+                        tapInvalid = true
+                    }
                     if (!isDragging && isHorizontalPanAvailable()) {
                         val movedX = abs(event.x - downX)
                         val movedY = abs(event.y - downY)
                         if (movedX > movedY) {
                             isDragging = true
+                            tapInvalid = true
                             lastX = event.x
                             lastY = event.y
                             rv.parent?.requestDisallowInterceptTouchEvent(true)
                             return true
                         }
                     }
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    val isTap = !tapInvalid && !isDragging
+                    if (isTap && handleLinkTap(rv, event)) {
+                        return true
+                    }
+                }
+
+                MotionEvent.ACTION_CANCEL -> {
+                    tapInvalid = true
                 }
             }
             return false
@@ -247,6 +286,10 @@ class PdfViewer @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         loadJob?.cancel()
+        extractLinksJob?.cancel()
+        extractLinksJob = null
+        pageLinks = emptyArray()
+        cancelLinkHighlight()
         cancelAllRenderJobs()
         pdfRendererManager?.close()
         pdfRendererManager = null
@@ -358,7 +401,12 @@ class PdfViewer @JvmOverloads constructor(
     private fun reloadPreview(path: String, width: Int) {
         val scope = viewScope ?: return
         loadJob?.cancel()
+        extractLinksJob?.cancel()
+        extractLinksJob = null
         cancelAllRenderJobs()
+        cancelLinkHighlight()
+        currentLoadGeneration++
+        pageLinks = emptyArray()
         resetZoom()
         targetWidthPx = width
 
@@ -381,8 +429,9 @@ class PdfViewer @JvmOverloads constructor(
                 // From here the field owns the renderer; it is closed on the next reload or detach.
                 pdfRendererManager = openedManager
 
-                currentLoadGeneration++
                 pageCount = openedManager.pageCount
+                val generation = currentLoadGeneration
+                startLinkExtraction(path, pageCount, generation)
                 val pageDisplayDimensions = withContext(Dispatchers.IO) {
                     openedManager.precomputeAllPageDisplayDimensions(width)
                 }
@@ -407,9 +456,51 @@ class PdfViewer @JvmOverloads constructor(
                 throw cancellationException
             } catch (exception: Exception) {
                 Timber.e(exception, "Failed to load PDF preview")
+                extractLinksJob?.cancel()
+                extractLinksJob = null
+                currentLoadGeneration++
+                pageLinks = emptyArray()
                 setLoadState(PdfLoadState.Error)
                 resetPageNavigation()
                 notifyLoadError()
+            }
+        }
+    }
+
+    private fun startLinkExtraction(path: String, expectedPageCount: Int, generation: Int) {
+        val scope = viewScope ?: return
+        extractLinksJob?.cancel()
+        Timber.d("Starting PDF link extraction for %d pages (generation=%d)", expectedPageCount, generation)
+        extractLinksJob = scope.launch(Dispatchers.IO) {
+            val extracted = try {
+                linkExtractor.extract(path, expectedPageCount)
+            } catch (cancellationException: CancellationException) {
+                throw cancellationException
+            } catch (exception: Exception) {
+                Timber.e(exception, "PDF link extraction failed")
+                emptyArray()
+            }
+            if (generation != currentLoadGeneration) {
+                Timber.d("Discarding stale PDF link extraction (generation=%d current=%d)", generation, currentLoadGeneration)
+                return@launch
+            }
+            withContext(Dispatchers.Main.immediate) {
+                if (generation != currentLoadGeneration) {
+                    Timber.d(
+                        "Discarding PDF links; generation changed (%d -> %d)",
+                        generation,
+                        currentLoadGeneration,
+                    )
+                    return@withContext
+                }
+                pageLinks = extracted
+                val pagesWithLinks = pageLinks.count { it.isNotEmpty() }
+                Timber.d(
+                    "Cached PDF links for %d pages (%d with links, generation=%d)",
+                    pageLinks.size,
+                    pagesWithLinks,
+                    generation,
+                )
             }
         }
     }
@@ -574,6 +665,84 @@ class PdfViewer @JvmOverloads constructor(
         pdfPages.scaleY = 1f
     }
 
+    private fun hasMovedPastTapSlop(event: MotionEvent): Boolean {
+        return abs(event.x - downX) > touchSlop || abs(event.y - downY) > touchSlop
+    }
+
+    private fun handleLinkTap(rv: RecyclerView, event: MotionEvent): Boolean {
+        val child = rv.findChildViewUnder(event.x, event.y) ?: return false
+        val pageIndex = rv.getChildAdapterPosition(child)
+        if (pageIndex == NO_POSITION) {
+            return false
+        }
+        val links = pageLinks.getOrNull(pageIndex).orEmpty()
+        if (links.isEmpty()) {
+            return false
+        }
+
+        val pageContent = child.findViewById<View>(R.id.pdf_page_content) ?: return false
+        val contentWidth = pageContent.width.toFloat()
+        val contentHeight = pageContent.height.toFloat()
+        if (contentWidth <= 0f || contentHeight <= 0f) {
+            return false
+        }
+
+        val xInContent = event.x - child.left - pageContent.left - pageContent.translationX
+        val yInContent = event.y - child.top - pageContent.top
+        if (xInContent < 0f || yInContent < 0f || xInContent > contentWidth || yInContent > contentHeight) {
+            Timber.d("PDF tap outside page content page=%d", pageIndex)
+            return false
+        }
+
+        val normalizedX = xInContent / contentWidth
+        val normalizedY = yInContent / contentHeight
+        val hit = links.firstOrNull { link ->
+            link.normalizedBounds.any { bounds -> bounds.contains(normalizedX, normalizedY) }
+        }
+        if (hit == null) {
+            Timber.d("PDF tap missed links page=%d x=%.3f y=%.3f", pageIndex, normalizedX, normalizedY)
+            return false
+        }
+
+        Timber.d("PDF link hit page=%d uri=%s", pageIndex, hit.uri)
+        showLinkHighlightAndOpen(pageContent, hit)
+        return true
+    }
+
+    private fun showLinkHighlightAndOpen(pageContent: View, link: PdfPageLink) {
+        val drawable = PdfLinkHighlightDrawable(
+            normalizedBounds = link.normalizedBounds,
+            color = ColorUtils.setAlphaComponent(
+                ContextCompat.getColor(context, R.color.homecloud_link),
+                LINK_HIGHLIGHT_ALPHA,
+            ),
+        )
+        Timber.d("Showing PDF link highlight overlays=%d uri=%s", link.normalizedBounds.size, link.uri)
+        cancelLinkHighlight()
+        linkHighlightJob = viewScope?.launch {
+            pageContent.foreground = drawable
+            val fade = ObjectAnimator.ofInt(drawable, "alpha", 255, 0).apply {
+                duration = LINK_HIGHLIGHT_FADE_MS
+            }
+            try {
+                delay(LINK_HIGHLIGHT_HOLD_MS)
+                fade.start()
+                listener?.onExternalLinkClicked(link.uri)
+                delay(LINK_HIGHLIGHT_FADE_MS)
+            } finally {
+                fade.cancel()
+                if (pageContent.foreground === drawable) {
+                    pageContent.foreground = null
+                }
+            }
+        }
+    }
+
+    private fun cancelLinkHighlight() {
+        linkHighlightJob?.cancel()
+        linkHighlightJob = null
+    }
+
     private fun isHorizontalPanAvailable(): Boolean = currentContentWidthPx > viewportWidthPx
 
     private val currentContentWidthPx: Int
@@ -732,5 +901,53 @@ class PdfViewer @JvmOverloads constructor(
         private const val MIN_ZOOM_SCALE = 0.25f
         private const val MAX_ZOOM_SCALE = 4f
         private const val ZOOM_STEP = 25
+        private const val LINK_HIGHLIGHT_ALPHA = 76
+        private const val LINK_HIGHLIGHT_HOLD_MS = 250L
+        private const val LINK_HIGHLIGHT_FADE_MS = 200L
     }
+}
+
+private class PdfLinkHighlightDrawable(
+    private val normalizedBounds: List<RectF>,
+    color: Int,
+) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        style = Paint.Style.FILL
+    }
+    private val baseAlpha = Color.alpha(color)
+    private var drawableAlpha = 255
+
+    override fun draw(canvas: Canvas) {
+        val width = bounds.width().toFloat()
+        val height = bounds.height().toFloat()
+        if (width <= 0f || height <= 0f) {
+            return
+        }
+        paint.alpha = baseAlpha * drawableAlpha / 255
+        for (rect in normalizedBounds) {
+            canvas.drawRect(
+                rect.left * width,
+                rect.top * height,
+                rect.right * width,
+                rect.bottom * height,
+                paint,
+            )
+        }
+    }
+
+    override fun setAlpha(alpha: Int) {
+        drawableAlpha = alpha
+        invalidateSelf()
+    }
+
+    override fun getAlpha(): Int = drawableAlpha
+
+    override fun setColorFilter(colorFilter: ColorFilter?) {
+        paint.colorFilter = colorFilter
+        invalidateSelf()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }
