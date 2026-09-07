@@ -60,13 +60,15 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.owncloud.android.R
 import com.owncloud.android.databinding.VideoPreviewBinding
+import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.utils.Event
-import com.owncloud.android.extensions.filterMenuOptions
+import com.owncloud.android.extensions.applyPreviewFileActions
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperation.SetFilesAsAvailableOffline
@@ -102,6 +104,7 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
     private val previewVideoViewModel: PreviewVideoViewModel by viewModel { parametersOf(intent.getParcelableExtra(EXTRA_FILE)) }
     private val fileOperationsViewModel: FileOperationsViewModel by viewModel()
     private val transfersViewModel: TransfersViewModel by viewModel()
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
 
     private lateinit var binding: VideoPreviewBinding
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -358,6 +361,19 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.file_actions_menu, menu)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val role = getString(R.string.button_role_accessibility)
+            menu.findItem(R.id.action_share_file)?.contentDescription =
+                "${getString(R.string.action_share)} $role"
+            menu.findItem(R.id.action_download_file)?.contentDescription =
+                "${getString(R.string.filedetails_download)} $role"
+            menu.findItem(R.id.action_sync_file)?.contentDescription =
+                "${getString(R.string.filedetails_sync_file)} $role"
+            menu.findItem(R.id.action_cancel_sync)?.contentDescription =
+                "${getString(R.string.common_cancel_sync)} $role"
+            menu.findItem(R.id.action_more_options)?.contentDescription =
+                "${getString(R.string.homecloud_filelist_more_options)} $role"
+        }
     }
 
     override fun onPrepareMenu(menu: Menu) {
@@ -368,32 +384,32 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
         collectLatestLifecycleFlow(
             previewVideoViewModel.menuOptions
         ) { menuOptions ->
+            latestMenuOptions = menuOptions
             val hasWritePermission: Boolean = safeFile.hasWritePermission
-            menu.filterMenuOptions(menuOptions, hasWritePermission)
-        }
-        setRolesAccessibilityToMenuItems(menu)
-    }
-
-    private fun setRolesAccessibilityToMenuItems(menu: Menu) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val roleAccessibilityDescription = getString(R.string.button_role_accessibility)
-            menu.apply {
-                menu.findItem(R.id.action_open_file_with)?.contentDescription =
-                    "${getString(R.string.actionbar_open_with)} $roleAccessibilityDescription"
-                menu.findItem(R.id.action_send_file)?.contentDescription = "${getString(R.string.actionbar_send_file)} $roleAccessibilityDescription"
-                menu.findItem(R.id.action_set_available_offline)?.contentDescription =
-                    "${getString(R.string.set_available_offline)} $roleAccessibilityDescription"
-                menu.findItem(R.id.action_unset_available_offline)?.contentDescription =
-                    "${getString(R.string.unset_available_offline)} $roleAccessibilityDescription"
-                menu.findItem(R.id.action_see_details)?.contentDescription =
-                    "${getString(R.string.actionbar_see_details)} $roleAccessibilityDescription"
-                menu.findItem(R.id.action_remove_file)?.contentDescription = "${getString(R.string.common_remove)} $roleAccessibilityDescription"
-            }
+            menu.applyPreviewFileActions(menuOptions, hasWritePermission)
         }
     }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
-        when (menuItem.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+        if (menuItem.itemId == R.id.action_more_options) {
+            showFileActionsMoreBottomSheet()
+            return true
+        }
+        return onFileActionChosen(menuItem.itemId)
+    }
+
+    private fun showFileActionsMoreBottomSheet() {
+        val safeFile = file ?: return
+        FileListSelectionMoreBottomSheetHelper.showForPreview(
+            context = this,
+            menuOptions = latestMenuOptions,
+            hasWritePermission = safeFile.hasWritePermission,
+            onAction = { menuId -> onFileActionChosen(menuId) },
+        )
+    }
+
+    private fun onFileActionChosen(itemId: Int): Boolean =
+        when (itemId) {
             R.id.action_share_file -> {
                 fileOperationsHelper.showShareFile(file)
                 true

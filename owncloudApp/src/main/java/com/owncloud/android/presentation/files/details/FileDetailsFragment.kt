@@ -27,7 +27,6 @@ import android.accounts.Account
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -48,12 +47,12 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.exceptions.AccountNotFoundException
 import com.owncloud.android.domain.exceptions.InstanceNotConfiguredException
 import com.owncloud.android.domain.exceptions.TooEarlyException
+import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.utils.Event
-import com.owncloud.android.extensions.addOpenInWebMenuOptions
+import com.owncloud.android.extensions.applyPreviewFileActions
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
-import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.isDownload
 import com.owncloud.android.extensions.openOCFile
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
@@ -63,6 +62,7 @@ import com.owncloud.android.presentation.authentication.ACTION_UPDATE_EXPIRED_TO
 import com.owncloud.android.presentation.authentication.EXTRA_ACCOUNT
 import com.owncloud.android.presentation.authentication.EXTRA_ACTION
 import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.conflicts.ConflictsResolveActivity
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel.ActionsInDetailsView.NONE
@@ -109,7 +109,7 @@ class FileDetailsFragment : FileFragment() {
     private var _binding: FileDetailsFragmentBinding? = null
     private val binding get() = _binding!!
 
-    private var openInWebProviders: Map<String, Int> = hashMapOf()
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
 
     private var isMultiPersonal = false
 
@@ -242,42 +242,49 @@ class FileDetailsFragment : FileFragment() {
         fileDetailsViewModel.filterMenuOptions(safeFile.file)
 
         collectLatestLifecycleFlow(fileDetailsViewModel.menuOptions) { menuOptions ->
+            latestMenuOptions = menuOptions
             val hasWritePermission = safeFile.file.hasWritePermission
-            menu.filterMenuOptions(menuOptions, hasWritePermission)
+            menu.applyPreviewFileActions(
+                menuOptions = menuOptions,
+                hasWritePermission = hasWritePermission,
+                openInWebProviders = fileDetailsViewModel.appRegistryMimeType.value?.appProviders.orEmpty(),
+            )
         }
 
         menu.findItem(R.id.action_search)?.apply {
             isVisible = false
             isEnabled = false
         }
-
-        val appRegistryProviders = fileDetailsViewModel.appRegistryMimeType.value?.appProviders
-        openInWebProviders = addOpenInWebMenuOptions(menu, openInWebProviders, appRegistryProviders)
-
-        setRolesAccessibilityToMenuItems(menu)
-    }
-
-    private fun setRolesAccessibilityToMenuItems(menu: Menu) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val roleAccessibilityDescription = getString(R.string.button_role_accessibility)
-            menu.findItem(R.id.action_rename_file)?.contentDescription = "${getString(R.string.common_rename)} $roleAccessibilityDescription"
-            menu.findItem(R.id.action_remove_file)?.contentDescription = "${getString(R.string.common_remove)} $roleAccessibilityDescription"
-        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_more_options) {
+            showFileActionsMoreBottomSheet()
+            return true
+        }
+        return onFileActionChosen(item.itemId)
+    }
+
+    private fun showFileActionsMoreBottomSheet() {
+        val safeFile = fileDetailsViewModel.getCurrentFile() ?: return
+        FileListSelectionMoreBottomSheetHelper.showForPreview(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = safeFile.file.hasWritePermission,
+            openInWebProviders = fileDetailsViewModel.appRegistryMimeType.value?.appProviders.orEmpty(),
+            onAction = { menuId -> onFileActionChosen(menuId) },
+            onOpenInWeb = { providerName ->
+                val remoteId = safeFile.file.remoteId ?: return@showForPreview
+                fileDetailsViewModel.openInWeb(remoteId, providerName)
+                fileOperationsViewModel.setLastUsageFile(safeFile.file)
+            },
+        )
+    }
+
+    private fun onFileActionChosen(itemId: Int): Boolean {
         val safeFile = fileDetailsViewModel.getCurrentFile() ?: return false
 
-        // Let's match the ones that are dynamic first.
-        openInWebProviders.forEach { (openInWebProviderName, menuItemId) ->
-            if (menuItemId == item.itemId) {
-                fileDetailsViewModel.openInWeb(safeFile.file.remoteId!!, openInWebProviderName)
-                fileOperationsViewModel.setLastUsageFile(safeFile.file)
-                return true
-            }
-        }
-
-        return when (item.itemId) {
+        return when (itemId) {
             R.id.action_share_file -> {
                 mContainerActivity.fileOperationsHelper.showShareFile(safeFile.file)
                 true
@@ -342,9 +349,7 @@ class FileDetailsFragment : FileFragment() {
                 true
             }
 
-            else -> {
-                super.onOptionsItemSelected(item)
-            }
+            else -> false
         }
     }
 

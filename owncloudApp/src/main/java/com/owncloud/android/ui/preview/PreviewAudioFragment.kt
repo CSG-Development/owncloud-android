@@ -34,7 +34,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.view.LayoutInflater
@@ -45,13 +44,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import com.google.android.material.snackbar.Snackbar
 import com.owncloud.android.R
+import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
+import com.owncloud.android.extensions.applyPreviewFileActions
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
-import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.media.MediaControlView
 import com.owncloud.android.media.MediaService
 import com.owncloud.android.media.MediaServiceBinder
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -88,6 +89,7 @@ class PreviewAudioFragment : FileFragment() {
     private var mediaController: MediaControlView? = null
     private var mediaServiceConnection: MediaServiceConnection? = null
     private var autoplay = true
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
 
     private val previewAudioViewModel by viewModel<PreviewAudioViewModel> {
         parametersOf(requireArguments().getParcelable(EXTRA_FILE))
@@ -247,30 +249,37 @@ class PreviewAudioFragment : FileFragment() {
         previewAudioViewModel.filterMenuOptions(safeFile, accountName)
 
         collectLatestLifecycleFlow(previewAudioViewModel.menuOptions) { menuOptions ->
+            latestMenuOptions = menuOptions
             val hasWritePermission = safeFile.hasWritePermission
-            menu.filterMenuOptions(menuOptions, hasWritePermission)
+            menu.applyPreviewFileActions(menuOptions, hasWritePermission)
         }
 
         menu.findItem(R.id.action_search)?.apply {
             isVisible = false
             isEnabled = false
         }
-
-        setRolesAccessibilityToMenuItems(menu)
     }
 
-    private fun setRolesAccessibilityToMenuItems(menu: Menu) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            menu.findItem(R.id.action_see_details)?.contentDescription =
-                "${getString(R.string.actionbar_see_details)} ${getString(R.string.button_role_accessibility)}"
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_more_options) {
+            showFileActionsMoreBottomSheet()
+            return true
         }
+        return onFileActionChosen(item.itemId)
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
+    private fun showFileActionsMoreBottomSheet() {
+        val safeFile = file ?: return
+        FileListSelectionMoreBottomSheetHelper.showForPreview(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = safeFile.hasWritePermission,
+            onAction = { menuId -> onFileActionChosen(menuId) },
+        )
+    }
+
+    private fun onFileActionChosen(itemId: Int): Boolean =
+        when (itemId) {
             R.id.action_share_file -> {
                 mContainerActivity.fileOperationsHelper.showShareFile(file)
                 true
@@ -319,9 +328,7 @@ class PreviewAudioFragment : FileFragment() {
                 true
             }
 
-            else -> {
-                super.onOptionsItemSelected(item)
-            }
+            else -> false
         }
 
     private fun seeDetails() {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="file_action_select_all" type="id" />
+    <item name="action_select_inverse" type="id" />
+    <item name="action_open_file_with" type="id" />
+    <item name="action_rename_file" type="id" />
+    <item name="action_move" type="id" />
+    <item name="action_copy" type="id" />
+    <item name="action_compress" type="id" />
+    <item name="action_extract" type="id" />
+    <item name="action_send_file" type="id" />
+    <item name="action_set_available_offline" type="id" />
+    <item name="action_unset_available_offline" type="id" />
+    <item name="action_set_favorite" type="id" />
+    <item name="action_unset_favorite" type="id" />
+    <item name="action_manage_tags" type="id" />
+    <item name="action_see_details" type="id" />
+    <item name="action_remove_file" type="id" />
+</resources>
