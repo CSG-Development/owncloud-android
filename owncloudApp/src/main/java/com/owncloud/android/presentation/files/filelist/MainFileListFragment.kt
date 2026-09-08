@@ -71,6 +71,7 @@ import com.owncloud.android.R
 import com.owncloud.android.databinding.MainFileListFragmentBinding
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.appregistry.model.AppRegistryMimeType
+import com.owncloud.android.domain.appregistry.model.AppRegistryProvider
 import com.owncloud.android.domain.exceptions.InstanceNotConfiguredException
 import com.owncloud.android.domain.exceptions.TooEarlyException
 import com.owncloud.android.domain.files.model.FileListOption
@@ -85,7 +86,6 @@ import com.owncloud.android.domain.spaces.model.OCSpace
 import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
 import com.owncloud.android.domain.utils.Event
-import com.owncloud.android.extensions.addOpenInWebMenuOptions
 import com.owncloud.android.extensions.avoidScreenshotsIfNeeded
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
@@ -102,6 +102,7 @@ import com.owncloud.android.extensions.toStringResId
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.BottomSheetFragmentItemView
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.common.compose.HomeCloudAlertDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
@@ -187,7 +188,8 @@ class MainFileListFragment : FileFragment(),
     private var currentDefaultApplication: String? = null
     private var browserOpened = false
 
-    private var openInWebProviders: Map<String, Int> = hashMapOf()
+    private var selectionAppRegistryProviders: List<AppRegistryProvider> = emptyList()
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
 
     private var isMultiPersonal = false
 
@@ -212,6 +214,10 @@ class MainFileListFragment : FileFragment(),
             override fun onActionItemClicked(itemId: Int?): Boolean =
                 onFileActionChosen(itemId)
 
+            override fun onMoreOptionsClicked() {
+                showSelectionMoreBottomSheet()
+            }
+
             override fun onPrepareMultiSelect(checkedItems: List<OCFileWithSyncInfo>, menu: Menu?) {
                 val checkedFiles = checkedItems.map { it.file }
                 val displaySelectAll = checkedItems.size != selectableFileIds().size
@@ -228,12 +234,7 @@ class MainFileListFragment : FileFragment(),
                         isMultiselection = true,
                     )
                 } else {
-                    menu?.let {
-                        openInWebProviders.forEach { (_, menuItemId) ->
-                            it.removeItem(menuItemId)
-                        }
-                        openInWebProviders = emptyMap()
-                    }
+                    selectionAppRegistryProviders = emptyList()
                 }
                 setRolesAccessibilityToMenuItems()
             }
@@ -406,30 +407,32 @@ class MainFileListFragment : FileFragment(),
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val roleAccessibilityDescription = getString(R.string.button_role_accessibility)
             actionModeController.menu?.apply {
-                findItem(R.id.file_action_select_all)?.contentDescription =
-                    "${getString(R.string.actionbar_select_all)} $roleAccessibilityDescription"
-                findItem(R.id.action_select_inverse)?.contentDescription =
-                    "${getString(R.string.actionbar_select_inverse)} $roleAccessibilityDescription"
-                findItem(R.id.action_open_file_with)?.contentDescription =
-                    "${getString(R.string.actionbar_open_with)} $roleAccessibilityDescription"
-                findItem(R.id.action_rename_file)?.contentDescription =
-                    "${getString(R.string.common_rename)} $roleAccessibilityDescription"
-                findItem(R.id.action_move)?.contentDescription =
-                    "${getString(R.string.actionbar_move)} $roleAccessibilityDescription"
-                findItem(R.id.action_copy)?.contentDescription =
-                    "${getString(R.string.copy)} $roleAccessibilityDescription"
-                findItem(R.id.action_send_file)?.contentDescription =
-                    "${getString(R.string.actionbar_send_file)} $roleAccessibilityDescription"
-                findItem(R.id.action_set_available_offline)?.contentDescription =
-                    "${getString(R.string.set_available_offline)} $roleAccessibilityDescription"
-                findItem(R.id.action_unset_available_offline)?.contentDescription =
-                    "${getString(R.string.unset_available_offline)} $roleAccessibilityDescription"
-                findItem(R.id.action_see_details)?.contentDescription =
-                    "${getString(R.string.actionbar_see_details)} $roleAccessibilityDescription"
-                findItem(R.id.action_remove_file)?.contentDescription =
-                    "${getString(R.string.common_remove)} $roleAccessibilityDescription"
+                findItem(R.id.action_share_file)?.contentDescription =
+                    "${getString(R.string.action_share)} $roleAccessibilityDescription"
+                findItem(R.id.action_sync_file)?.contentDescription =
+                    "${getString(R.string.filedetails_sync_file)} $roleAccessibilityDescription"
+                findItem(R.id.action_more_options)?.contentDescription =
+                    "${getString(R.string.homecloud_filelist_more_options)} $roleAccessibilityDescription"
             }
         }
+    }
+
+    private fun showSelectionMoreBottomSheet() {
+        val checkedFiles = actionModeController.checkedFiles
+        val hasWritePermission = checkedFiles.size == 1 && checkedFiles.first().hasWritePermission
+        FileListSelectionMoreBottomSheetHelper.show(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = hasWritePermission,
+            openInWebProviders = if (checkedFiles.size == 1) selectionAppRegistryProviders else emptyList(),
+            onAction = { onFileActionChosen(it) },
+            onOpenInWeb = { providerName ->
+                val file = checkedFiles.firstOrNull() ?: return@show
+                val remoteId = file.remoteId ?: return@show
+                mainFileListViewModel.openInWeb(remoteId, providerName)
+                fileOperationsViewModel.setLastUsageFile(file)
+            },
+        )
     }
 
     private fun refreshFileListFromPull() {
@@ -665,6 +668,7 @@ class MainFileListFragment : FileFragment(),
 
     private fun observeMenuOptions() {
         collectLatestLifecycleFlow(mainFileListViewModel.menuOptions) { menuOptions ->
+            latestMenuOptions = menuOptions
             val checkedFiles = actionModeController.checkedFiles
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
@@ -677,10 +681,7 @@ class MainFileListFragment : FileFragment(),
 
     private fun observeAppRegistryMimeType() {
         collectLatestLifecycleFlow(mainFileListViewModel.appRegistryMimeType) { appRegistryMimeType ->
-            val appProviders = appRegistryMimeType?.appProviders
-            actionModeController.menu?.let {
-                openInWebProviders = addOpenInWebMenuOptions(it, openInWebProviders, appProviders)
-            }
+            selectionAppRegistryProviders = appRegistryMimeType?.appProviders.orEmpty()
         }
     }
 
@@ -1487,13 +1488,6 @@ class MainFileListFragment : FileFragment(),
     }
 
     private fun onSingleFileActionChosen(menuId: Int?, singleFile: OCFile): Boolean {
-        openInWebProviders.forEach { (openInWebProviderName, menuItemId) ->
-            if (menuItemId == menuId) {
-                mainFileListViewModel.openInWeb(singleFile.remoteId!!, openInWebProviderName)
-                return true
-            }
-        }
-
         return when (menuId) {
             R.id.action_share_file -> {
                 fileActions?.onShareFileClicked(singleFile)

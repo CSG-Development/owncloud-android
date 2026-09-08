@@ -27,6 +27,7 @@ import android.content.Context;
 import android.os.Build;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -159,10 +160,18 @@ public abstract class FileFragment extends Fragment {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             String roleAccessibilityDescription = getString(R.string.button_role_accessibility);
-            menu.findItem(R.id.action_open_file_with).setContentDescription(getString(R.string.actionbar_open_with) + " " + roleAccessibilityDescription);
-            menu.findItem(R.id.action_send_file).setContentDescription(getString(R.string.actionbar_send_file) + " " + roleAccessibilityDescription);
-            menu.findItem(R.id.action_set_available_offline).setContentDescription(getString(R.string.set_available_offline) + " " + roleAccessibilityDescription);
-            menu.findItem(R.id.action_unset_available_offline).setContentDescription(getString(R.string.set_available_offline) + " " + roleAccessibilityDescription);
+            setMenuItemContentDescription(menu, R.id.action_share_file, getString(R.string.action_share), roleAccessibilityDescription);
+            setMenuItemContentDescription(menu, R.id.action_download_file, getString(R.string.filedetails_download), roleAccessibilityDescription);
+            setMenuItemContentDescription(menu, R.id.action_sync_file, getString(R.string.filedetails_sync_file), roleAccessibilityDescription);
+            setMenuItemContentDescription(menu, R.id.action_cancel_sync, getString(R.string.common_cancel_sync), roleAccessibilityDescription);
+            setMenuItemContentDescription(menu, R.id.action_more_options, getString(R.string.homecloud_filelist_more_options), roleAccessibilityDescription);
+        }
+    }
+
+    private void setMenuItemContentDescription(@NonNull Menu menu, int itemId, @NonNull String title, @NonNull String roleAccessibilityDescription) {
+        MenuItem item = menu.findItem(itemId);
+        if (item != null) {
+            item.setContentDescription(title + " " + roleAccessibilityDescription);
         }
     }
 }

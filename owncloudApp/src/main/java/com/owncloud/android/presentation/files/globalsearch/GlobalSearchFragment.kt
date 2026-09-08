@@ -13,6 +13,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.owncloud.android.R
 import com.owncloud.android.databinding.GlobalSearchFragmentBinding
+import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.isVirtualFile
@@ -24,6 +25,7 @@ import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
 import com.owncloud.android.presentation.files.SortOrder
@@ -56,6 +58,8 @@ class GlobalSearchFragment : Fragment(),
     private val globalSearchViewModel: GlobalSearchViewModel by viewModel()
     private val fileOperationsViewModel by activityViewModel<FileOperationsViewModel>()
 
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
+
     private val capabilityViewModel: CapabilityViewModel by activityViewModel {
         parametersOf(
             AccountUtils.getCurrentOwnCloudAccount(requireContext())?.name
@@ -76,6 +80,10 @@ class GlobalSearchFragment : Fragment(),
 
             override fun onActionItemClicked(itemId: Int?): Boolean =
                 onFileActionChosen(itemId)
+
+            override fun onMoreOptionsClicked() {
+                showSelectionMoreBottomSheet()
+            }
 
             override fun onPrepareMultiSelect(checkedItems: List<OCFileWithSyncInfo>, menu: Menu?) {
                 val displaySelectAll =
@@ -330,6 +338,7 @@ class GlobalSearchFragment : Fragment(),
 
     private fun subscribeToViewModels() {
         collectLatestLifecycleFlow(globalSearchViewModel.menuOptions) { menuOptions ->
+            latestMenuOptions = menuOptions
             val checkedFiles = actionModeController.checkedFiles
             val hasWritePermission = if (checkedFiles.size == 1) {
                 checkedFiles.first().hasWritePermission
@@ -421,6 +430,17 @@ class GlobalSearchFragment : Fragment(),
     private fun onComposeThreeDotClick(fileId: Long) {
         val file = findFileWithSyncInfo(fileId)?.file ?: return
         (requireActivity() as? MainFileListFragment.FileActions)?.showDetails(file)
+    }
+
+    private fun showSelectionMoreBottomSheet() {
+        val checkedFiles = actionModeController.checkedFiles
+        val hasWritePermission = checkedFiles.size == 1 && checkedFiles.first().hasWritePermission
+        FileListSelectionMoreBottomSheetHelper.show(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = hasWritePermission,
+            onAction = { onFileActionChosen(it) },
+        )
     }
 
     private fun onFileActionChosen(menuId: Int?): Boolean {
