@@ -7,21 +7,31 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.Velocity
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import java.util.UUID
+import kotlin.math.roundToInt
 
 private val NoArchiveActivityFlow: StateFlow<ArchiveActivityUiModel?> = MutableStateFlow(null)
 
@@ -46,6 +56,7 @@ fun FileListHost(
     onVirtualCancelUpload: (fileId: Long) -> Unit = {},
     onRefresh: (() -> Unit)? = null,
     onSelectionBecameEmpty: (() -> Unit)? = null,
+    scrollSink: LandscapeBarsScrollSink? = null,
 ) {
     val composeState by uiStateFlow.collectAsState()
     val archiveActivity by archiveActivityFlow.collectAsState()
@@ -82,6 +93,24 @@ fun FileListHost(
         val onVirtualCancelUploadState = rememberUpdatedState(onVirtualCancelUpload)
         val onRefreshState = rememberUpdatedState(onRefresh)
         val onArchiveActivityCancelState = rememberUpdatedState(onArchiveActivityCancel)
+        val scrollSinkState = rememberUpdatedState(scrollSink)
+        val nestedScrollConnection = rememberLandscapeBarsNestedScrollConnection(scrollSinkState)
+
+        LaunchedEffect(scrollSink) {
+            if (scrollSink == null) return@LaunchedEffect
+            snapshotFlow {
+                val scrolling = listState.isScrollInProgress || gridState.isScrollInProgress
+                val atTop = listState.firstVisibleItemIndex == 0 &&
+                    listState.firstVisibleItemScrollOffset == 0 &&
+                    gridState.firstVisibleItemIndex == 0 &&
+                    gridState.firstVisibleItemScrollOffset == 0
+                scrolling to atTop
+            }.distinctUntilChanged().collect { (scrolling, atTop) ->
+                if (!scrolling) {
+                    scrollSinkState.value?.onLandscapeContentScrollIdle(atTop)
+                }
+            }
+        }
 
         val thumbnail: @Composable (FileListItemUiModel) -> Bitmap? = remember {
             { item ->
@@ -105,7 +134,9 @@ fun FileListHost(
             onRefresh = onRefreshState.value?.let { refresh -> { refresh() } },
             archiveActivity = archiveActivity,
             onArchiveActivityCancel = { workId -> onArchiveActivityCancelState.value(workId) },
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .then(if (scrollSink != null) Modifier.nestedScroll(nestedScrollConnection) else Modifier),
             thumbnail = thumbnail,
             onItemClick = { onItemClickState.value(it.fileId) },
             onItemLongClick = { onItemLongClickState.value(it.fileId) },
@@ -132,6 +163,7 @@ fun ComposeView.setFileListContent(
     scrollToTopEvents: Flow<Unit> = emptyFlow(),
     archiveActivityFlow: StateFlow<ArchiveActivityUiModel?> = NoArchiveActivityFlow,
     onArchiveActivityCancel: (UUID) -> Unit = {},
+    scrollSink: LandscapeBarsScrollSink? = null,
 ) {
     filterTouchesWhenObscured =
         PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(context)
@@ -150,6 +182,36 @@ fun ComposeView.setFileListContent(
             onVirtualCancelUpload = onVirtualCancelUpload,
             onRefresh = onRefresh,
             onSelectionBecameEmpty = onSelectionBecameEmpty,
+            scrollSink = scrollSink,
         )
+    }
+}
+
+@Composable
+private fun rememberLandscapeBarsNestedScrollConnection(
+    scrollSinkState: State<LandscapeBarsScrollSink?>,
+): NestedScrollConnection {
+    return remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                val dy = -consumed.y.roundToInt()
+                if (dy != 0) {
+                    scrollSinkState.value?.onLandscapeContentScroll(
+                        dy = dy,
+                        isUserDragging = source == NestedScrollSource.UserInput,
+                    )
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                scrollSinkState.value?.onLandscapeContentFling()
+                return Velocity.Zero
+            }
+        }
     }
 }

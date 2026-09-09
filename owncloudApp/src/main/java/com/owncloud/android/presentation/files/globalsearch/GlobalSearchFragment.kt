@@ -39,10 +39,12 @@ import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
+import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.ui.activity.BaseActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
+import com.owncloud.android.ui.skipWhen
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -158,6 +160,8 @@ class GlobalSearchFragment : Fragment(),
             onItemLongClick = ::onComposeItemLongClick,
             onThreeDotClick = ::onComposeThreeDotClick,
             onSelectionBecameEmpty = { actionModeController.finish() },
+            scrollSink = (requireActivity() as? LandscapeBarsScrollSink)
+                ?.skipWhen { actionModeController.isActive },
         )
     }
 
