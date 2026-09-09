@@ -129,11 +129,13 @@ import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.presentation.tags.TagsViewModel
 import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
+import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.ui.activity.DrawerActivity
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
 import com.owncloud.android.ui.fragment.FileFragment
+import com.owncloud.android.ui.skipWhen
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
@@ -381,6 +383,8 @@ class MainFileListFragment : FileFragment(),
             onVirtualCancelUpload = ::onVirtualCancelUpload,
             onRefresh = ::refreshFileListFromPull,
             onSelectionBecameEmpty = { actionModeController.finish() },
+            scrollSink = (requireActivity() as? LandscapeBarsScrollSink)
+                ?.skipWhen { actionModeController.isActive },
         )
     }
 
