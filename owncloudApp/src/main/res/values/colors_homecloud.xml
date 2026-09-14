@@ -13,6 +13,7 @@
     <color name="homecloud_error">#F44336</color>
     <color name="homecloud_error_transparent">#1FF44336</color>
     <color name="homecloud_input_stroke_focused">@color/homecloud_cta</color>
+    <color name="homecloud_input_hint_focused">@color/homecloud_link</color>
     <color name="homecloud_input_stroke_nonfocused">@color/homecloud_border_gray</color>
     <color name="homecloud_input_placeholder">#7A7A7A</color>
     <color name="homecloud_drawer_header_background">@color/white</color>
@@ -40,6 +41,8 @@
     <color name="homecloud_button_secondary_stroke">@color/homecloud_link</color>
     <color name="homecloud_button_secondary_stroke_disabled">@color/homecloud_content_grey</color>
     <color name="homecloud_button_borderless_text">@color/homecloud_link</color>
+
+    <color name="homecloud_card_background">@color/white</color>
 
     <color name="homecloud_dialog_background">@color/white</color>
     <color name="homecloud_dialog_title_background">#1FFF9800</color>

@@ -22,6 +22,7 @@ class FileListActionModeController(
         fun getCheckedItems(): List<OCFileWithSyncInfo>
         fun clearSelection()
         fun onActionItemClicked(itemId: Int?): Boolean
+        fun onMoreOptionsClicked()
         /**
          * After title/checkedFiles are updated. Host should filter menu options
          * and apply any screen-specific prepare logic.
@@ -51,7 +52,7 @@ class FileListActionModeController(
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
             actionMode = mode
             val activity = host.requireAppCompatActivity()
-            activity.menuInflater.inflate(R.menu.file_actions_menu, menu)
+            activity.menuInflater.inflate(R.menu.file_list_action_mode_menu, menu)
             this@FileListActionModeController.menu = menu
             mode?.invalidate()
             statusBarColorBeforeMode = activity.window.statusBarColor
@@ -69,11 +70,17 @@ class FileListActionModeController(
             )
             checkedFiles = checkedItems.map { it.file }
             host.onPrepareMultiSelect(checkedItems, menu)
+            menu?.findItem(R.id.action_more_options)?.isVisible = true
             return true
         }
 
-        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean =
-            host.onActionItemClicked(item?.itemId)
+        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+            if (item?.itemId == R.id.action_more_options) {
+                host.onMoreOptionsClicked()
+                return true
+            }
+            return host.onActionItemClicked(item?.itemId)
+        }
 
         override fun onDestroyActionMode(mode: ActionMode?) {
             actionMode = null

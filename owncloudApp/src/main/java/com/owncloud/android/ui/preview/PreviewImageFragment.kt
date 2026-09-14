@@ -31,7 +31,6 @@ import android.accounts.Account
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -50,12 +49,14 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.android.material.snackbar.Snackbar
 import com.owncloud.android.R
 import com.owncloud.android.databinding.PreviewImageFragmentBinding
+import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.MIME_SVG
 import com.owncloud.android.domain.files.model.OCFile
+import com.owncloud.android.extensions.applyPreviewFileActions
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
-import com.owncloud.android.extensions.filterMenuOptions
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -88,6 +89,7 @@ class PreviewImageFragment : FileFragment() {
     private val bitmap: Bitmap? = null
     private var account: Account? = null
     private var ignoreFirstSavedState = false
+    private var latestMenuOptions: List<FileMenuOption> = emptyList()
 
     private var _binding: PreviewImageFragmentBinding? = null
     private val binding get() = _binding!!
@@ -200,26 +202,33 @@ class PreviewImageFragment : FileFragment() {
             previewImageViewModel.filterMenuOptions(it, accountName)
 
             collectLatestLifecycleFlow(previewImageViewModel.menuOptions) { menuOptions ->
+                latestMenuOptions = menuOptions
                 val hasWritePermission = it.hasWritePermission
-                menu.filterMenuOptions(menuOptions, hasWritePermission)
+                menu.applyPreviewFileActions(menuOptions, hasWritePermission)
             }
         }
-
-        setRolesAccessibilityToMenuItems(menu)
     }
 
-    private fun setRolesAccessibilityToMenuItems(menu: Menu) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            menu.findItem(R.id.action_see_details)?.contentDescription =
-                "${getString(R.string.actionbar_see_details)} ${getString(R.string.button_role_accessibility)}"
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_more_options) {
+            showFileActionsMoreBottomSheet()
+            return true
         }
+        return onFileActionChosen(item.itemId)
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
+    private fun showFileActionsMoreBottomSheet() {
+        val safeFile = file ?: return
+        FileListSelectionMoreBottomSheetHelper.showForPreview(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = safeFile.hasWritePermission,
+            onAction = { menuId -> onFileActionChosen(menuId) },
+        )
+    }
+
+    private fun onFileActionChosen(itemId: Int): Boolean =
+        when (itemId) {
             R.id.action_share_file -> {
                 mContainerActivity.fileOperationsHelper.showShareFile(file)
                 true
@@ -288,9 +297,7 @@ class PreviewImageFragment : FileFragment() {
                 true
             }
 
-            else -> {
-                super.onOptionsItemSelected(item)
-            }
+            else -> false
         }
 
     private fun seeDetails() {

@@ -51,6 +51,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -122,6 +123,8 @@ import com.owncloud.android.presentation.transfers.TransferListFragment
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.providers.WorkManagerProvider
 import com.owncloud.android.syncadapter.FileSyncAdapter
+import com.owncloud.android.ui.LandscapeBarsController
+import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.ui.dialog.FileAlreadyExistsDialog
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.ui.fragment.TaskRetainerFragment
@@ -156,7 +159,8 @@ open class FileDisplayActivity : FileActivity(),
     FileFragment.ContainerActivity,
     SecurityEnforced,
     MainFileListFragment.FileActions,
-    MainFileListFragment.UploadActions {
+    MainFileListFragment.UploadActions,
+    LandscapeBarsScrollSink {
 
     private val job = Job()
     override val coroutineContext: CoroutineContext
@@ -218,6 +222,7 @@ open class FileDisplayActivity : FileActivity(),
         }
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var landscapeBarsController: LandscapeBarsController
 
     private var isLightUser = false
     private var isMultiPersonal = false
@@ -272,6 +277,10 @@ open class FileDisplayActivity : FileActivity(),
         val view = binding.root
         setContentView(view)
 
+        onBackPressedDispatcher.addCallback(this) {
+            onBackPressed()
+        }
+
         // setup toolbar
         setupStandardToolbar(
             title = getAppName(),
@@ -289,6 +298,7 @@ open class FileDisplayActivity : FileActivity(),
 
         leftFragmentContainer = findViewById(R.id.left_fragment_container)
         rightFragmentContainer = findViewById(R.id.right_fragment_container)
+        setupLandscapeBarsController()
 
         // Init Fragment without UI to retain AsyncTask across configuration changes
         val fm = supportFragmentManager
@@ -310,9 +320,10 @@ open class FileDisplayActivity : FileActivity(),
             AppRater.appLaunched(this, packageName)
         }
 
-        if ((isLandscapeMode && !isTablet) || secondFragment != null) {
-            // Hide both bars in smartphone landscape mode
+        if (secondFragment != null) {
             showBottomNavBar(false)
+        } else {
+            landscapeBarsController.enableAndShow()
         }
         setGlobalSearchBarVisible(fileListOption == FileListOption.GLOBAL_SEARCH && secondFragment == null)
 
@@ -648,10 +659,26 @@ open class FileDisplayActivity : FileActivity(),
         updateFragmentsVisibility(true)
     }
 
+    private fun setupLandscapeBarsController() {
+        val coordinator = binding.navCoordinatorLayout.root
+        val listLayout = binding.navCoordinatorLayout.listLayout?.root ?: return
+        landscapeBarsController = LandscapeBarsController(
+            parent = coordinator,
+            topBar = binding.navCoordinatorLayout.appBarLayout,
+            bottomBar = binding.bottomNavView ?: binding.navCoordinatorLayout.bottomNavView,
+            content = listLayout,
+            isLandscapePhone = isLandscapeMode && !isTablet,
+        )
+    }
+
     private fun showBottomNavBar(show: Boolean) {
-        // Do not show bottom bar in smartphone landscape mode
         val bottomNavView = binding.bottomNavView ?: binding.navCoordinatorLayout.bottomNavView
-        bottomNavView?.isVisible = show && (!isLandscapeMode || isTablet)
+        bottomNavView?.isVisible = show
+        if (show) {
+            landscapeBarsController.enableAndShow()
+        } else {
+            landscapeBarsController.disableAndReset()
+        }
     }
 
     /**
@@ -2201,6 +2228,18 @@ open class FileDisplayActivity : FileActivity(),
 
     override fun setBottomBarVisibility(isVisible: Boolean) {
         showBottomNavBar(isVisible)
+    }
+
+    override fun onLandscapeContentScroll(dy: Int, isUserDragging: Boolean) {
+        landscapeBarsController.onScroll(dy, isUserDragging)
+    }
+
+    override fun onLandscapeContentFling() {
+        landscapeBarsController.onFling()
+    }
+
+    override fun onLandscapeContentScrollIdle(isAtTop: Boolean) {
+        landscapeBarsController.onScrollIdle(isAtTop)
     }
 
     override fun uploadFromCamera() {

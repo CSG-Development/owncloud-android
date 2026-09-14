@@ -55,7 +55,7 @@ fun ArchiveActivityCard(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(CARD_CORNER_RADIUS),
-        color = colorResource(R.color.homecloud_dialog_background),
+        color = colorResource(R.color.homecloud_card_background),
         shadowElevation = CARD_ELEVATION,
     ) {
         if (activity.operationCount >= 2) {

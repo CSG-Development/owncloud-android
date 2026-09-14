@@ -28,6 +28,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.addCallback
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
 import com.owncloud.android.R
@@ -64,6 +65,10 @@ open class FolderPickerActivity : FileActivity(),
 
         binding = FilesFolderPickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        onBackPressedDispatcher.addCallback(this) {
+            onBackPressed()
+        }
 
         // Allow or disallow touches with other visible windows
         binding.filesFolderPickerLayout.filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(this)

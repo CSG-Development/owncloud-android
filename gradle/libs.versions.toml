@@ -20,7 +20,7 @@ androidxTest = "1.4.0"
 androidxTestExt = "1.1.5"
 androidxTestMonitor = "1.6.1"
 androidxTestUiAutomator ="2.2.0"
-androidxWork = "2.8.1"
+androidxWork = "2.10.5"
 coil = "2.2.2"
 # Compose Compiler 1.5.5 matches Kotlin 1.9.20 (see Compose-Kotlin compatibility map).
 # BOM 2024.09.00 is the first stable BOM with Material3 PullToRefreshBox (material3 1.3.0).
@@ -50,6 +50,7 @@ mockk = "1.13.3"
 moshi = "1.15.0"
 okhttp = "4.9.2"
 patternlockview = "a90b0d4bf0"
+pdfboxAndroid = "2.0.27.0"
 retrofit = "2.9.0"
 photoView = "2.3.0"
 playServicesMlkitDocumentScanner = "16.0.0"
@@ -141,6 +142,7 @@ patternlockview = { group = "com.github.aritraroy.PatternLockView", name = "patt
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoView" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
 stetho = { group = "com.facebook.stetho", name = "stetho", version.ref = "stetho" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }

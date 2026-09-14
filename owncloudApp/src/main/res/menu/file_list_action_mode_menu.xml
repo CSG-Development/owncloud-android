@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_share_file"
+        android:icon="@drawable/ic_share_generic_white"
+        android:orderInCategory="1"
+        android:title="@string/action_share"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_sync_file"
+        android:icon="@drawable/ic_action_refresh"
+        android:orderInCategory="2"
+        android:title="@string/filedetails_sync_file"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_more_options"
+        android:icon="@drawable/ic_three_dot_menu"
+        android:orderInCategory="3"
+        android:title="@string/homecloud_filelist_more_options"
+        app:iconTint="@color/homecloud_toolbar_icon_tint"
+        app:showAsAction="always" />
+
+</menu>

@@ -34,6 +34,7 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.transaction
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -77,6 +78,10 @@ class ShareActivity : FileActivity(), ShareFragmentListener, VerificationCodeDia
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.share_activity)
+
+        onBackPressedDispatcher.addCallback(this) {
+            navigateBack()
+        }
 
         setupStandardToolbar(
             title = null,
@@ -414,13 +419,33 @@ class ShareActivity : FileActivity(), ShareFragmentListener, VerificationCodeDia
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        var retval = true
-        if (item.itemId == android.R.id.home && !supportFragmentManager.popBackStackImmediate()) {
-            finish()
-        } else {
-            retval = super.onOptionsItemSelected(item)
+        if (item.itemId == android.R.id.home) {
+            navigateBack()
+            return true
         }
-        return retval
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun navigateBack() {
+        if (supportFragmentManager.popBackStackImmediate()) {
+            return
+        }
+
+        val searchFragment = supportFragmentManager.findFragmentByTag(TAG_SEARCH_FRAGMENT)
+        val currentFile = file
+        val currentAccount = account
+        if (searchFragment != null && searchFragment.isVisible && currentFile != null && currentAccount != null) {
+            supportFragmentManager.transaction {
+                replace(
+                    R.id.share_fragment_container,
+                    ShareFileFragment.newInstance(currentFile, currentAccount),
+                    TAG_SHARE_FRAGMENT
+                )
+            }
+            return
+        }
+
+        finish()
     }
 
     override fun showLoading() {

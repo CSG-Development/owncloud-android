@@ -1,6 +1,8 @@
 package com.owncloud.android.ui.preview
 
 import android.graphics.Bitmap
+import android.graphics.RectF
+import android.net.Uri
 
 data class PdfPageUiModel(
     val pageIndex: Int,
@@ -41,4 +43,9 @@ data class PdfZoomState(
     val mode: PdfZoomMode = PdfZoomMode.FitWidth,
     val canZoomIn: Boolean = true,
     val canZoomOut: Boolean = true,
+)
+
+data class PdfPageLink(
+    val uri: Uri,
+    val normalizedBounds: List<RectF>,
 )

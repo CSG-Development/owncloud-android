@@ -1,7 +1,7 @@
 package com.owncloud.android.ui.preview
 
 import android.accounts.Account
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -15,10 +15,12 @@ import com.owncloud.android.R
 import com.owncloud.android.databinding.PreviewPdfFragmentBinding
 import com.owncloud.android.domain.files.model.FileMenuOption
 import com.owncloud.android.domain.files.model.OCFile
+import com.owncloud.android.extensions.applyPreviewFileActions
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
-import com.owncloud.android.extensions.filterMenuOptions
+import com.owncloud.android.extensions.goToUrl
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
+import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
@@ -29,6 +31,8 @@ import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
+import timber.log.Timber
+import java.util.Locale
 
 class PreviewPdfFragment : FileFragment() {
 
@@ -107,6 +111,10 @@ class PreviewPdfFragment : FileFragment() {
             override fun onLoadError() {
                 showPreviewError()
             }
+
+            override fun onExternalLinkClicked(uri: Uri) {
+                openExternalPdfLink(uri)
+            }
         }
 
         setupPageNavigationControls()
@@ -145,8 +153,26 @@ class PreviewPdfFragment : FileFragment() {
         super.onDestroyView()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_more_options) {
+            showFileActionsMoreBottomSheet()
+            return true
+        }
+        return onFileActionChosen(item.itemId)
+    }
+
+    private fun showFileActionsMoreBottomSheet() {
+        val safeFile = file ?: return
+        FileListSelectionMoreBottomSheetHelper.showForPreview(
+            context = requireContext(),
+            menuOptions = latestMenuOptions,
+            hasWritePermission = safeFile.hasWritePermission,
+            onAction = { menuId -> onFileActionChosen(menuId) },
+        )
+    }
+
+    private fun onFileActionChosen(itemId: Int): Boolean =
+        when (itemId) {
             R.id.action_share_file -> {
                 mContainerActivity.fileOperationsHelper.showShareFile(file)
                 true
@@ -218,7 +244,7 @@ class PreviewPdfFragment : FileFragment() {
                 true
             }
 
-            else -> super.onOptionsItemSelected(item)
+            else -> false
         }
 
     override fun onFileMetadataChanged(updatedFile: OCFile?) {
@@ -251,20 +277,11 @@ class PreviewPdfFragment : FileFragment() {
 
     override fun onPrepareOptionsMenu(menu: Menu) {
         requestFilterMenuOptions()
-        menu.filterMenuOptions(latestMenuOptions, file.hasWritePermission)
+        menu.applyPreviewFileActions(latestMenuOptions, file.hasWritePermission)
 
         menu.findItem(R.id.action_search)?.apply {
             isVisible = false
             isEnabled = false
-        }
-
-        setRolesAccessibilityToMenuItems(menu)
-    }
-
-    private fun setRolesAccessibilityToMenuItems(menu: Menu) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            menu.findItem(R.id.action_see_details)?.contentDescription =
-                "${getString(R.string.actionbar_see_details)} ${getString(R.string.button_role_accessibility)}"
         }
     }
 
@@ -392,6 +409,20 @@ class PreviewPdfFragment : FileFragment() {
 
     private fun showPreviewError() {
         Snackbar.make(requireView(), R.string.homecloud_pdf_preview_failed, Snackbar.LENGTH_LONG).show()
+    }
+
+    private fun openExternalPdfLink(uri: Uri) {
+        val scheme = uri.scheme?.lowercase(Locale.US)
+        if (scheme != "http" && scheme != "https") {
+            Timber.w("Ignoring non-http PDF link: %s", uri)
+            return
+        }
+        if (uri.host.isNullOrBlank()) {
+            Timber.w("Ignoring PDF link with empty host: %s", uri)
+            return
+        }
+        Timber.d("Opening PDF link in browser: %s", uri)
+        requireActivity().goToUrl(uri.toString())
     }
 
     private fun openFile() {

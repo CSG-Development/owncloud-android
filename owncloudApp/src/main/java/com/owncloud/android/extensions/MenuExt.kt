@@ -22,7 +22,10 @@ package com.owncloud.android.extensions
 
 import android.view.Menu
 import com.owncloud.android.R
+import com.owncloud.android.domain.appregistry.model.AppRegistryProvider
 import com.owncloud.android.domain.files.model.FileMenuOption
+import com.owncloud.android.presentation.common.compose.PREVIEW_FILE_ACTIONS_TOOLBAR_OPTIONS
+import com.owncloud.android.presentation.common.compose.hasFileActionsSheetRows
 
 fun Menu.filterMenuOptions(
     optionsToShow: List<FileMenuOption>,
@@ -48,4 +51,17 @@ fun Menu.filterMenuOptions(
         }
 
     }
+}
+
+fun Menu.applyPreviewFileActions(
+    menuOptions: List<FileMenuOption>,
+    hasWritePermission: Boolean,
+    openInWebProviders: List<AppRegistryProvider> = emptyList(),
+) {
+    filterMenuOptions(menuOptions, hasWritePermission)
+    findItem(R.id.action_more_options)?.isVisible = hasFileActionsSheetRows(
+        menuOptions = menuOptions,
+        toolbarOptions = PREVIEW_FILE_ACTIONS_TOOLBAR_OPTIONS,
+        openInWebProviders = openInWebProviders,
+    )
 }
