@@ -45,10 +45,7 @@ import kotlin.math.roundToInt
 @Composable
 fun ImageCropRotateScreen(
     imageUri: Uri?,
-    isSaving: Boolean,
-    isDownloading: Boolean,
-    downloadProgress: Int,
-    isImageLoaded: Boolean,
+    uiState: ImageCropRotateUiState,
     errorMessage: String?,
     onErrorDismissed: () -> Unit,
     onCancel: () -> Unit,
@@ -59,7 +56,7 @@ fun ImageCropRotateScreen(
 ) {
     var rotationDegrees by rememberSaveable { mutableIntStateOf(0) }
     val cropHandle = remember { CropImageViewHandle() }
-    val controlsEnabled = isImageLoaded && !isSaving && !isDownloading
+    val controlsEnabled = uiState is ImageCropRotateUiState.Ready
 
     Column(
         modifier = modifier.windowInsetsPadding(WindowInsets.systemBars),
@@ -75,7 +72,7 @@ fun ImageCropRotateScreen(
                 .fillMaxWidth()
                 .background(Color.Black),
         ) {
-            if (imageUri != null && !isDownloading) {
+            if (imageUri != null && uiState !is ImageCropRotateUiState.Downloading) {
                 ImageCropRotateCropHost(
                     imageUri = imageUri,
                     rotationDegrees = rotationDegrees,
@@ -85,16 +82,16 @@ fun ImageCropRotateScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            if (isDownloading) {
+            if (uiState is ImageCropRotateUiState.Downloading) {
                 ImageCropRotateDownloadProgress(
-                    progressPercent = downloadProgress,
+                    progressPercent = uiState.progress,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .fillMaxWidth()
                         .padding(dimensionResource(R.dimen.standard_margin)),
                 )
             }
-            if (isSaving) {
+            if (uiState is ImageCropRotateUiState.Saving) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                 )

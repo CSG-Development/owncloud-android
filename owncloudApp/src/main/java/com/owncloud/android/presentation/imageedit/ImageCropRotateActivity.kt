@@ -45,15 +45,15 @@ class ImageCropRotateActivity : AppCompatActivity() {
         setContent {
             HomeCloudTheme {
                 val uiState by viewModel.uiState.collectAsState()
-                val imageUri = remember(uiState.localFilePath) {
+                val imageUri = remember(uiState.localFilePath()) {
                     viewModel.getInputUri(this@ImageCropRotateActivity)
                 }
 
-                LaunchedEffect(uiState.outputFile) {
-                    val outputFile = uiState.outputFile ?: return@LaunchedEffect
+                LaunchedEffect(uiState) {
+                    val saved = uiState as? ImageCropRotateUiState.Saved ?: return@LaunchedEffect
                     setResult(
                         RESULT_OK,
-                        Intent().putExtra(EXTRA_OUTPUT_PATH, outputFile.absolutePath),
+                        Intent().putExtra(EXTRA_OUTPUT_PATH, saved.outputFile.absolutePath),
                     )
                     finish()
                 }
@@ -61,10 +61,7 @@ class ImageCropRotateActivity : AppCompatActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     ImageCropRotateScreen(
                         imageUri = imageUri,
-                        isSaving = uiState.isSaving,
-                        isDownloading = uiState.isDownloading,
-                        downloadProgress = uiState.downloadProgress,
-                        isImageLoaded = uiState.isImageLoaded,
+                        uiState = uiState,
                         errorMessage = uiState.errorMessageRes?.let { stringResource(it) },
                         onErrorDismissed = viewModel::consumeError,
                         onCancel = ::onEditCancelled,

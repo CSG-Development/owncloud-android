@@ -34,15 +34,40 @@ import java.util.UUID
 
 internal const val INDETERMINATE_DOWNLOAD_PROGRESS = -1
 
-data class ImageCropRotateUiState(
-    val isSaving: Boolean = false,
-    val isDownloading: Boolean = false,
-    val downloadProgress: Int = INDETERMINATE_DOWNLOAD_PROGRESS,
-    val localFilePath: String? = null,
-    val isImageLoaded: Boolean = false,
-    val errorMessageRes: Int? = null,
-    val outputFile: File? = null,
-)
+sealed interface ImageCropRotateUiState {
+    val errorMessageRes: Int? get() = null
+
+    data class Downloading(
+        val progress: Int = INDETERMINATE_DOWNLOAD_PROGRESS,
+    ) : ImageCropRotateUiState
+
+    data class LoadingImage(
+        val localFilePath: String,
+        override val errorMessageRes: Int? = null,
+    ) : ImageCropRotateUiState
+
+    data class Ready(
+        val localFilePath: String,
+        override val errorMessageRes: Int? = null,
+    ) : ImageCropRotateUiState
+
+    data class Saving(val localFilePath: String) : ImageCropRotateUiState
+
+    data class Saved(val outputFile: File) : ImageCropRotateUiState
+
+    data class Unavailable(
+        override val errorMessageRes: Int? = null,
+    ) : ImageCropRotateUiState
+}
+
+fun ImageCropRotateUiState.localFilePath(): String? = when (this) {
+    is ImageCropRotateUiState.LoadingImage -> localFilePath
+    is ImageCropRotateUiState.Ready -> localFilePath
+    is ImageCropRotateUiState.Saving -> localFilePath
+    is ImageCropRotateUiState.Downloading,
+    is ImageCropRotateUiState.Saved,
+    is ImageCropRotateUiState.Unavailable -> null
+}
 
 class ImageCropRotateViewModel(
     private val contextProvider: ContextProvider,
@@ -57,10 +82,11 @@ class ImageCropRotateViewModel(
     private var ocFile: OCFile = initialFile
 
     private val _uiState = MutableStateFlow(
-        ImageCropRotateUiState(
-            isDownloading = !initialFile.isAvailableLocally,
-            localFilePath = initialFile.storagePath.takeIf { initialFile.isAvailableLocally },
-        )
+        if (initialFile.isAvailableLocally) {
+            ImageCropRotateUiState.LoadingImage(localFilePath = initialFile.storagePath.orEmpty())
+        } else {
+            ImageCropRotateUiState.Downloading()
+        }
     )
     val uiState: StateFlow<ImageCropRotateUiState> = _uiState.asStateFlow()
 
@@ -94,16 +120,30 @@ class ImageCropRotateViewModel(
     }
 
     fun onImageLoaded(success: Boolean) {
-        _uiState.update {
-            it.copy(
-                isImageLoaded = success,
-                errorMessageRes = if (success) null else R.string.homecloud_imageedit_load_error,
-            )
+        _uiState.update { current ->
+            when (current) {
+                is ImageCropRotateUiState.LoadingImage,
+                is ImageCropRotateUiState.Ready -> {
+                    val path = current.localFilePath() ?: return@update current
+                    if (success) {
+                        ImageCropRotateUiState.Ready(localFilePath = path)
+                    } else {
+                        ImageCropRotateUiState.LoadingImage(
+                            localFilePath = path,
+                            errorMessageRes = R.string.homecloud_imageedit_load_error,
+                        )
+                    }
+                }
+                else -> current
+            }
         }
     }
 
     fun onSaveStarted() {
-        _uiState.update { it.copy(isSaving = true, errorMessageRes = null) }
+        _uiState.update { current ->
+            val path = current.localFilePath() ?: return@update current
+            ImageCropRotateUiState.Saving(localFilePath = path)
+        }
     }
 
     fun onSaveCompleted(outputFile: File?, error: Exception?) {
@@ -111,21 +151,34 @@ class ImageCropRotateViewModel(
             Timber.e(error, "Failed to crop and rotate image")
         }
         val savedSuccessfully = error == null && outputFile != null && outputFile.exists() && outputFile.length() > 0
-        _uiState.update {
-            if (savedSuccessfully) {
-                it.copy(isSaving = false, outputFile = outputFile, errorMessageRes = null)
+        _uiState.update { current ->
+            val path = current.localFilePath() ?: return@update current
+            if (savedSuccessfully && outputFile != null) {
+                ImageCropRotateUiState.Saved(outputFile = outputFile)
             } else {
-                it.copy(isSaving = false, errorMessageRes = R.string.homecloud_imageedit_save_error)
+                ImageCropRotateUiState.Ready(
+                    localFilePath = path,
+                    errorMessageRes = R.string.homecloud_imageedit_save_error,
+                )
             }
         }
     }
 
     fun consumeError() {
-        _uiState.update { it.copy(errorMessageRes = null) }
+        _uiState.update { current ->
+            when (current) {
+                is ImageCropRotateUiState.LoadingImage -> current.copy(errorMessageRes = null)
+                is ImageCropRotateUiState.Ready -> current.copy(errorMessageRes = null)
+                is ImageCropRotateUiState.Unavailable -> current.copy(errorMessageRes = null)
+                is ImageCropRotateUiState.Downloading,
+                is ImageCropRotateUiState.Saving,
+                is ImageCropRotateUiState.Saved -> current
+            }
+        }
     }
 
     fun cancelDownloadIfNeeded() {
-        if (!_uiState.value.isDownloading) return
+        if (_uiState.value !is ImageCropRotateUiState.Downloading) return
         viewModelScope.launch {
             withContext(NonCancellable + coroutinesDispatcherProvider.io) {
                 cancelDownloadForFileUseCase(CancelDownloadForFileUseCase.Params(ocFile))
@@ -141,18 +194,13 @@ class ImageCropRotateViewModel(
         }
 
         if (ocFile.isAvailableLocally) {
-            if (isInputValid()) {
-                _uiState.update {
-                    it.copy(isDownloading = false, localFilePath = ocFile.storagePath, errorMessageRes = null)
-                }
+            val localPath = ocFile.storagePath
+            if (isInputValid() && !localPath.isNullOrBlank()) {
+                _uiState.update { ImageCropRotateUiState.LoadingImage(localFilePath = localPath) }
             } else {
                 Timber.w("Cannot edit image, invalid local path: %s", ocFile.storagePath)
                 _uiState.update {
-                    it.copy(
-                        isDownloading = false,
-                        localFilePath = null,
-                        errorMessageRes = R.string.homecloud_imageedit_load_error,
-                    )
+                    ImageCropRotateUiState.Unavailable(errorMessageRes = R.string.homecloud_imageedit_load_error)
                 }
             }
             return
@@ -167,7 +215,7 @@ class ImageCropRotateViewModel(
             return
         }
 
-        _uiState.update { it.copy(isDownloading = true, errorMessageRes = null) }
+        _uiState.update { ImageCropRotateUiState.Downloading() }
         observeDownload(workId)
     }
 
@@ -185,16 +233,14 @@ class ImageCropRotateViewModel(
             .onEach { workInfo ->
                 if (workInfo.state == WorkInfo.State.RUNNING) {
                     val progress = workInfo.progress.getInt(WORKER_KEY_PROGRESS, INDETERMINATE_DOWNLOAD_PROGRESS)
-                    _uiState.update {
-                        it.copy(isDownloading = true, downloadProgress = progress)
-                    }
+                    _uiState.update { ImageCropRotateUiState.Downloading(progress = progress) }
                 }
             }
             .first { it.state.isFinished }
 
         when (finished.state) {
             WorkInfo.State.SUCCEEDED -> onDownloadSucceeded()
-            WorkInfo.State.CANCELLED -> _uiState.update { it.copy(isDownloading = false) }
+            WorkInfo.State.CANCELLED -> _uiState.update { ImageCropRotateUiState.Unavailable() }
             else -> {
                 Timber.w("Image download did not succeed: %s", finished.state)
                 showDownloadError()
@@ -219,23 +265,17 @@ class ImageCropRotateViewModel(
         }
 
         ocFile = refreshed
-        _uiState.update {
-            it.copy(
-                isDownloading = false,
-                downloadProgress = INDETERMINATE_DOWNLOAD_PROGRESS,
-                localFilePath = refreshed.storagePath,
-                errorMessageRes = null,
-            )
+        val localPath = refreshed.storagePath
+        if (localPath.isNullOrBlank()) {
+            showDownloadError()
+            return
         }
+        _uiState.update { ImageCropRotateUiState.LoadingImage(localFilePath = localPath) }
     }
 
     private fun showDownloadError() {
         _uiState.update {
-            it.copy(
-                isDownloading = false,
-                downloadProgress = INDETERMINATE_DOWNLOAD_PROGRESS,
-                errorMessageRes = R.string.homecloud_imageedit_download_error,
-            )
+            ImageCropRotateUiState.Unavailable(errorMessageRes = R.string.homecloud_imageedit_download_error)
         }
     }
 
