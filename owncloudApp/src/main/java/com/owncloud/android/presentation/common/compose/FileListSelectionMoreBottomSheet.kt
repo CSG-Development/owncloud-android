@@ -208,6 +208,7 @@ private fun FileListSelectionMoreBottomSheetPreview() {
             FileListSelectionMoreBottomSheet(
                 menuOptions = listOf(
                     FileMenuOption.OPEN_WITH,
+                    FileMenuOption.CROP_AND_ROTATE,
                     FileMenuOption.DOWNLOAD,
                     FileMenuOption.MOVE,
                     FileMenuOption.COPY,

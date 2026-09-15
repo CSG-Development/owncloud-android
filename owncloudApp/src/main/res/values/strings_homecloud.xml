@@ -208,6 +208,7 @@
     <string name="homecloud_filelist_virtual_file_cancel_upload">Cancel upload</string>
     <string name="homecloud_filelist_compress">Compress</string>
     <string name="homecloud_filelist_extract">Extract</string>
+    <string name="homecloud_filelist_crop_and_rotate">Crop and rotate</string>
     <string name="homecloud_filelist_activity_in_progress_title">Activity in progress</string>
     <plurals name="homecloud_filelist_activity_in_progress_subtitle">
         <item quantity="one">%d file operation in progress</item>

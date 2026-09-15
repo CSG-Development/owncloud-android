@@ -837,6 +837,10 @@ class MainFileListFragment : FileFragment(),
                         fileActions?.openFile(file)
                     }
 
+                    FileMenuOption.CROP_AND_ROTATE -> {
+                        // Stub: crop and rotate is not wired up yet.
+                    }
+
                     FileMenuOption.CANCEL_SYNC -> {
                         fileActions?.cancelFileTransference(arrayListOf(file))
                     }
@@ -1505,6 +1509,10 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                true
+            }
+
             R.id.action_rename_file -> {
                 val dialog = RenameFileDialogFragment.newInstance(singleFile)
                 dialog.show(requireActivity().supportFragmentManager, FRAGMENT_TAG_RENAME_FILE)
@@ -1662,6 +1670,10 @@ class MainFileListFragment : FileFragment(),
                 if (checkedFiles.size == 1) {
                     extractFile(checkedFiles.first())
                 }
+                true
+            }
+
+            R.id.action_crop_and_rotate -> {
                 true
             }
 

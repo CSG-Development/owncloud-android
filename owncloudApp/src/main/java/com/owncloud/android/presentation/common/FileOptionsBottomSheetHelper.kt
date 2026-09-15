@@ -217,6 +217,10 @@ object FileOptionsBottomSheetHelper {
 
             FileMenuOption.OPEN_WITH -> fileActions?.openFile(file)
 
+            FileMenuOption.CROP_AND_ROTATE -> {
+                // Stub: crop and rotate is not wired up yet.
+            }
+
             FileMenuOption.CANCEL_SYNC -> fileActions?.cancelFileTransference(listOf(file))
 
             FileMenuOption.SHARE -> fileActions?.onShareFileClicked(file)

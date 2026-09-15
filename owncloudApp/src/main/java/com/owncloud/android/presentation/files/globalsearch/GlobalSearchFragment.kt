@@ -479,6 +479,10 @@ class GlobalSearchFragment : Fragment(),
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                true
+            }
+
             R.id.action_rename_file -> {
                 val dialog = RenameFileDialogFragment.newInstance(singleFile)
                 dialog.show(requireActivity().supportFragmentManager, RenameFileDialogFragment.FRAGMENT_TAG_RENAME_FILE)

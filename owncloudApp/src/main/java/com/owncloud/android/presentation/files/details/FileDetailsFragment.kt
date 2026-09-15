@@ -301,6 +301,10 @@ class FileDetailsFragment : FileFragment() {
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                true
+            }
+
             R.id.action_remove_file -> {
                 val dialog = RemoveFilesDialogFragment.newInstance(safeFile.file)
                 dialog.show(parentFragmentManager, TAG_REMOVE_FILES_DIALOG_FRAGMENT)

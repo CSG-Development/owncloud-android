@@ -239,6 +239,10 @@ class PreviewImageFragment : FileFragment() {
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                true
+            }
+
             R.id.action_remove_file -> {
                 val dialog = RemoveFilesDialogFragment.newInstance(file)
                 dialog.show(requireFragmentManager(), TAG_REMOVE_FILES_DIALOG_FRAGMENT)
