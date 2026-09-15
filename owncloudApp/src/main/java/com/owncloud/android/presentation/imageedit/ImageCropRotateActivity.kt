@@ -68,6 +68,9 @@ class ImageCropRotateActivity : AppCompatActivity() {
                         onImageLoaded = viewModel::onImageLoaded,
                         onCropComplete = viewModel::onSaveCompleted,
                         onSaveRequested = ::onSaveRequested,
+                        onOverwriteChosen = viewModel::onOverwriteChosen,
+                        onSaveAsCopyChosen = viewModel::onSaveAsCopyChosen,
+                        onConflictDismissed = viewModel::onConflictDismissed,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -85,7 +88,7 @@ class ImageCropRotateActivity : AppCompatActivity() {
         viewModel.onSaveStarted()
         val outputFile = viewModel.createOutputFile()
         val outputUri = viewModel.getOutputUri(this, outputFile)
-        handle.cropToJpeg(outputUri, outputFile)
+        handle.cropToOutput(viewModel.getOutputCompressFormat(), outputUri, outputFile)
     }
 
     companion object {

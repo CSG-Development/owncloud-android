@@ -1,7 +1,9 @@
 package com.owncloud.android.presentation.imageedit
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
@@ -11,12 +13,15 @@ import androidx.work.WorkManager
 import com.owncloud.android.R
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
+import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
 import com.owncloud.android.extensions.getTagsForDownload
 import com.owncloud.android.extensions.getWorkInfoByTags
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.transfers.downloads.CancelDownloadForFileUseCase
 import com.owncloud.android.usecases.transfers.downloads.DownloadFileUseCase
+import com.owncloud.android.usecases.transfers.uploads.UploadFileInConflictUseCase
+import com.owncloud.android.usecases.transfers.uploads.UploadFilesFromSystemUseCase
 import com.owncloud.android.workers.DownloadFileWorker.Companion.WORKER_KEY_PROGRESS
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +58,12 @@ sealed interface ImageCropRotateUiState {
 
     data class Saving(val localFilePath: String) : ImageCropRotateUiState
 
+    data class NameConflict(
+        val localFilePath: String,
+        val existingFileName: String,
+        val tempOutputFile: File,
+    ) : ImageCropRotateUiState
+
     data class Saved(val outputFile: File) : ImageCropRotateUiState
 
     data class Unavailable(
@@ -64,6 +75,7 @@ fun ImageCropRotateUiState.localFilePath(): String? = when (this) {
     is ImageCropRotateUiState.LoadingImage -> localFilePath
     is ImageCropRotateUiState.Ready -> localFilePath
     is ImageCropRotateUiState.Saving -> localFilePath
+    is ImageCropRotateUiState.NameConflict -> localFilePath
     is ImageCropRotateUiState.Downloading,
     is ImageCropRotateUiState.Saved,
     is ImageCropRotateUiState.Unavailable -> null
@@ -72,8 +84,11 @@ fun ImageCropRotateUiState.localFilePath(): String? = when (this) {
 class ImageCropRotateViewModel(
     private val contextProvider: ContextProvider,
     private val getFileByIdUseCase: GetFileByIdUseCase,
+    private val getFileByRemotePathUseCase: GetFileByRemotePathUseCase,
     private val downloadFileUseCase: DownloadFileUseCase,
     private val cancelDownloadForFileUseCase: CancelDownloadForFileUseCase,
+    private val uploadFileInConflictUseCase: UploadFileInConflictUseCase,
+    private val uploadFilesFromSystemUseCase: UploadFilesFromSystemUseCase,
     private val workManager: WorkManager,
     private val coroutinesDispatcherProvider: CoroutinesDispatcherProvider,
     initialFile: OCFile,
@@ -109,12 +124,15 @@ class ImageCropRotateViewModel(
 
     fun getOutputUri(context: Context, outputFile: File): Uri = uriForFile(context, outputFile)
 
+    fun getOutputCompressFormat(): Bitmap.CompressFormat = resolveOutputFormat().compressFormat
+
     fun createOutputFile(): File {
         val dir = File(contextProvider.getContext().cacheDir, OUTPUT_DIR)
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return File(dir, "${UUID.randomUUID()}.jpg").also { file ->
+        val extension = resolveOutputFormat().extension
+        return File(dir, "${UUID.randomUUID()}.$extension").also { file ->
             file.createNewFile()
         }
     }
@@ -151,16 +169,30 @@ class ImageCropRotateViewModel(
             Timber.e(error, "Failed to crop and rotate image")
         }
         val savedSuccessfully = error == null && outputFile != null && outputFile.exists() && outputFile.length() > 0
+        if (!savedSuccessfully || outputFile == null) {
+            showSaveError()
+            return
+        }
+        viewModelScope.launch {
+            persistOrShowConflict(outputFile)
+        }
+    }
+
+    fun onOverwriteChosen() {
+        val conflict = _uiState.value as? ImageCropRotateUiState.NameConflict ?: return
+        enqueueChosenUpload(tempOutputFile = conflict.tempOutputFile, overwrite = true)
+    }
+
+    fun onSaveAsCopyChosen() {
+        val conflict = _uiState.value as? ImageCropRotateUiState.NameConflict ?: return
+        enqueueChosenUpload(tempOutputFile = conflict.tempOutputFile, overwrite = false)
+    }
+
+    fun onConflictDismissed() {
         _uiState.update { current ->
-            val path = current.localFilePath() ?: return@update current
-            if (savedSuccessfully && outputFile != null) {
-                ImageCropRotateUiState.Saved(outputFile = outputFile)
-            } else {
-                ImageCropRotateUiState.Ready(
-                    localFilePath = path,
-                    errorMessageRes = R.string.homecloud_imageedit_save_error,
-                )
-            }
+            if (current !is ImageCropRotateUiState.NameConflict) return@update current
+            current.tempOutputFile.delete()
+            ImageCropRotateUiState.Ready(localFilePath = current.localFilePath)
         }
     }
 
@@ -172,6 +204,7 @@ class ImageCropRotateViewModel(
                 is ImageCropRotateUiState.Unavailable -> current.copy(errorMessageRes = null)
                 is ImageCropRotateUiState.Downloading,
                 is ImageCropRotateUiState.Saving,
+                is ImageCropRotateUiState.NameConflict,
                 is ImageCropRotateUiState.Saved -> current
             }
         }
@@ -183,6 +216,99 @@ class ImageCropRotateViewModel(
             withContext(NonCancellable + coroutinesDispatcherProvider.io) {
                 cancelDownloadForFileUseCase(CancelDownloadForFileUseCase.Params(ocFile))
             }
+        }
+    }
+
+    private suspend fun persistOrShowConflict(outputFile: File) {
+        val path = _uiState.value.localFilePath() ?: return
+        val targetName = targetFileName()
+        val existing = withContext(coroutinesDispatcherProvider.io) {
+            getFileByRemotePathUseCase(
+                GetFileByRemotePathUseCase.Params(
+                    owner = ocFile.owner,
+                    remotePath = ocFile.getParentRemotePath() + targetName,
+                    spaceId = ocFile.spaceId,
+                )
+            ).getDataOrNull()
+        }
+        if (existing != null) {
+            _uiState.update {
+                ImageCropRotateUiState.NameConflict(
+                    localFilePath = path,
+                    existingFileName = targetName,
+                    tempOutputFile = outputFile,
+                )
+            }
+            return
+        }
+        enqueueUploadAndFinish(tempOutputFile = outputFile, overwrite = false)
+    }
+
+    private fun enqueueChosenUpload(tempOutputFile: File, overwrite: Boolean) {
+        val path = _uiState.value.localFilePath() ?: return
+        _uiState.update { ImageCropRotateUiState.Saving(localFilePath = path) }
+        viewModelScope.launch {
+            enqueueUploadAndFinish(tempOutputFile = tempOutputFile, overwrite = overwrite)
+        }
+    }
+
+    private suspend fun enqueueUploadAndFinish(tempOutputFile: File, overwrite: Boolean) {
+        val path = _uiState.value.localFilePath() ?: return
+        runCatching {
+            withContext(coroutinesDispatcherProvider.io) {
+                enqueueUpload(tempOutputFile = tempOutputFile, overwrite = overwrite)
+            }
+        }.onSuccess {
+            _uiState.update { ImageCropRotateUiState.Saved(outputFile = tempOutputFile) }
+        }.onFailure { throwable ->
+            Timber.e(throwable, "Failed to enqueue edited image upload")
+            _uiState.update {
+                ImageCropRotateUiState.Ready(
+                    localFilePath = path,
+                    errorMessageRes = R.string.homecloud_imageedit_save_error,
+                )
+            }
+        }
+    }
+
+    private fun enqueueUpload(tempOutputFile: File, overwrite: Boolean) {
+        val folderPath = ocFile.getParentRemotePath()
+        val targetName = targetFileName()
+        if (overwrite) {
+            val namedFile = File(tempOutputFile.parent, targetName)
+            val fileToUpload = if (namedFile.absolutePath == tempOutputFile.absolutePath) {
+                tempOutputFile
+            } else {
+                tempOutputFile.copyTo(namedFile, overwrite = true)
+            }
+            uploadFileInConflictUseCase(
+                UploadFileInConflictUseCase.Params(
+                    accountName = ocFile.owner,
+                    localPath = fileToUpload.absolutePath,
+                    uploadFolderPath = folderPath,
+                    spaceId = ocFile.spaceId,
+                )
+            ) ?: error("Could not enqueue overwrite upload")
+        } else {
+            uploadFilesFromSystemUseCase(
+                UploadFilesFromSystemUseCase.Params(
+                    accountName = ocFile.owner,
+                    listOfLocalPaths = listOf(tempOutputFile.absolutePath),
+                    uploadFolderPath = folderPath,
+                    listOfRemoteNames = listOf(targetName),
+                    spaceId = ocFile.spaceId,
+                )
+            )
+        }
+    }
+
+    private fun showSaveError() {
+        _uiState.update { current ->
+            val path = current.localFilePath() ?: return@update current
+            ImageCropRotateUiState.Ready(
+                localFilePath = path,
+                errorMessageRes = R.string.homecloud_imageedit_save_error,
+            )
         }
     }
 
@@ -295,7 +421,57 @@ class ImageCropRotateViewModel(
         }
     }
 
+    private fun targetFileName(): String {
+        val outputFormat = resolveOutputFormat()
+        val originalName = ocFile.fileName
+        val originalExtension = originalName.substringAfterLast('.', missingDelimiterValue = "")
+        if (outputFormat.matchesExtension(originalExtension)) {
+            return originalName
+        }
+        val baseName = originalName.substringBeforeLast('.', originalName)
+        return "$baseName.${outputFormat.extension}"
+    }
+
+    private fun resolveOutputFormat(): OutputFormat {
+        val mimeType = ocFile.mimeType.takeIf { it.startsWith(MIME_PREFIX_IMAGE) }
+            ?: ocFile.getMimeTypeFromName().orEmpty()
+        return when (mimeType.lowercase()) {
+            MIME_PNG -> OutputFormat(Bitmap.CompressFormat.PNG, EXTENSION_PNG)
+            MIME_WEBP -> OutputFormat(webpCompressFormat(), EXTENSION_WEBP)
+            MIME_JPEG, MIME_JPG -> OutputFormat(Bitmap.CompressFormat.JPEG, EXTENSION_JPG)
+            else -> OutputFormat(Bitmap.CompressFormat.JPEG, EXTENSION_JPG)
+        }
+    }
+
+    private fun webpCompressFormat(): Bitmap.CompressFormat {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Bitmap.CompressFormat.WEBP_LOSSY
+        } else {
+            @Suppress("DEPRECATION")
+            Bitmap.CompressFormat.WEBP
+        }
+    }
+
+    private data class OutputFormat(
+        val compressFormat: Bitmap.CompressFormat,
+        val extension: String,
+    ) {
+        fun matchesExtension(originalExtension: String): Boolean {
+            if (extension.equals(originalExtension, ignoreCase = true)) return true
+            return extension == EXTENSION_JPG && originalExtension.equals(EXTENSION_JPEG, ignoreCase = true)
+        }
+    }
+
     companion object {
         const val OUTPUT_DIR = "image_edit"
+        private const val MIME_PREFIX_IMAGE = "image/"
+        private const val MIME_PNG = "image/png"
+        private const val MIME_WEBP = "image/webp"
+        private const val MIME_JPEG = "image/jpeg"
+        private const val MIME_JPG = "image/jpg"
+        private const val EXTENSION_PNG = "png"
+        private const val EXTENSION_WEBP = "webp"
+        private const val EXTENSION_JPG = "jpg"
+        private const val EXTENSION_JPEG = "jpeg"
     }
 }

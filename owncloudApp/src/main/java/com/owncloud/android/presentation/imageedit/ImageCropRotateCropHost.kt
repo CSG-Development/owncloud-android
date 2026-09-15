@@ -79,16 +79,20 @@ fun ImageCropRotateCropHost(
     )
 }
 
-fun CropImageViewHandle.cropToJpeg(outputUri: Uri, outputFile: File) {
+fun CropImageViewHandle.cropToOutput(
+    format: Bitmap.CompressFormat,
+    outputUri: Uri,
+    outputFile: File,
+) {
     val cropView = view ?: return
     pendingOutputFile = outputFile
     cropView.croppedImageAsync(
-        saveCompressFormat = Bitmap.CompressFormat.JPEG,
-        saveCompressQuality = JPEG_QUALITY,
+        saveCompressFormat = format,
+        saveCompressQuality = OUTPUT_QUALITY,
         customOutputUri = outputUri,
     )
 }
 
-private const val JPEG_QUALITY = 90
+private const val OUTPUT_QUALITY = 90
 
 private fun FrameLayout.cropImageView(): CropImageView = getChildAt(0) as CropImageView

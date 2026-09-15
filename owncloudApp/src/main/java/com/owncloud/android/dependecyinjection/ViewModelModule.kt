@@ -189,6 +189,6 @@ val viewModelModule = module {
         SpacesListViewModel(get(), get(), get(), get(), get(), get(), get(), accountName, showPersonalSpace)
     }
     viewModel { (file: OCFile) ->
-        ImageCropRotateViewModel(get(), get(), get(), get(), get(), get(), file)
+        ImageCropRotateViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
     }
 }

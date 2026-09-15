@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -52,11 +53,15 @@ fun ImageCropRotateScreen(
     onImageLoaded: (success: Boolean) -> Unit,
     onCropComplete: (File?, Exception?) -> Unit,
     onSaveRequested: (CropImageViewHandle) -> Unit,
+    onOverwriteChosen: () -> Unit,
+    onSaveAsCopyChosen: () -> Unit,
+    onConflictDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var rotationDegrees by rememberSaveable { mutableIntStateOf(0) }
     val cropHandle = remember { CropImageViewHandle() }
     val controlsEnabled = uiState is ImageCropRotateUiState.Ready
+    val nameConflict = uiState as? ImageCropRotateUiState.NameConflict
 
     Column(
         modifier = modifier.windowInsetsPadding(WindowInsets.systemBars),
@@ -110,6 +115,14 @@ fun ImageCropRotateScreen(
             enabled = controlsEnabled,
             onRotate90 = { rotationDegrees = (rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES },
             onRotationChange = { rotationDegrees = it.coerceIn(0, MAX_ROTATION_DEGREES) },
+        )
+    }
+    if (nameConflict != null) {
+        ImageCropRotateNameConflictDialog(
+            fileName = nameConflict.existingFileName,
+            onOverwrite = onOverwriteChosen,
+            onSaveAsCopy = onSaveAsCopyChosen,
+            onDismiss = onConflictDismissed,
         )
     }
 }
@@ -188,6 +201,32 @@ private fun ImageCropRotateControls(
 }
 
 @Composable
+private fun ImageCropRotateNameConflictDialog(
+    fileName: String,
+    onOverwrite: () -> Unit,
+    onSaveAsCopy: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.file_already_exists)) },
+        text = { Text(text = stringResource(R.string.file_already_exists_description, fileName)) },
+        confirmButton = {
+            TextButton(onClick = onOverwrite) {
+                Text(text = stringResource(R.string.conflict_replace))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onSaveAsCopy) {
+                Text(text = stringResource(R.string.conflict_keep_both))
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
 private fun ImageCropRotateDownloadProgress(
     progressPercent: Int,
     modifier: Modifier = Modifier,
@@ -245,6 +284,19 @@ private fun ImageCropRotateChromePreview() {
                 )
             }
         }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun ImageCropRotateNameConflictDialogPreview() {
+    HomeCloudTheme {
+        ImageCropRotateNameConflictDialog(
+            fileName = "photo.png",
+            onOverwrite = {},
+            onSaveAsCopy = {},
+            onDismiss = {},
+        )
     }
 }
 
