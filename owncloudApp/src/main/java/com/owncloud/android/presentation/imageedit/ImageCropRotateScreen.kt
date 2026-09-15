@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.imageedit
 
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,10 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -43,6 +46,8 @@ import kotlin.math.roundToInt
 fun ImageCropRotateScreen(
     imageUri: Uri?,
     isSaving: Boolean,
+    isDownloading: Boolean,
+    downloadProgress: Int,
     isImageLoaded: Boolean,
     errorMessage: String?,
     onErrorDismissed: () -> Unit,
@@ -54,7 +59,7 @@ fun ImageCropRotateScreen(
 ) {
     var rotationDegrees by rememberSaveable { mutableIntStateOf(0) }
     val cropHandle = remember { CropImageViewHandle() }
-    val controlsEnabled = isImageLoaded && !isSaving
+    val controlsEnabled = isImageLoaded && !isSaving && !isDownloading
 
     Column(
         modifier = modifier.windowInsetsPadding(WindowInsets.systemBars),
@@ -70,7 +75,7 @@ fun ImageCropRotateScreen(
                 .fillMaxWidth()
                 .background(Color.Black),
         ) {
-            if (imageUri != null) {
+            if (imageUri != null && !isDownloading) {
                 ImageCropRotateCropHost(
                     imageUri = imageUri,
                     rotationDegrees = rotationDegrees,
@@ -78,6 +83,15 @@ fun ImageCropRotateScreen(
                     onImageLoaded = onImageLoaded,
                     onCropComplete = onCropComplete,
                     modifier = Modifier.fillMaxSize(),
+                )
+            }
+            if (isDownloading) {
+                ImageCropRotateDownloadProgress(
+                    progressPercent = downloadProgress,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .padding(dimensionResource(R.dimen.standard_margin)),
                 )
             }
             if (isSaving) {
@@ -176,6 +190,33 @@ private fun ImageCropRotateControls(
     }
 }
 
+@Composable
+private fun ImageCropRotateDownloadProgress(
+    progressPercent: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.homecloud_imageedit_download_in_progress),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.standard_margin)))
+        if (progressPercent < 0) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        } else {
+            LinearProgressIndicator(
+                progress = { progressPercent.coerceIn(0, 100) / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
 @HomeCloudPreview
 @Composable
 private fun ImageCropRotateChromePreview() {
@@ -204,6 +245,26 @@ private fun ImageCropRotateChromePreview() {
                     enabled = true,
                     onRotate90 = {},
                     onRotationChange = {},
+                )
+            }
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun ImageCropRotateDownloadProgressPreview() {
+    HomeCloudTheme {
+        Surface {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black)
+                    .padding(dimensionResource(R.dimen.standard_margin)),
+            ) {
+                ImageCropRotateDownloadProgress(
+                    progressPercent = 40,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

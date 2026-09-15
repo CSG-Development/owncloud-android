@@ -39,6 +39,7 @@ import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.ui.activity.BaseActivity
 import com.owncloud.android.ui.activity.FileActivity
@@ -480,6 +481,8 @@ class GlobalSearchFragment : Fragment(),
             }
 
             R.id.action_crop_and_rotate -> {
+                startActivity(ImageCropRotateActivity.createIntent(requireContext(), singleFile))
+                disableSelectionMode()
                 true
             }
 

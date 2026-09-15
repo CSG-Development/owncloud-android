@@ -32,6 +32,7 @@ import com.owncloud.android.presentation.files.operations.FileOperation.UnsetFil
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.tags.ManageTagsFragment
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
@@ -218,7 +219,7 @@ object FileOptionsBottomSheetHelper {
             FileMenuOption.OPEN_WITH -> fileActions?.openFile(file)
 
             FileMenuOption.CROP_AND_ROTATE -> {
-                // Stub: crop and rotate is not wired up yet.
+                activity.startActivity(ImageCropRotateActivity.createIntent(activity, file))
             }
 
             FileMenuOption.CANCEL_SYNC -> fileActions?.cancelFileTransference(listOf(file))

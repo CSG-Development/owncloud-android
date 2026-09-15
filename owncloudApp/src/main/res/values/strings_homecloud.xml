@@ -261,5 +261,7 @@
     <string name="homecloud_imageedit_rotate">Rotate 90°</string>
     <string name="homecloud_imageedit_angle">%d°</string>
     <string name="homecloud_imageedit_load_error">Could not load this image.</string>
+    <string name="homecloud_imageedit_download_in_progress">Downloading image…</string>
+    <string name="homecloud_imageedit_download_error">Could not download this image. Please try again.</string>
     <string name="homecloud_imageedit_save_error">Could not save the edited image. Please try again.</string>
 </resources>

@@ -4,11 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
+import com.owncloud.android.domain.files.model.OCFile
 import java.io.File
 
-class ImageCropRotateContract : ActivityResultContract<File, File?>() {
+class ImageCropRotateContract : ActivityResultContract<OCFile, File?>() {
 
-    override fun createIntent(context: Context, input: File): Intent =
+    override fun createIntent(context: Context, input: OCFile): Intent =
         ImageCropRotateActivity.createIntent(context, input)
 
     override fun parseResult(resultCode: Int, intent: Intent?): File? {

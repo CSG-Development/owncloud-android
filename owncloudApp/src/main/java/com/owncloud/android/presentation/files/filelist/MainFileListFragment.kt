@@ -124,6 +124,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.presentation.tags.TagsViewModel
@@ -838,7 +839,7 @@ class MainFileListFragment : FileFragment(),
                     }
 
                     FileMenuOption.CROP_AND_ROTATE -> {
-                        // Stub: crop and rotate is not wired up yet.
+                        startCropAndRotate(file)
                     }
 
                     FileMenuOption.CANCEL_SYNC -> {
@@ -1510,6 +1511,8 @@ class MainFileListFragment : FileFragment(),
             }
 
             R.id.action_crop_and_rotate -> {
+                startCropAndRotate(singleFile)
+                disableSelectionMode()
                 true
             }
 
@@ -1674,6 +1677,7 @@ class MainFileListFragment : FileFragment(),
             }
 
             R.id.action_crop_and_rotate -> {
+                checkedFiles.firstOrNull()?.let(::startCropAndRotate)
                 true
             }
 
@@ -1785,6 +1789,10 @@ class MainFileListFragment : FileFragment(),
                 zipFile = zipFile,
             ),
         )
+    }
+
+    private fun startCropAndRotate(file: OCFile) {
+        startActivity(ImageCropRotateActivity.createIntent(requireContext(), file))
     }
 
     private fun disableSelectionMode() {
