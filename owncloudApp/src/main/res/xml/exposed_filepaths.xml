@@ -7,4 +7,5 @@
     as a value for 'path' attribute; in practice, we will only generate URIs in our folders, of course -->
     <files-path name="files" path="/" />
     <external-cache-path name="file" path="/" />
+    <cache-path name="image_edit_cache" path="image_edit/" />
 </paths>

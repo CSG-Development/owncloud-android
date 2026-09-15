@@ -22,6 +22,8 @@ androidxTestMonitor = "1.6.1"
 androidxTestUiAutomator ="2.2.0"
 androidxWork = "2.10.5"
 coil = "2.2.2"
+# 4.7.0 pulls AndroidX Activity 1.9 and breaks existing onNewIntent; stay on 4.5.0 until that upgrade.
+androidImageCropper = "4.5.0"
 # Compose Compiler 1.5.5 matches Kotlin 1.9.20 (see Compose-Kotlin compatibility map).
 # BOM 2024.09.00 is the first stable BOM with Material3 PullToRefreshBox (material3 1.3.0).
 composeBom = "2024.09.00"
@@ -97,6 +99,7 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "androidxTestUiAutomator" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidxWork" }
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
+android-image-cropper = { group = "com.vanniktech", name = "android-image-cropper", version.ref = "androidImageCropper" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }

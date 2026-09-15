@@ -40,6 +40,7 @@ import com.owncloud.android.presentation.files.favorites.FavoritesViewModel
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchViewModel
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
+import com.owncloud.android.presentation.imageedit.ImageCropRotateViewModel
 import com.owncloud.android.presentation.logging.LogListViewModel
 import com.owncloud.android.presentation.migration.MigrationViewModel
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
@@ -187,4 +188,5 @@ val viewModelModule = module {
     viewModel { (accountName: String, showPersonalSpace: Boolean) ->
         SpacesListViewModel(get(), get(), get(), get(), get(), get(), get(), accountName, showPersonalSpace)
     }
+    viewModel { (inputFilePath: String) -> ImageCropRotateViewModel(get(), inputFilePath) }
 }

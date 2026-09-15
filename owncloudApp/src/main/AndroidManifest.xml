@@ -70,6 +70,11 @@
             android:resource="@xml/managed_configurations" />
 
         <activity
+            android:name=".presentation.imageedit.ImageCropRotateActivity"
+            android:label="@string/homecloud_imageedit_title"
+            android:theme="@style/Theme.homeCloud"
+            android:exported="false" />
+        <activity
             android:name=".presentation.releasenotes.ReleaseNotesActivity"
             android:label="@string/release_notes_label"
             android:exported="false" />

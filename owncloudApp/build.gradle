@@ -72,6 +72,9 @@ dependencies {
     // Zooming Android ImageView.
     implementation libs.photoview
 
+    // Image crop and rotate.
+    implementation libs.android.image.cropper
+
     // Koin dependency injector
     implementation libs.koin.androidx.workmanager
     implementation libs.koin.core
