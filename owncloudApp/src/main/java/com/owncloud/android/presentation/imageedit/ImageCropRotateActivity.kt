@@ -3,20 +3,27 @@ package com.owncloud.android.presentation.imageedit
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import androidx.activity.addCallback
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.owncloud.android.R
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 import timber.log.Timber
@@ -26,6 +33,8 @@ class ImageCropRotateActivity : AppCompatActivity() {
     private val viewModel: ImageCropRotateViewModel by viewModel {
         parametersOf(intent.getParcelableExtra(EXTRA_FILE) as OCFile?)
     }
+
+    private val cropHandle = CropImageViewHandle()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,44 +46,80 @@ class ImageCropRotateActivity : AppCompatActivity() {
             return
         }
 
-        enableEdgeToEdge()
+        setContentView(R.layout.activity_image_crop_rotate)
+        val toolbar = findViewById<Toolbar>(R.id.standard_toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         onBackPressedDispatcher.addCallback(this) {
             onEditCancelled()
         }
 
-        setContent {
-            HomeCloudTheme {
-                val uiState by viewModel.uiState.collectAsState()
-                val imageUri = remember(uiState.localFilePath()) {
-                    viewModel.getInputUri(this@ImageCropRotateActivity)
-                }
-
-                LaunchedEffect(uiState) {
-                    val saved = uiState as? ImageCropRotateUiState.Saved ?: return@LaunchedEffect
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { uiState ->
+                    invalidateOptionsMenu()
+                    val saved = uiState as? ImageCropRotateUiState.Saved ?: return@collect
                     setResult(
                         RESULT_OK,
                         Intent().putExtra(EXTRA_OUTPUT_PATH, saved.outputFile.absolutePath),
                     )
                     finish()
                 }
+            }
+        }
 
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    ImageCropRotateScreen(
-                        imageUri = imageUri,
-                        uiState = uiState,
-                        errorMessage = uiState.errorMessageRes?.let { stringResource(it) },
-                        onErrorDismissed = viewModel::consumeError,
-                        onCancel = ::onEditCancelled,
-                        onImageLoaded = viewModel::onImageLoaded,
-                        onCropComplete = viewModel::onSaveCompleted,
-                        onSaveRequested = ::onSaveRequested,
-                        onOverwriteChosen = viewModel::onOverwriteChosen,
-                        onSaveAsCopyChosen = viewModel::onSaveAsCopyChosen,
-                        onConflictDismissed = viewModel::onConflictDismissed,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+        findViewById<ComposeView>(R.id.image_crop_rotate_compose_view).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                HomeCloudTheme {
+                    val uiState by viewModel.uiState.collectAsState()
+                    val imageUri = remember(uiState.localFilePath()) {
+                        viewModel.getInputUri(this@ImageCropRotateActivity)
+                    }
+
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        ImageCropRotateScreen(
+                            imageUri = imageUri,
+                            uiState = uiState,
+                            errorMessage = uiState.errorMessageRes?.let { stringResource(it) },
+                            cropHandle = cropHandle,
+                            onErrorDismissed = viewModel::consumeError,
+                            onImageLoaded = viewModel::onImageLoaded,
+                            onCropComplete = viewModel::onSaveCompleted,
+                            onOverwriteChosen = viewModel::onOverwriteChosen,
+                            onSaveAsCopyChosen = viewModel::onSaveAsCopyChosen,
+                            onConflictDismissed = viewModel::onConflictDismissed,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.image_crop_rotate_menu, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.action_done)?.isEnabled =
+            viewModel.uiState.value is ImageCropRotateUiState.Ready
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                onEditCancelled()
+                true
+            }
+            R.id.action_done -> {
+                onSaveRequested()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -83,12 +128,12 @@ class ImageCropRotateActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun onSaveRequested(handle: CropImageViewHandle) {
-        if (handle.view == null) return
+    private fun onSaveRequested() {
+        if (cropHandle.view == null) return
         viewModel.onSaveStarted()
         val outputFile = viewModel.createOutputFile()
         val outputUri = viewModel.getOutputUri(this, outputFile)
-        handle.cropToOutput(viewModel.getOutputCompressFormat(), outputUri, outputFile)
+        cropHandle.cropToOutput(viewModel.getOutputCompressFormat(), outputUri, outputFile)
     }
 
     companion object {

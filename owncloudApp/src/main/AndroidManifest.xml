@@ -72,7 +72,7 @@
         <activity
             android:name=".presentation.imageedit.ImageCropRotateActivity"
             android:label="@string/homecloud_imageedit_title"
-            android:theme="@style/Theme.homeCloud"
+            android:theme="@style/Theme.homeCloud.Toolbar"
             android:exported="false" />
         <activity
             android:name=".presentation.releasenotes.ReleaseNotesActivity"

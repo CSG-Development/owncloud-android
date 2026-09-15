@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -25,7 +22,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,8 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameterProvider
 import com.owncloud.android.R
@@ -50,18 +44,16 @@ fun ImageCropRotateScreen(
     imageUri: Uri?,
     uiState: ImageCropRotateUiState,
     errorMessage: String?,
+    cropHandle: CropImageViewHandle,
     onErrorDismissed: () -> Unit,
-    onCancel: () -> Unit,
     onImageLoaded: (success: Boolean) -> Unit,
     onCropComplete: (File?, Exception?) -> Unit,
-    onSaveRequested: (CropImageViewHandle) -> Unit,
     onOverwriteChosen: () -> Unit,
     onSaveAsCopyChosen: () -> Unit,
     onConflictDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var rotationDegrees by rememberSaveable { mutableIntStateOf(0) }
-    val cropHandle = remember { CropImageViewHandle() }
 
     ImageCropRotateScreenView(
         imageUri = imageUri,
@@ -70,8 +62,6 @@ fun ImageCropRotateScreen(
         rotationDegrees = rotationDegrees,
         cropHandle = cropHandle,
         onErrorDismissed = onErrorDismissed,
-        onCancel = onCancel,
-        onDone = { onSaveRequested(cropHandle) },
         onRotate90 = { rotationDegrees = (rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES },
         onRotationChange = { rotationDegrees = it.coerceIn(0, MAX_ROTATION_DEGREES) },
         onImageLoaded = onImageLoaded,
@@ -79,10 +69,8 @@ fun ImageCropRotateScreen(
         onOverwriteChosen = onOverwriteChosen,
         onSaveAsCopyChosen = onSaveAsCopyChosen,
         onConflictDismissed = onConflictDismissed,
-        modifier = modifier.windowInsetsPadding(WindowInsets.systemBars),
+        modifier = modifier,
     )
-
-
 }
 
 @Composable
@@ -93,8 +81,6 @@ internal fun ImageCropRotateScreenView(
     rotationDegrees: Int,
     cropHandle: CropImageViewHandle,
     onErrorDismissed: () -> Unit,
-    onCancel: () -> Unit,
-    onDone: () -> Unit,
     onRotate90: () -> Unit,
     onRotationChange: (Int) -> Unit,
     onImageLoaded: (success: Boolean) -> Unit,
@@ -107,11 +93,6 @@ internal fun ImageCropRotateScreenView(
     val controlsEnabled = uiState is ImageCropRotateUiState.Ready
 
     Column(modifier = modifier) {
-        ImageCropRotateTopBar(
-            isDoneEnabled = controlsEnabled,
-            onCancel = onCancel,
-            onDone = onDone,
-        )
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -165,42 +146,6 @@ internal fun ImageCropRotateScreenView(
             onSaveAsCopy = onSaveAsCopyChosen,
             onDismiss = onConflictDismissed,
         )
-    }
-}
-
-@Composable
-private fun ImageCropRotateTopBar(
-    isDoneEnabled: Boolean,
-    onCancel: () -> Unit,
-    onDone: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.standard_half_margin)),
-    ) {
-        TextButton(
-            onClick = onCancel,
-            modifier = Modifier.align(Alignment.CenterStart),
-        ) {
-            Text(text = stringResource(R.string.homecloud_imageedit_cancel))
-        }
-        Text(
-            text = stringResource(R.string.homecloud_imageedit_title),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.align(Alignment.Center),
-        )
-        TextButton(
-            onClick = onDone,
-            enabled = isDoneEnabled,
-            modifier = Modifier.align(Alignment.CenterEnd),
-        ) {
-            Text(text = stringResource(R.string.homecloud_imageedit_done))
-        }
     }
 }
 
@@ -335,8 +280,6 @@ private fun ImageCropRotateScreenPreview(
                 rotationDegrees = model.rotationDegrees,
                 cropHandle = previewCropHandle,
                 onErrorDismissed = {},
-                onCancel = {},
-                onDone = {},
                 onRotate90 = {},
                 onRotationChange = {},
                 onImageLoaded = {},

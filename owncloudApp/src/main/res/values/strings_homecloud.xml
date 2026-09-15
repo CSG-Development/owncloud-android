@@ -256,7 +256,6 @@
     <string name="homecloud_textpreview_error">Could not open this file for preview.</string>
 
     <string name="homecloud_imageedit_title">Edit image</string>
-    <string name="homecloud_imageedit_cancel">Cancel</string>
     <string name="homecloud_imageedit_done">Done</string>
     <string name="homecloud_imageedit_rotate">Rotate 90°</string>
     <string name="homecloud_imageedit_angle">%d°</string>
