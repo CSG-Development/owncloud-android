@@ -5,6 +5,8 @@
     <item
         android:id="@+id/action_done"
         android:title="@string/homecloud_imageedit_done"
+        android:icon="@drawable/ic_check_password_policy"
+        android:iconTint="@color/homecloud_icon"
         app:showAsAction="always" />
 
 </menu>

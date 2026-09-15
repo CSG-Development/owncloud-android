@@ -62,8 +62,8 @@ fun ImageCropRotateScreen(
         rotationDegrees = rotationDegrees,
         cropHandle = cropHandle,
         onErrorDismissed = onErrorDismissed,
-        onRotate90 = { rotationDegrees = (rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES },
-        onRotationChange = { rotationDegrees = it.coerceIn(0, MAX_ROTATION_DEGREES) },
+        onRotate90 = { rotationDegrees = (MAX_ROTATION_DEGREES + rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES - MAX_ROTATION_DEGREES },
+        onRotationChange = { rotationDegrees = it.coerceIn(-MAX_ROTATION_DEGREES, MAX_ROTATION_DEGREES) },
         onImageLoaded = onImageLoaded,
         onCropComplete = onCropComplete,
         onOverwriteChosen = onOverwriteChosen,
@@ -178,7 +178,7 @@ private fun ImageCropRotateControls(
         Slider(
             value = rotationDegrees.toFloat(),
             onValueChange = { onRotationChange(it.roundToInt()) },
-            valueRange = 0f..MAX_ROTATION_DEGREES.toFloat(),
+            valueRange = -MAX_ROTATION_DEGREES.toFloat()..MAX_ROTATION_DEGREES.toFloat(),
             steps = ROTATION_SLIDER_STEPS,
             enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
@@ -296,7 +296,7 @@ private val previewCropHandle = CropImageViewHandle()
 
 private const val ROTATION_STEP_90 = 90
 private const val FULL_CIRCLE_DEGREES = 360
-private const val MAX_ROTATION_DEGREES = 359
-private const val ROTATION_SLIDER_STEPS = 358
+private const val MAX_ROTATION_DEGREES = 180
+private const val ROTATION_SLIDER_STEPS = 360
 private const val PREVIEW_LOCAL_PATH = "/preview"
 private const val PREVIEW_FILE_NAME = "photo.png"
