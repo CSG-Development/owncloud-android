@@ -35,6 +35,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameterProvider
 import com.owncloud.android.R
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
@@ -60,16 +62,55 @@ fun ImageCropRotateScreen(
 ) {
     var rotationDegrees by rememberSaveable { mutableIntStateOf(0) }
     val cropHandle = remember { CropImageViewHandle() }
-    val controlsEnabled = uiState is ImageCropRotateUiState.Ready
-    val nameConflict = uiState as? ImageCropRotateUiState.NameConflict
 
-    Column(
+    ImageCropRotateScreenView(
+        imageUri = imageUri,
+        uiState = uiState,
+        errorMessage = errorMessage,
+        rotationDegrees = rotationDegrees,
+        cropHandle = cropHandle,
+        onErrorDismissed = onErrorDismissed,
+        onCancel = onCancel,
+        onDone = { onSaveRequested(cropHandle) },
+        onRotate90 = { rotationDegrees = (rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES },
+        onRotationChange = { rotationDegrees = it.coerceIn(0, MAX_ROTATION_DEGREES) },
+        onImageLoaded = onImageLoaded,
+        onCropComplete = onCropComplete,
+        onOverwriteChosen = onOverwriteChosen,
+        onSaveAsCopyChosen = onSaveAsCopyChosen,
+        onConflictDismissed = onConflictDismissed,
         modifier = modifier.windowInsetsPadding(WindowInsets.systemBars),
-    ) {
+    )
+
+
+}
+
+@Composable
+internal fun ImageCropRotateScreenView(
+    imageUri: Uri?,
+    uiState: ImageCropRotateUiState,
+    errorMessage: String?,
+    rotationDegrees: Int,
+    cropHandle: CropImageViewHandle,
+    onErrorDismissed: () -> Unit,
+    onCancel: () -> Unit,
+    onDone: () -> Unit,
+    onRotate90: () -> Unit,
+    onRotationChange: (Int) -> Unit,
+    onImageLoaded: (success: Boolean) -> Unit,
+    onCropComplete: (File?, Exception?) -> Unit,
+    onOverwriteChosen: () -> Unit,
+    onSaveAsCopyChosen: () -> Unit,
+    onConflictDismissed: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val controlsEnabled = uiState is ImageCropRotateUiState.Ready
+
+    Column(modifier = modifier) {
         ImageCropRotateTopBar(
             isDoneEnabled = controlsEnabled,
             onCancel = onCancel,
-            onDone = { onSaveRequested(cropHandle) },
+            onDone = onDone,
         )
         Box(
             modifier = Modifier
@@ -113,13 +154,13 @@ fun ImageCropRotateScreen(
         ImageCropRotateControls(
             rotationDegrees = rotationDegrees,
             enabled = controlsEnabled,
-            onRotate90 = { rotationDegrees = (rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES },
-            onRotationChange = { rotationDegrees = it.coerceIn(0, MAX_ROTATION_DEGREES) },
+            onRotate90 = onRotate90,
+            onRotationChange = onRotationChange,
         )
     }
-    if (nameConflict != null) {
+    if (uiState is ImageCropRotateUiState.NameConflict) {
         ImageCropRotateNameConflictDialog(
-            fileName = nameConflict.existingFileName,
+            fileName = uiState.existingFileName,
             onOverwrite = onOverwriteChosen,
             onSaveAsCopy = onSaveAsCopyChosen,
             onDismiss = onConflictDismissed,
@@ -253,74 +294,66 @@ private fun ImageCropRotateDownloadProgress(
     }
 }
 
+private data class ImageCropRotateScreenPreviewModel(
+    val uiState: ImageCropRotateUiState,
+    val errorMessage: String? = null,
+    val rotationDegrees: Int = 0,
+)
+
+private class ImageCropRotateScreenPreviewParameterProvider :
+    CollectionPreviewParameterProvider<ImageCropRotateScreenPreviewModel>(
+        listOf(
+            ImageCropRotateScreenPreviewModel(
+                uiState = ImageCropRotateUiState.Ready(localFilePath = PREVIEW_LOCAL_PATH),
+                rotationDegrees = 15,
+            ),
+            ImageCropRotateScreenPreviewModel(
+                uiState = ImageCropRotateUiState.Downloading(progress = 40),
+            ),
+            ImageCropRotateScreenPreviewModel(
+                uiState = ImageCropRotateUiState.NameConflict(
+                    localFilePath = PREVIEW_LOCAL_PATH,
+                    existingFileName = PREVIEW_FILE_NAME,
+                    tempOutputFile = File(PREVIEW_FILE_NAME),
+                ),
+            ),
+        ),
+    )
+
 @HomeCloudPreview
 @Composable
-private fun ImageCropRotateChromePreview() {
+private fun ImageCropRotateScreenPreview(
+    @PreviewParameter(ImageCropRotateScreenPreviewParameterProvider::class)
+    model: ImageCropRotateScreenPreviewModel,
+) {
     HomeCloudTheme {
         Surface {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                ImageCropRotateTopBar(
-                    isDoneEnabled = true,
-                    onCancel = {},
-                    onDone = {},
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.DarkGray)
-                        .padding(dimensionResource(R.dimen.standard_margin)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "Image",
-                        color = Color.White,
-                    )
-                }
-                ImageCropRotateControls(
-                    rotationDegrees = 15,
-                    enabled = true,
-                    onRotate90 = {},
-                    onRotationChange = {},
-                )
-            }
+            ImageCropRotateScreenView(
+                imageUri = null,
+                uiState = model.uiState,
+                errorMessage = model.errorMessage,
+                rotationDegrees = model.rotationDegrees,
+                cropHandle = previewCropHandle,
+                onErrorDismissed = {},
+                onCancel = {},
+                onDone = {},
+                onRotate90 = {},
+                onRotationChange = {},
+                onImageLoaded = {},
+                onCropComplete = { _, _ -> },
+                onOverwriteChosen = {},
+                onSaveAsCopyChosen = {},
+                onConflictDismissed = {},
+            )
         }
     }
 }
 
-@HomeCloudPreview
-@Composable
-private fun ImageCropRotateNameConflictDialogPreview() {
-    HomeCloudTheme {
-        ImageCropRotateNameConflictDialog(
-            fileName = "photo.png",
-            onOverwrite = {},
-            onSaveAsCopy = {},
-            onDismiss = {},
-        )
-    }
-}
-
-@HomeCloudPreview
-@Composable
-private fun ImageCropRotateDownloadProgressPreview() {
-    HomeCloudTheme {
-        Surface {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Black)
-                    .padding(dimensionResource(R.dimen.standard_margin)),
-            ) {
-                ImageCropRotateDownloadProgress(
-                    progressPercent = 40,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-}
+private val previewCropHandle = CropImageViewHandle()
 
 private const val ROTATION_STEP_90 = 90
 private const val FULL_CIRCLE_DEGREES = 360
 private const val MAX_ROTATION_DEGREES = 359
 private const val ROTATION_SLIDER_STEPS = 358
+private const val PREVIEW_LOCAL_PATH = "/preview"
+private const val PREVIEW_FILE_NAME = "photo.png"
