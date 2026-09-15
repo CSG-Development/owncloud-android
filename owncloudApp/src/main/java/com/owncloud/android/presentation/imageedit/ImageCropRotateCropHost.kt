@@ -52,10 +52,12 @@ fun ImageCropRotateCropHost(
                         result.error,
                     )
                 }
-                setImageUriAsync(imageUri)
             }
         },
         update = { view ->
+            if (imageUri != view.imageUri) {
+                view.setImageUriAsync(imageUri)
+            }
             if (view.rotatedDegrees != rotationDegrees) {
                 view.rotatedDegrees = rotationDegrees
             }
