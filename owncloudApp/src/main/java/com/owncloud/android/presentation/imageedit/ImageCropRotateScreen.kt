@@ -15,7 +15,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +34,7 @@ import com.owncloud.android.R
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
+import com.owncloud.android.presentation.common.compose.HomeCloudSlider
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import java.io.File
 import kotlin.math.roundToInt
@@ -175,7 +175,7 @@ private fun ImageCropRotateControls(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        Slider(
+        HomeCloudSlider(
             value = rotationDegrees.toFloat(),
             onValueChange = { onRotationChange(it.roundToInt()) },
             valueRange = -MAX_ROTATION_DEGREES.toFloat()..MAX_ROTATION_DEGREES.toFloat(),
