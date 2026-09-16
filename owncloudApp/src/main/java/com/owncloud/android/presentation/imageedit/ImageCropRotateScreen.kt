@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,8 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameterProvider
 import com.owncloud.android.R
@@ -62,10 +66,15 @@ fun ImageCropRotateScreen(
         rotationDegrees = rotationDegrees,
         cropHandle = cropHandle,
         onErrorDismissed = onErrorDismissed,
-        onRotate90 = {
+        onRotate90Right = {
             val currentRotationAdapted = rotationDegrees + MAX_ROTATION_DEGREES
             val next90DegreesStep = (currentRotationAdapted / ROTATION_STEP_90 + 1) * ROTATION_STEP_90 // 0, 90, 180, 270, 360...
             rotationDegrees = next90DegreesStep % FULL_CIRCLE_DEGREES - MAX_ROTATION_DEGREES
+        },
+        onRotate90Left = {
+            val currentRotationAdapted = rotationDegrees - MAX_ROTATION_DEGREES
+            val next90DegreesStep = (currentRotationAdapted / ROTATION_STEP_90 - 1) * ROTATION_STEP_90 // 0, 90, 180, 270, 360...
+            rotationDegrees = next90DegreesStep % FULL_CIRCLE_DEGREES + MAX_ROTATION_DEGREES
         },
         onRotationChange = { rotationDegrees = it.coerceIn(-MAX_ROTATION_DEGREES, MAX_ROTATION_DEGREES) },
         onImageLoaded = onImageLoaded,
@@ -85,7 +94,8 @@ internal fun ImageCropRotateScreenView(
     rotationDegrees: Int,
     cropHandle: CropImageViewHandle,
     onErrorDismissed: () -> Unit,
-    onRotate90: () -> Unit,
+    onRotate90Right: () -> Unit,
+    onRotate90Left: () -> Unit,
     onRotationChange: (Int) -> Unit,
     onImageLoaded: (success: Boolean) -> Unit,
     onCropComplete: (File?, Exception?) -> Unit,
@@ -139,7 +149,8 @@ internal fun ImageCropRotateScreenView(
         ImageCropRotateControls(
             rotationDegrees = rotationDegrees,
             enabled = controlsEnabled,
-            onRotate90 = onRotate90,
+            onRotate90Right = onRotate90Right,
+            onRotate90Left = onRotate90Left,
             onRotationChange = onRotationChange,
         )
     }
@@ -157,7 +168,8 @@ internal fun ImageCropRotateScreenView(
 private fun ImageCropRotateControls(
     rotationDegrees: Int,
     enabled: Boolean,
-    onRotate90: () -> Unit,
+    onRotate90Right: () -> Unit,
+    onRotate90Left: () -> Unit,
     onRotationChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -167,11 +179,25 @@ private fun ImageCropRotateControls(
             .padding(dimensionResource(R.dimen.standard_margin)),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(
-                onClick = onRotate90,
+            IconButton(
+                onClick = onRotate90Left,
                 enabled = enabled,
             ) {
-                Text(text = stringResource(R.string.homecloud_imageedit_rotate))
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_rotate_left),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    contentDescription = null
+                )
+            }
+            IconButton(
+                onClick = onRotate90Right,
+                enabled = enabled,
+            ) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_rotate_right),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    contentDescription = null
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -284,7 +310,8 @@ private fun ImageCropRotateScreenPreview(
                 rotationDegrees = model.rotationDegrees,
                 cropHandle = previewCropHandle,
                 onErrorDismissed = {},
-                onRotate90 = {},
+                onRotate90Left = {},
+                onRotate90Right = {},
                 onRotationChange = {},
                 onImageLoaded = {},
                 onCropComplete = { _, _ -> },
