@@ -62,7 +62,11 @@ fun ImageCropRotateScreen(
         rotationDegrees = rotationDegrees,
         cropHandle = cropHandle,
         onErrorDismissed = onErrorDismissed,
-        onRotate90 = { rotationDegrees = (MAX_ROTATION_DEGREES + rotationDegrees + ROTATION_STEP_90) % FULL_CIRCLE_DEGREES - MAX_ROTATION_DEGREES },
+        onRotate90 = {
+            val currentRotationAdapted = rotationDegrees + MAX_ROTATION_DEGREES
+            val next90DegreesStep = (currentRotationAdapted / ROTATION_STEP_90 + 1) * ROTATION_STEP_90 // 0, 90, 180, 270, 360...
+            rotationDegrees = next90DegreesStep % FULL_CIRCLE_DEGREES - MAX_ROTATION_DEGREES
+        },
         onRotationChange = { rotationDegrees = it.coerceIn(-MAX_ROTATION_DEGREES, MAX_ROTATION_DEGREES) },
         onImageLoaded = onImageLoaded,
         onCropComplete = onCropComplete,
