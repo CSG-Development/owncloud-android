@@ -259,10 +259,16 @@ private fun ImageCropRotateDownloadProgress(
         )
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.standard_margin)))
         if (progressPercent < 0) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                trackColor = colorResource(R.color.homecloud_surface),
+            )
         } else {
             LinearProgressIndicator(
                 progress = { progressPercent.coerceIn(0, 100) / 100f },
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                trackColor = colorResource(R.color.homecloud_surface),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -281,6 +287,9 @@ private class ImageCropRotateScreenPreviewParameterProvider :
             ImageCropRotateScreenPreviewModel(
                 uiState = ImageCropRotateUiState.Ready(localFilePath = PREVIEW_LOCAL_PATH),
                 rotationDegrees = 15,
+            ),
+            ImageCropRotateScreenPreviewModel(
+                uiState = ImageCropRotateUiState.Downloading(progress = -1),
             ),
             ImageCropRotateScreenPreviewModel(
                 uiState = ImageCropRotateUiState.Downloading(progress = 40),
