@@ -46,10 +46,14 @@ fun ImageCropRotateCropHost(
                         )
                         guidelines = CropImageView.Guidelines.ON
                         setFixedAspectRatio(false)
+                        isAutoZoomEnabled = false
                         setBackgroundColor(Color.BLACK)
                         handle.view = this
                         setOnSetImageUriCompleteListener { _, _, error ->
                             onImageLoadedState.value(error == null)
+                        }
+                        setOnCropWindowChangedListener {
+                            setFixedAspectRatio(false)
                         }
                         setOnCropImageCompleteListener { _, result ->
                             val outputFile = handle.pendingOutputFile
@@ -70,6 +74,7 @@ fun ImageCropRotateCropHost(
             }
             val cropperDegrees = rotationDegrees.normalizedTo360()
             if (view.rotatedDegrees != cropperDegrees) {
+                view.setFixedAspectRatio(true)
                 view.rotatedDegrees = cropperDegrees
             }
         },
