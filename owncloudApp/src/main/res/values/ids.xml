@@ -3,6 +3,7 @@
     <item name="file_action_select_all" type="id" />
     <item name="action_select_inverse" type="id" />
     <item name="action_open_file_with" type="id" />
+    <item name="action_crop_and_rotate" type="id" />
     <item name="action_rename_file" type="id" />
     <item name="action_move" type="id" />
     <item name="action_copy" type="id" />

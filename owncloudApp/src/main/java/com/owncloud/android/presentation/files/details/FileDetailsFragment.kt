@@ -78,6 +78,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
@@ -298,6 +299,11 @@ class FileDetailsFragment : FileFragment() {
                     requireActivity().openOCFile(safeFile.file)
                     fileOperationsViewModel.setLastUsageFile(safeFile.file)
                 }
+                true
+            }
+
+            R.id.action_crop_and_rotate -> {
+                startActivity(ImageCropRotateActivity.createIntent(requireContext(), safeFile.file))
                 true
             }
 

@@ -208,6 +208,7 @@
     <string name="homecloud_filelist_virtual_file_cancel_upload">Cancel upload</string>
     <string name="homecloud_filelist_compress">Compress</string>
     <string name="homecloud_filelist_extract">Extract</string>
+    <string name="homecloud_filelist_crop_and_rotate">Crop and rotate</string>
     <string name="homecloud_filelist_activity_in_progress_title">Activity in progress</string>
     <plurals name="homecloud_filelist_activity_in_progress_subtitle">
         <item quantity="one">%d file operation in progress</item>
@@ -253,4 +254,13 @@
 
     <string name="homecloud_textpreview_loading">Wait a moment</string>
     <string name="homecloud_textpreview_error">Could not open this file for preview.</string>
+
+    <string name="homecloud_imageedit_title">Edit image</string>
+    <string name="homecloud_imageedit_done">Done</string>
+    <string name="homecloud_imageedit_rotate">Rotate 90°</string>
+    <string name="homecloud_imageedit_angle">%d°</string>
+    <string name="homecloud_imageedit_load_error">Could not load this image.</string>
+    <string name="homecloud_imageedit_download_in_progress">Downloading image…</string>
+    <string name="homecloud_imageedit_download_error">Could not download this image. Please try again.</string>
+    <string name="homecloud_imageedit_save_error">Could not save the edited image. Please try again.</string>
 </resources>
