@@ -68,8 +68,9 @@ fun ImageCropRotateCropHost(
             if (imageUri != view.imageUri) {
                 view.setImageUriAsync(imageUri)
             }
-            if (view.rotatedDegrees != rotationDegrees) {
-                view.rotatedDegrees = rotationDegrees
+            val cropperDegrees = rotationDegrees.normalizedTo360()
+            if (view.rotatedDegrees != cropperDegrees) {
+                view.rotatedDegrees = cropperDegrees
             }
         },
         onRelease = {
@@ -94,5 +95,9 @@ fun CropImageViewHandle.cropToOutput(
 }
 
 private const val OUTPUT_QUALITY = 90
+private const val FULL_CIRCLE_DEGREES = 360
 
 private fun FrameLayout.cropImageView(): CropImageView = getChildAt(0) as CropImageView
+
+private fun Int.normalizedTo360(): Int =
+    ((this % FULL_CIRCLE_DEGREES) + FULL_CIRCLE_DEGREES) % FULL_CIRCLE_DEGREES
