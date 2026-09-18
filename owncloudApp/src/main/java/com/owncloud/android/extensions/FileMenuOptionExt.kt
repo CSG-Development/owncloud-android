@@ -36,6 +36,7 @@ fun FileMenuOption.toResId() =
         FileMenuOption.REMOVE -> R.id.action_remove_file
         FileMenuOption.OPEN_WITH -> R.id.action_open_file_with
         FileMenuOption.CROP_AND_ROTATE -> R.id.action_crop_and_rotate
+        FileMenuOption.EDIT_PHOTO -> R.id.action_edit_photo
         FileMenuOption.SYNC -> R.id.action_sync_file
         FileMenuOption.CANCEL_SYNC -> R.id.action_cancel_sync
         FileMenuOption.SHARE -> R.id.action_share_file
@@ -61,6 +62,7 @@ fun FileMenuOption.toStringResId() =
         FileMenuOption.REMOVE -> R.string.common_remove
         FileMenuOption.OPEN_WITH -> R.string.actionbar_open_with
         FileMenuOption.CROP_AND_ROTATE -> R.string.homecloud_filelist_crop_and_rotate
+        FileMenuOption.EDIT_PHOTO -> R.string.homecloud_filelist_edit_photo
         FileMenuOption.SYNC -> R.string.filedetails_sync_file
         FileMenuOption.CANCEL_SYNC -> R.string.common_cancel_sync
         FileMenuOption.SHARE -> R.string.action_share
@@ -86,6 +88,7 @@ fun FileMenuOption.toDrawableResId() =
         FileMenuOption.REMOVE -> R.drawable.ic_action_delete_white
         FileMenuOption.OPEN_WITH -> R.drawable.ic_open_in_app
         FileMenuOption.CROP_AND_ROTATE -> R.drawable.ic_crop
+        FileMenuOption.EDIT_PHOTO -> R.drawable.ic_image
         FileMenuOption.SYNC -> R.drawable.ic_action_refresh
         FileMenuOption.CANCEL_SYNC -> R.drawable.ic_action_cancel_white
         FileMenuOption.SHARE -> R.drawable.ic_share_generic_white

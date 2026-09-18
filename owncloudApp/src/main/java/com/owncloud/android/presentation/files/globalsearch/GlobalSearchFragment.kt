@@ -26,6 +26,7 @@ import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
 import com.owncloud.android.presentation.files.SortOrder
@@ -482,6 +483,12 @@ class GlobalSearchFragment : Fragment(),
 
             R.id.action_crop_and_rotate -> {
                 startActivity(ImageCropRotateActivity.createIntent(requireContext(), singleFile))
+                disableSelectionMode()
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                startActivity(EditPhotoActivity.createIntent(requireContext(), singleFile))
                 disableSelectionMode()
                 true
             }

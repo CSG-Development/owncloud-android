@@ -209,6 +209,7 @@
     <string name="homecloud_filelist_compress">Compress</string>
     <string name="homecloud_filelist_extract">Extract</string>
     <string name="homecloud_filelist_crop_and_rotate">Crop and rotate</string>
+    <string name="homecloud_filelist_edit_photo">Edit Photo</string>
     <string name="homecloud_filelist_activity_in_progress_title">Activity in progress</string>
     <plurals name="homecloud_filelist_activity_in_progress_subtitle">
         <item quantity="one">%d file operation in progress</item>

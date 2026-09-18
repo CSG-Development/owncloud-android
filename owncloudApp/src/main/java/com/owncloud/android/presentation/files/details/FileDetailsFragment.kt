@@ -65,6 +65,7 @@ import com.owncloud.android.presentation.authentication.homecloud.LoginActivity
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.conflicts.ConflictsResolveActivity
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel.ActionsInDetailsView.NONE
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel.ActionsInDetailsView.SYNC
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel.ActionsInDetailsView.SYNC_AND_OPEN
@@ -304,6 +305,11 @@ class FileDetailsFragment : FileFragment() {
 
             R.id.action_crop_and_rotate -> {
                 startActivity(ImageCropRotateActivity.createIntent(requireContext(), safeFile.file))
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                startActivity(EditPhotoActivity.createIntent(requireContext(), safeFile.file))
                 true
             }
 

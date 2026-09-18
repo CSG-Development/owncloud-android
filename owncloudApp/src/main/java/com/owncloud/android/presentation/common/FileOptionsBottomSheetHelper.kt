@@ -20,6 +20,7 @@ import com.owncloud.android.extensions.toDrawableResId
 import com.owncloud.android.extensions.toResId
 import com.owncloud.android.extensions.toStringResId
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperation.CompressOperation
@@ -220,6 +221,10 @@ object FileOptionsBottomSheetHelper {
 
             FileMenuOption.CROP_AND_ROTATE -> {
                 activity.startActivity(ImageCropRotateActivity.createIntent(activity, file))
+            }
+
+            FileMenuOption.EDIT_PHOTO -> {
+                activity.startActivity(EditPhotoActivity.createIntent(activity, file))
             }
 
             FileMenuOption.CANCEL_SYNC -> fileActions?.cancelFileTransference(listOf(file))
