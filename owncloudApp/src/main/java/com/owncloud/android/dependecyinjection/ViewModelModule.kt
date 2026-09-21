@@ -193,6 +193,6 @@ val viewModelModule = module {
         ImageCropRotateViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
     }
     viewModel { (file: OCFile) ->
-        EditPhotoViewModel(get(), get(), file)
+        EditPhotoViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
     }
 }

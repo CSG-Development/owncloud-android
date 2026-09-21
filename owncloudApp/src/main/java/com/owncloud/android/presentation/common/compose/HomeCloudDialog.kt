@@ -101,6 +101,26 @@ private fun HomeCloudDialogButton(
     }
 }
 
+@Composable
+fun HomeCloudFileExistsDialog(
+    fileName: String,
+    onOverwrite: () -> Unit,
+    onSaveAsCopy: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    HomeCloudDialog(
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.file_already_exists),
+        text = stringResource(R.string.file_already_exists_description, fileName),
+        confirmLabel = stringResource(R.string.conflict_replace),
+        onConfirm = onOverwrite,
+        modifier = modifier,
+        dismissLabel = stringResource(R.string.conflict_keep_both),
+        onDismiss = onSaveAsCopy,
+    )
+}
+
 private val DIALOG_CORNER_RADIUS = 16.dp
 
 private data class HomeCloudDialogPreviewModel(
@@ -130,6 +150,19 @@ private fun HomeCloudDialogPreview(
             onConfirm = {},
             dismissLabel = stringResource(R.string.common_no).takeIf { model.showDismissButton },
             onDismiss = {}.takeIf { model.showDismissButton },
+        )
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun HomeCloudFileExistsDialogPreview() {
+    HomeCloudTheme {
+        HomeCloudFileExistsDialog(
+            fileName = PREVIEW_FILE_NAME,
+            onOverwrite = {},
+            onSaveAsCopy = {},
+            onDismiss = {},
         )
     }
 }

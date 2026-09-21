@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -34,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -66,12 +69,14 @@ import androidx.compose.ui.unit.sp
 import com.owncloud.android.R
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
+import com.owncloud.android.presentation.common.compose.HomeCloudFileExistsDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudSlider
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import ja.burhanrashid52.photoeditor.PhotoFilter
 import ja.burhanrashid52.photoeditor.shape.ArrowPointerLocation
 import ja.burhanrashid52.photoeditor.shape.ShapeType
+import java.io.File
 import java.util.Locale
 import android.graphics.Color as AndroidColor
 
@@ -105,6 +110,9 @@ fun EditPhotoScreen(
     editorHandle: PhotoEditorHandle,
     onErrorDismissed: () -> Unit,
     onImageLoaded: (success: Boolean) -> Unit,
+    onOverwriteChosen: () -> Unit,
+    onSaveAsCopyChosen: () -> Unit,
+    onConflictDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedTool by rememberSaveable { mutableStateOf(EditPhotoTool.None) }
@@ -207,6 +215,9 @@ fun EditPhotoScreen(
             textSession = null
             selectedTool = EditPhotoTool.None
         },
+        onOverwriteChosen = onOverwriteChosen,
+        onSaveAsCopyChosen = onSaveAsCopyChosen,
+        onConflictDismissed = onConflictDismissed,
         modifier = modifier,
     )
 }
@@ -242,10 +253,13 @@ private fun EditPhotoScreenView(
     onEmojiSelected: (String) -> Unit,
     onTextConfirmed: (String, Int) -> Unit,
     onTextDismissed: () -> Unit,
+    onOverwriteChosen: () -> Unit,
+    onSaveAsCopyChosen: () -> Unit,
+    onConflictDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val localFilePath = uiState.localFilePath()
-    val showLoading = uiState is EditPhotoUiState.Loading ||
+    val showLoading = uiState is EditPhotoUiState.Saving ||
         (uiState is EditPhotoUiState.Ready && !uiState.isImageLoaded)
     val isPreview = LocalInspectionMode.current
 
@@ -256,7 +270,7 @@ private fun EditPhotoScreenView(
                 .fillMaxWidth()
                 .background(Color.Black),
         ) {
-            if (localFilePath != null && !isPreview) {
+            if (localFilePath != null && !isPreview && uiState !is EditPhotoUiState.Downloading) {
                 EditPhotoEditorHost(
                     localFilePath = localFilePath,
                     handle = editorHandle,
@@ -264,6 +278,15 @@ private fun EditPhotoScreenView(
                     onEditTextRequested = onEditTextRequested,
                     onHistoryChanged = onHistoryChanged,
                     modifier = Modifier.fillMaxSize(),
+                )
+            }
+            if (uiState is EditPhotoUiState.Downloading) {
+                EditPhotoDownloadProgress(
+                    progressPercent = uiState.progress,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .padding(dimensionResource(R.dimen.standard_margin)),
                 )
             }
             if (showLoading) {
@@ -323,6 +346,14 @@ private fun EditPhotoScreenView(
             session = textSession,
             onConfirm = onTextConfirmed,
             onDismiss = onTextDismissed,
+        )
+    }
+    if (uiState is EditPhotoUiState.NameConflict) {
+        HomeCloudFileExistsDialog(
+            fileName = uiState.existingFileName,
+            onOverwrite = onOverwriteChosen,
+            onSaveAsCopy = onSaveAsCopyChosen,
+            onDismiss = onConflictDismissed,
         )
     }
 }
@@ -646,6 +677,39 @@ private fun EditPhotoTextDialog(
     )
 }
 
+@Composable
+private fun EditPhotoDownloadProgress(
+    progressPercent: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.homecloud_editphoto_download_in_progress),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.standard_margin)))
+        if (progressPercent < 0) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                trackColor = colorResource(R.color.homecloud_surface),
+            )
+        } else {
+            LinearProgressIndicator(
+                progress = { progressPercent.coerceIn(0, 100) / 100f },
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                trackColor = colorResource(R.color.homecloud_surface),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
 private fun EditPhotoShape.toShapeType(): ShapeType = when (this) {
     EditPhotoShape.Brush -> ShapeType.Brush
     EditPhotoShape.Line -> ShapeType.Line
@@ -687,7 +751,17 @@ private class EditPhotoScreenPreviewParameterProvider :
                 selectedTool = EditPhotoTool.Shape,
             ),
             EditPhotoScreenPreviewModel(
-                uiState = EditPhotoUiState.Loading,
+                uiState = EditPhotoUiState.Downloading(progress = INDETERMINATE_DOWNLOAD_PROGRESS),
+            ),
+            EditPhotoScreenPreviewModel(
+                uiState = EditPhotoUiState.Downloading(progress = 40),
+            ),
+            EditPhotoScreenPreviewModel(
+                uiState = EditPhotoUiState.NameConflict(
+                    localFilePath = PREVIEW_LOCAL_PATH,
+                    existingFileName = PREVIEW_FILE_NAME,
+                    tempOutputFile = File(PREVIEW_FILE_NAME),
+                ),
             ),
             EditPhotoScreenPreviewModel(
                 uiState = EditPhotoUiState.Unavailable(
@@ -736,6 +810,9 @@ private fun EditPhotoScreenPreview(
                 onEmojiSelected = {},
                 onTextConfirmed = { _, _ -> },
                 onTextDismissed = {},
+                onOverwriteChosen = {},
+                onSaveAsCopyChosen = {},
+                onConflictDismissed = {},
             )
         }
     }
@@ -760,6 +837,7 @@ private val EDIT_PHOTO_EMOJIS = listOf(
 )
 
 private const val PREVIEW_LOCAL_PATH = "/preview"
+private const val PREVIEW_FILE_NAME = "photo.jpg"
 private const val DEFAULT_BRUSH_SIZE = 25f
 private const val MIN_BRUSH_SIZE = 5f
 private const val MAX_BRUSH_SIZE = 80f

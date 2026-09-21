@@ -267,6 +267,10 @@
 
     <string name="homecloud_editphoto_unavailable">This photo is not available on this device.</string>
     <string name="homecloud_editphoto_load_error">Could not load this image.</string>
+    <string name="homecloud_editphoto_done">Done</string>
+    <string name="homecloud_editphoto_save_error">Could not save the edited photo. Please try again.</string>
+    <string name="homecloud_editphoto_download_in_progress">Downloading photo…</string>
+    <string name="homecloud_editphoto_download_error">Could not download this photo. Please try again.</string>
     <string name="homecloud_editphoto_tool_shape">Shape</string>
     <string name="homecloud_editphoto_tool_eraser">Eraser</string>
     <string name="homecloud_editphoto_tool_text">Text</string>
