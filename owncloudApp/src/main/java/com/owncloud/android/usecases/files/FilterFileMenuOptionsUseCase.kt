@@ -111,7 +111,9 @@ class FilterFileMenuOptionsUseCase(
             optionsToShow.add(FileMenuOption.CROP_AND_ROTATE)
         }
         // Edit photo
-        if (isSingleFile(files) && files.first().isImage) {
+        if (isSingleFile(files) && files.first().isEditPhotoSupported &&
+            (files.first().hasWritePermission || currentFolder?.hasAddFilePermission == true)
+        ) {
             optionsToShow.add(FileMenuOption.EDIT_PHOTO)
         }
         // Download
