@@ -170,13 +170,11 @@ fun EditPhotoScreen(
         },
         onEraserSizeChange = { eraserSize = it },
         onUndo = {
-            val nothingLeftToUndo = editorHandle.undo()
-            canUndo = !nothingLeftToUndo
+            canUndo = editorHandle.undo()
             canRedo = true
         },
         onRedo = {
-            val nothingLeftToRedo = editorHandle.redo()
-            canRedo = !nothingLeftToRedo
+            canRedo = editorHandle.redo()
             canUndo = true
         },
         onEditTextRequested = { view, text, color ->

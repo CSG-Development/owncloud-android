@@ -67,7 +67,14 @@ class PhotoEditorHandle {
 
     fun enableEraser(size: Float) {
         val editor = photoEditor ?: return
+        // PhotoEditor 3.0.2 createEraserPaint() uses ShapeBuilder.shapeSize, not eraserSize.
+        editor.setShape(
+            ShapeBuilder()
+                .withShapeType(ShapeType.Brush)
+                .withShapeSize(size),
+        )
         editor.setBrushEraserSize(size)
+        // setShape enables drawing and clears isErasing; brushEraser() must run last.
         editor.brushEraser()
     }
 
@@ -91,9 +98,9 @@ class PhotoEditorHandle {
         photoEditor?.setFilterEffect(filter)
     }
 
-    fun undo(): Boolean = photoEditor?.undo() ?: true
 
-    fun redo(): Boolean = photoEditor?.redo() ?: true
+    fun undo(): Boolean = photoEditor?.undo() ?: false
+    fun redo(): Boolean = photoEditor?.redo() ?: false
 
     @SuppressLint("MissingPermission")
     suspend fun saveAsFile(
