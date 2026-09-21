@@ -264,4 +264,26 @@
     <string name="homecloud_imageedit_download_in_progress">Downloading image…</string>
     <string name="homecloud_imageedit_download_error">Could not download this image. Please try again.</string>
     <string name="homecloud_imageedit_save_error">Could not save the edited image. Please try again.</string>
+
+    <string name="homecloud_editphoto_unavailable">This photo is not available on this device.</string>
+    <string name="homecloud_editphoto_load_error">Could not load this image.</string>
+    <string name="homecloud_editphoto_tool_shape">Shape</string>
+    <string name="homecloud_editphoto_tool_eraser">Eraser</string>
+    <string name="homecloud_editphoto_tool_text">Text</string>
+    <string name="homecloud_editphoto_tool_emoji">Emoji</string>
+    <string name="homecloud_editphoto_tool_filter">Filter</string>
+    <string name="homecloud_editphoto_tool_undo">Undo</string>
+    <string name="homecloud_editphoto_tool_redo">Redo</string>
+    <string name="homecloud_editphoto_shape_brush">Brush</string>
+    <string name="homecloud_editphoto_shape_line">Line</string>
+    <string name="homecloud_editphoto_shape_oval">Oval</string>
+    <string name="homecloud_editphoto_shape_rectangle">Rectangle</string>
+    <string name="homecloud_editphoto_shape_arrow">Arrow</string>
+    <string name="homecloud_editphoto_brush_size">Size</string>
+    <string name="homecloud_editphoto_brush_opacity">Opacity</string>
+    <string name="homecloud_editphoto_color">Color</string>
+    <string name="homecloud_editphoto_text_title">Add text</string>
+    <string name="homecloud_editphoto_text_edit_title">Edit text</string>
+    <string name="homecloud_editphoto_text_hint">Enter text</string>
+    <string name="homecloud_editphoto_text_done">Done</string>
 </resources>

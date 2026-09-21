@@ -8,15 +8,26 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
 import com.owncloud.android.R
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 
 class EditPhotoActivity : AppCompatActivity() {
+
+    private val viewModel: EditPhotoViewModel by viewModel {
+        parametersOf(intent.getParcelableExtra(EXTRA_FILE) as OCFile?)
+    }
+
+    private val editorHandle = PhotoEditorHandle()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +49,16 @@ class EditPhotoActivity : AppCompatActivity() {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 HomeCloudTheme {
+                    val uiState by viewModel.uiState.collectAsState()
                     Surface(modifier = Modifier.fillMaxSize()) {
-                        EditPhotoScreen(modifier = Modifier.fillMaxSize())
+                        EditPhotoScreen(
+                            uiState = uiState,
+                            errorMessage = uiState.errorMessageRes()?.let { stringResource(it) },
+                            editorHandle = editorHandle,
+                            onErrorDismissed = viewModel::consumeError,
+                            onImageLoaded = viewModel::onImageLoaded,
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
                 }
             }
