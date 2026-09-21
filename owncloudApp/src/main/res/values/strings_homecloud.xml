@@ -271,14 +271,14 @@
     <string name="homecloud_editphoto_save_error">Could not save the edited photo. Please try again.</string>
     <string name="homecloud_editphoto_download_in_progress">Downloading photo…</string>
     <string name="homecloud_editphoto_download_error">Could not download this photo. Please try again.</string>
-    <string name="homecloud_editphoto_tool_shape">Shape</string>
+    <string name="homecloud_editphoto_tool_pen">Pen</string>
+    <string name="homecloud_editphoto_tool_marker">Marker</string>
+    <string name="homecloud_editphoto_tool_pencil">Pencil</string>
     <string name="homecloud_editphoto_tool_eraser">Eraser</string>
     <string name="homecloud_editphoto_tool_text">Text</string>
     <string name="homecloud_editphoto_tool_emoji">Emoji</string>
-    <string name="homecloud_editphoto_tool_filter">Filter</string>
     <string name="homecloud_editphoto_tool_undo">Undo</string>
     <string name="homecloud_editphoto_tool_redo">Redo</string>
-    <string name="homecloud_editphoto_shape_brush">Brush</string>
     <string name="homecloud_editphoto_shape_line">Line</string>
     <string name="homecloud_editphoto_shape_oval">Oval</string>
     <string name="homecloud_editphoto_shape_rectangle">Rectangle</string>

@@ -2,40 +2,23 @@ package com.owncloud.android.presentation.editphoto
 
 import android.view.View
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixOff
-import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.EmojiEmotions
-import androidx.compose.material.icons.filled.PhotoFilter
-import androidx.compose.material.icons.filled.Redo
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -54,9 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -71,31 +52,10 @@ import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
 import com.owncloud.android.presentation.common.compose.HomeCloudFileExistsDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
-import com.owncloud.android.presentation.common.compose.HomeCloudSlider
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
-import ja.burhanrashid52.photoeditor.PhotoFilter
-import ja.burhanrashid52.photoeditor.shape.ArrowPointerLocation
 import ja.burhanrashid52.photoeditor.shape.ShapeType
 import java.io.File
-import java.util.Locale
 import android.graphics.Color as AndroidColor
-
-private enum class EditPhotoTool {
-    None,
-    Shape,
-    Eraser,
-    Text,
-    Emoji,
-    Filter,
-}
-
-private enum class EditPhotoShape {
-    Brush,
-    Line,
-    Oval,
-    Rectangle,
-    Arrow,
-}
 
 private data class EditPhotoTextSession(
     val view: View?,
@@ -116,31 +76,48 @@ fun EditPhotoScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTool by rememberSaveable { mutableStateOf(EditPhotoTool.None) }
-    var selectedShape by rememberSaveable { mutableStateOf(EditPhotoShape.Brush) }
     var brushColor by rememberSaveable { mutableIntStateOf(AndroidColor.WHITE) }
-    var brushSize by rememberSaveable { mutableFloatStateOf(DEFAULT_BRUSH_SIZE) }
-    var brushOpacity by rememberSaveable { mutableIntStateOf(MAX_BRUSH_OPACITY) }
-    var selectedFilter by rememberSaveable { mutableStateOf(PhotoFilter.NONE.name) }
+    var penSize by rememberSaveable { mutableFloatStateOf(PEN_DEFAULT_SIZE) }
+    var penOpacity by rememberSaveable { mutableIntStateOf(PEN_DEFAULT_OPACITY) }
+    var markerSize by rememberSaveable { mutableFloatStateOf(MARKER_DEFAULT_SIZE) }
+    var markerOpacity by rememberSaveable { mutableIntStateOf(MARKER_DEFAULT_OPACITY) }
+    var pencilSize by rememberSaveable { mutableFloatStateOf(PENCIL_DEFAULT_SIZE) }
+    var pencilOpacity by rememberSaveable { mutableIntStateOf(PENCIL_DEFAULT_OPACITY) }
+    var eraserSize by rememberSaveable { mutableFloatStateOf(DEFAULT_ERASER_SIZE) }
     var canUndo by remember { mutableStateOf(false) }
     var canRedo by remember { mutableStateOf(false) }
     var textSession by remember { mutableStateOf<EditPhotoTextSession?>(null) }
 
     val toolsEnabled = uiState is EditPhotoUiState.Ready && uiState.isImageLoaded
+    val activeBrushSize = selectedTool.brushSize(penSize, markerSize, pencilSize)
+    val activeBrushOpacity = selectedTool.brushOpacity(penOpacity, markerOpacity, pencilOpacity)
 
-    LaunchedEffect(selectedTool, selectedShape, brushColor, brushSize, brushOpacity, toolsEnabled) {
+    LaunchedEffect(
+        selectedTool,
+        brushColor,
+        penSize,
+        penOpacity,
+        markerSize,
+        markerOpacity,
+        pencilSize,
+        pencilOpacity,
+        eraserSize,
+        toolsEnabled,
+    ) {
         if (!toolsEnabled) return@LaunchedEffect
         when (selectedTool) {
-            EditPhotoTool.Shape -> editorHandle.applyShape(
-                shapeType = selectedShape.toShapeType(),
+            EditPhotoTool.Pen,
+            EditPhotoTool.Marker,
+            EditPhotoTool.Pencil -> editorHandle.applyShape(
+                shapeType = ShapeType.Brush,
                 color = brushColor,
-                size = brushSize,
-                opacity = brushOpacity,
+                size = selectedTool.brushSize(penSize, markerSize, pencilSize),
+                opacity = selectedTool.brushOpacity(penOpacity, markerOpacity, pencilOpacity),
             )
-            EditPhotoTool.Eraser -> editorHandle.enableEraser(brushSize)
+            EditPhotoTool.Eraser -> editorHandle.enableEraser(eraserSize)
             EditPhotoTool.None,
             EditPhotoTool.Text,
-            EditPhotoTool.Emoji,
-            EditPhotoTool.Filter -> editorHandle.disableDrawing()
+            EditPhotoTool.Emoji -> editorHandle.disableDrawing()
         }
     }
 
@@ -149,11 +126,10 @@ fun EditPhotoScreen(
         errorMessage = errorMessage,
         editorHandle = editorHandle,
         selectedTool = selectedTool,
-        selectedShape = selectedShape,
         brushColor = brushColor,
-        brushSize = brushSize,
-        brushOpacity = brushOpacity,
-        selectedFilter = selectedFilter,
+        brushSize = activeBrushSize,
+        brushOpacity = activeBrushOpacity,
+        eraserSize = eraserSize,
         canUndo = canUndo,
         canRedo = canRedo,
         textSession = textSession,
@@ -175,14 +151,24 @@ fun EditPhotoScreen(
                 textSession = null
             }
         },
-        onShapeSelected = { selectedShape = it },
         onBrushColorChange = { brushColor = it },
-        onBrushSizeChange = { brushSize = it },
-        onBrushOpacityChange = { brushOpacity = it },
-        onFilterSelected = { filter ->
-            selectedFilter = filter.name
-            editorHandle.setFilter(filter)
+        onBrushSizeChange = { size ->
+            when (selectedTool) {
+                EditPhotoTool.Pen -> penSize = size
+                EditPhotoTool.Marker -> markerSize = size
+                EditPhotoTool.Pencil -> pencilSize = size
+                else -> Unit
+            }
         },
+        onBrushOpacityChange = { opacity ->
+            when (selectedTool) {
+                EditPhotoTool.Pen -> penOpacity = opacity
+                EditPhotoTool.Marker -> markerOpacity = opacity
+                EditPhotoTool.Pencil -> pencilOpacity = opacity
+                else -> Unit
+            }
+        },
+        onEraserSizeChange = { eraserSize = it },
         onUndo = {
             val nothingLeftToUndo = editorHandle.undo()
             canUndo = !nothingLeftToUndo
@@ -229,11 +215,10 @@ private fun EditPhotoScreenView(
     errorMessage: String?,
     editorHandle: PhotoEditorHandle,
     selectedTool: EditPhotoTool,
-    selectedShape: EditPhotoShape,
     brushColor: Int,
     brushSize: Float,
     brushOpacity: Int,
-    selectedFilter: String,
+    eraserSize: Float,
     canUndo: Boolean,
     canRedo: Boolean,
     textSession: EditPhotoTextSession?,
@@ -242,11 +227,10 @@ private fun EditPhotoScreenView(
     onImageLoaded: (success: Boolean) -> Unit,
     onHistoryChanged: (canUndo: Boolean, canRedo: Boolean) -> Unit,
     onToolSelected: (EditPhotoTool) -> Unit,
-    onShapeSelected: (EditPhotoShape) -> Unit,
     onBrushColorChange: (Int) -> Unit,
     onBrushSizeChange: (Float) -> Unit,
     onBrushOpacityChange: (Int) -> Unit,
-    onFilterSelected: (PhotoFilter) -> Unit,
+    onEraserSizeChange: (Float) -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onEditTextRequested: (View, String, Int) -> Unit,
@@ -262,6 +246,9 @@ private fun EditPhotoScreenView(
     val showLoading = uiState is EditPhotoUiState.Saving ||
         (uiState is EditPhotoUiState.Ready && !uiState.isImageLoaded)
     val isPreview = LocalInspectionMode.current
+    val drawingBarModifier = Modifier
+        .fillMaxWidth()
+        .padding(dimensionResource(R.dimen.standard_half_margin))
 
     Column(modifier = modifier) {
         Box(
@@ -303,24 +290,24 @@ private fun EditPhotoScreenView(
                 modifier = Modifier.padding(dimensionResource(R.dimen.standard_half_margin)),
             )
         }
-        if (selectedTool == EditPhotoTool.Shape) {
-            EditPhotoShapePanel(
-                selectedShape = selectedShape,
-                brushColor = brushColor,
+        if (selectedTool.isBrushTool) {
+            EditPhotoBrushSettings(
+                selectedColor = brushColor,
                 brushSize = brushSize,
                 brushOpacity = brushOpacity,
                 enabled = toolsEnabled,
-                onShapeSelected = onShapeSelected,
-                onBrushColorChange = onBrushColorChange,
-                onBrushSizeChange = onBrushSizeChange,
-                onBrushOpacityChange = onBrushOpacityChange,
+                onColorSelected = onBrushColorChange,
+                onSizeChange = onBrushSizeChange,
+                onOpacityChange = onBrushOpacityChange,
+                modifier = drawingBarModifier,
             )
         }
-        if (selectedTool == EditPhotoTool.Filter) {
-            EditPhotoFilterStrip(
-                selectedFilter = selectedFilter,
+        if (selectedTool == EditPhotoTool.Eraser) {
+            EditPhotoEraserSettings(
+                eraserSize = eraserSize,
                 enabled = toolsEnabled,
-                onFilterSelected = onFilterSelected,
+                onSizeChange = onEraserSizeChange,
+                modifier = drawingBarModifier,
             )
         }
         EditPhotoToolsRow(
@@ -331,6 +318,7 @@ private fun EditPhotoScreenView(
             onToolSelected = onToolSelected,
             onUndo = onUndo,
             onRedo = onRedo,
+            modifier = drawingBarModifier,
         )
     }
     if (selectedTool == EditPhotoTool.Emoji) {
@@ -354,231 +342,6 @@ private fun EditPhotoScreenView(
             onOverwrite = onOverwriteChosen,
             onSaveAsCopy = onSaveAsCopyChosen,
             onDismiss = onConflictDismissed,
-        )
-    }
-}
-
-@Composable
-private fun EditPhotoShapePanel(
-    selectedShape: EditPhotoShape,
-    brushColor: Int,
-    brushSize: Float,
-    brushOpacity: Int,
-    enabled: Boolean,
-    onShapeSelected: (EditPhotoShape) -> Unit,
-    onBrushColorChange: (Int) -> Unit,
-    onBrushSizeChange: (Float) -> Unit,
-    onBrushOpacityChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.standard_half_margin)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.standard_half_margin)),
-    ) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.standard_half_margin)),
-        ) {
-            EditPhotoShape.entries.forEach { shape ->
-                FilterChip(
-                    selected = shape == selectedShape,
-                    onClick = { onShapeSelected(shape) },
-                    enabled = enabled,
-                    label = { Text(text = stringResource(shape.labelRes)) },
-                )
-            }
-        }
-        EditPhotoColorRow(
-            selectedColor = brushColor,
-            enabled = enabled,
-            onColorSelected = onBrushColorChange,
-        )
-        Text(
-            text = stringResource(R.string.homecloud_editphoto_brush_size),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        HomeCloudSlider(
-            value = brushSize,
-            onValueChange = onBrushSizeChange,
-            valueRange = MIN_BRUSH_SIZE..MAX_BRUSH_SIZE,
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = stringResource(R.string.homecloud_editphoto_brush_opacity),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        HomeCloudSlider(
-            value = brushOpacity.toFloat(),
-            onValueChange = { onBrushOpacityChange(it.toInt()) },
-            valueRange = 0f..MAX_BRUSH_OPACITY.toFloat(),
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun EditPhotoColorRow(
-    selectedColor: Int,
-    enabled: Boolean,
-    onColorSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.standard_half_margin)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.homecloud_editphoto_color),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        EDIT_PHOTO_COLORS.forEach { color ->
-            val selected = color == selectedColor
-            Box(
-                modifier = Modifier
-                    .size(COLOR_SWATCH_SIZE)
-                    .clip(CircleShape)
-                    .background(Color(color))
-                    .border(
-                        width = if (selected) SELECTED_SWATCH_BORDER else UNSELECTED_SWATCH_BORDER,
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        },
-                        shape = CircleShape,
-                    )
-                    .clickable(
-                        enabled = enabled,
-                        role = Role.Button,
-                        onClick = { onColorSelected(color) },
-                    ),
-            )
-        }
-    }
-}
-
-@Composable
-private fun EditPhotoFilterStrip(
-    selectedFilter: String,
-    enabled: Boolean,
-    onFilterSelected: (PhotoFilter) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(dimensionResource(R.dimen.standard_half_margin)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.standard_half_margin)),
-    ) {
-        PhotoFilter.entries.forEach { filter ->
-            FilterChip(
-                selected = filter.name == selectedFilter,
-                onClick = { onFilterSelected(filter) },
-                enabled = enabled,
-                label = { Text(text = filter.displayLabel()) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun EditPhotoToolsRow(
-    selectedTool: EditPhotoTool,
-    canUndo: Boolean,
-    canRedo: Boolean,
-    enabled: Boolean,
-    onToolSelected: (EditPhotoTool) -> Unit,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(dimensionResource(R.dimen.standard_half_margin)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        EditPhotoToolButton(
-            icon = Icons.Filled.Brush,
-            label = stringResource(R.string.homecloud_editphoto_tool_shape),
-            selected = selectedTool == EditPhotoTool.Shape,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Shape) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.AutoFixOff,
-            label = stringResource(R.string.homecloud_editphoto_tool_eraser),
-            selected = selectedTool == EditPhotoTool.Eraser,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Eraser) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.TextFields,
-            label = stringResource(R.string.homecloud_editphoto_tool_text),
-            selected = selectedTool == EditPhotoTool.Text,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Text) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.EmojiEmotions,
-            label = stringResource(R.string.homecloud_editphoto_tool_emoji),
-            selected = selectedTool == EditPhotoTool.Emoji,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Emoji) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.PhotoFilter,
-            label = stringResource(R.string.homecloud_editphoto_tool_filter),
-            selected = selectedTool == EditPhotoTool.Filter,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Filter) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.Undo,
-            label = stringResource(R.string.homecloud_editphoto_tool_undo),
-            selected = false,
-            enabled = enabled && canUndo,
-            onClick = onUndo,
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.Redo,
-            label = stringResource(R.string.homecloud_editphoto_tool_redo),
-            selected = false,
-            enabled = enabled && canRedo,
-            onClick = onRedo,
-        )
-    }
-}
-
-@Composable
-private fun EditPhotoToolButton(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = when {
-                !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ICON_ALPHA)
-                selected -> MaterialTheme.colorScheme.onSecondaryContainer
-                else -> MaterialTheme.colorScheme.onSurface
-            },
         )
     }
 }
@@ -710,29 +473,27 @@ private fun EditPhotoDownloadProgress(
     }
 }
 
-private fun EditPhotoShape.toShapeType(): ShapeType = when (this) {
-    EditPhotoShape.Brush -> ShapeType.Brush
-    EditPhotoShape.Line -> ShapeType.Line
-    EditPhotoShape.Oval -> ShapeType.Oval
-    EditPhotoShape.Rectangle -> ShapeType.Rectangle
-    EditPhotoShape.Arrow -> ShapeType.Arrow(pointerLocation = ArrowPointerLocation.END)
+private fun EditPhotoTool.brushSize(
+    penSize: Float,
+    markerSize: Float,
+    pencilSize: Float,
+): Float = when (this) {
+    EditPhotoTool.Pen -> penSize
+    EditPhotoTool.Marker -> markerSize
+    EditPhotoTool.Pencil -> pencilSize
+    else -> penSize
 }
 
-private val EditPhotoShape.labelRes: Int
-    get() = when (this) {
-        EditPhotoShape.Brush -> R.string.homecloud_editphoto_shape_brush
-        EditPhotoShape.Line -> R.string.homecloud_editphoto_shape_line
-        EditPhotoShape.Oval -> R.string.homecloud_editphoto_shape_oval
-        EditPhotoShape.Rectangle -> R.string.homecloud_editphoto_shape_rectangle
-        EditPhotoShape.Arrow -> R.string.homecloud_editphoto_shape_arrow
-    }
-
-private fun PhotoFilter.displayLabel(): String =
-    name.split('_').joinToString(" ") { part ->
-        part.lowercase(Locale.US).replaceFirstChar { char ->
-            if (char.isLowerCase()) char.titlecase(Locale.US) else char.toString()
-        }
-    }
+private fun EditPhotoTool.brushOpacity(
+    penOpacity: Int,
+    markerOpacity: Int,
+    pencilOpacity: Int,
+): Int = when (this) {
+    EditPhotoTool.Pen -> penOpacity
+    EditPhotoTool.Marker -> markerOpacity
+    EditPhotoTool.Pencil -> pencilOpacity
+    else -> penOpacity
+}
 
 private data class EditPhotoScreenPreviewModel(
     val uiState: EditPhotoUiState,
@@ -748,7 +509,14 @@ private class EditPhotoScreenPreviewParameterProvider :
                     localFilePath = PREVIEW_LOCAL_PATH,
                     isImageLoaded = true,
                 ),
-                selectedTool = EditPhotoTool.Shape,
+                selectedTool = EditPhotoTool.Pen,
+            ),
+            EditPhotoScreenPreviewModel(
+                uiState = EditPhotoUiState.Ready(
+                    localFilePath = PREVIEW_LOCAL_PATH,
+                    isImageLoaded = true,
+                ),
+                selectedTool = EditPhotoTool.Eraser,
             ),
             EditPhotoScreenPreviewModel(
                 uiState = EditPhotoUiState.Downloading(progress = INDETERMINATE_DOWNLOAD_PROGRESS),
@@ -785,25 +553,22 @@ private fun EditPhotoScreenPreview(
                 errorMessage = model.errorMessage,
                 editorHandle = previewEditorHandle,
                 selectedTool = model.selectedTool,
-                selectedShape = EditPhotoShape.Brush,
                 brushColor = AndroidColor.WHITE,
-                brushSize = DEFAULT_BRUSH_SIZE,
-                brushOpacity = MAX_BRUSH_OPACITY,
-                selectedFilter = PhotoFilter.NONE.name,
+                brushSize = PEN_DEFAULT_SIZE,
+                brushOpacity = PEN_DEFAULT_OPACITY,
+                eraserSize = DEFAULT_ERASER_SIZE,
                 canUndo = false,
                 canRedo = false,
                 textSession = null,
-                toolsEnabled = model.uiState is EditPhotoUiState.Ready &&
-                    (model.uiState as EditPhotoUiState.Ready).isImageLoaded,
+                toolsEnabled = (model.uiState as? EditPhotoUiState.Ready)?.isImageLoaded == true,
                 onErrorDismissed = {},
                 onImageLoaded = {},
                 onHistoryChanged = { _, _ -> },
                 onToolSelected = {},
-                onShapeSelected = {},
                 onBrushColorChange = {},
                 onBrushSizeChange = {},
                 onBrushOpacityChange = {},
-                onFilterSelected = {},
+                onEraserSizeChange = {},
                 onUndo = {},
                 onRedo = {},
                 onEditTextRequested = { _, _, _ -> },
@@ -820,17 +585,6 @@ private fun EditPhotoScreenPreview(
 
 private val previewEditorHandle = PhotoEditorHandle()
 
-private val EDIT_PHOTO_COLORS = listOf(
-    AndroidColor.WHITE,
-    AndroidColor.BLACK,
-    AndroidColor.RED,
-    AndroidColor.GREEN,
-    AndroidColor.BLUE,
-    AndroidColor.YELLOW,
-    AndroidColor.MAGENTA,
-    AndroidColor.CYAN,
-)
-
 private val EDIT_PHOTO_EMOJIS = listOf(
     "😀", "😂", "😍", "😎", "😢", "😡", "👍", "👎", "🎉", "🔥",
     "❤️", "💯", "⭐", "🌈", "☀️", "🌸", "🍕", "⚽", "🎵", "✨",
@@ -838,14 +592,6 @@ private val EDIT_PHOTO_EMOJIS = listOf(
 
 private const val PREVIEW_LOCAL_PATH = "/preview"
 private const val PREVIEW_FILE_NAME = "photo.jpg"
-private const val DEFAULT_BRUSH_SIZE = 25f
-private const val MIN_BRUSH_SIZE = 5f
-private const val MAX_BRUSH_SIZE = 80f
-private const val MAX_BRUSH_OPACITY = 255
-private const val DISABLED_ICON_ALPHA = 0.38f
-private val COLOR_SWATCH_SIZE = 28.dp
-private val SELECTED_SWATCH_BORDER = 2.dp
-private val UNSELECTED_SWATCH_BORDER = 1.dp
 private val EMOJI_CELL_SIZE = 48.dp
 private val EMOJI_FONT_SIZE = 28.sp
 private val DIALOG_CORNER_RADIUS = 16.dp
