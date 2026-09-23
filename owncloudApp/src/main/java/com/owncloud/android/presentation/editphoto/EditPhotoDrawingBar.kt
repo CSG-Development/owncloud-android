@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,15 +19,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoFixOff
-import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.CropSquare
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.owncloud.android.R
@@ -196,28 +195,28 @@ internal fun EditPhotoToolsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         EditPhotoToolButton(
-            icon = Icons.Filled.Create,
+            icon = ImageVector.vectorResource(R.drawable.ic_pen),
             label = stringResource(R.string.homecloud_editphoto_tool_pen),
             selected = selectedTool == EditPhotoTool.Pen,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Pen) },
         )
         EditPhotoToolButton(
-            icon = Icons.Filled.Brush,
+            icon = ImageVector.vectorResource(R.drawable.ic_marker),
             label = stringResource(R.string.homecloud_editphoto_tool_marker),
             selected = selectedTool == EditPhotoTool.Marker,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Marker) },
         )
         EditPhotoToolButton(
-            icon = Icons.Filled.Edit,
+            icon = Icons.Outlined.Edit,
             label = stringResource(R.string.homecloud_editphoto_tool_pencil),
             selected = selectedTool == EditPhotoTool.Pencil,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Pencil) },
         )
         EditPhotoToolButton(
-            icon = Icons.Filled.AutoFixOff,
+            icon = ImageVector.vectorResource(R.drawable.ic_eraser),
             label = stringResource(R.string.homecloud_editphoto_tool_eraser),
             selected = selectedTool == EditPhotoTool.Eraser,
             enabled = enabled,
@@ -230,6 +229,7 @@ internal fun EditPhotoToolsRow(
             enabled = enabled,
             onClick = onAddClick,
         )
+        Spacer(modifier = Modifier.weight(1f))
         EditPhotoToolButton(
             icon = Icons.AutoMirrored.Filled.Undo,
             label = stringResource(R.string.homecloud_editphoto_tool_undo),
@@ -272,7 +272,7 @@ internal fun EditPhotoAddMenu(
             modifier = Modifier.fillMaxWidth(),
         )
         EditPhotoAddMenuItem(
-            icon = Icons.Filled.Circle,
+            icon = Icons.Outlined.Circle,
             label = stringResource(R.string.homecloud_editphoto_shape_oval),
             onClick = { onItemSelected(EditPhotoAddItem.Oval) },
             modifier = Modifier.fillMaxWidth(),
@@ -432,12 +432,12 @@ private fun EditPhotoAddMenuPreview() {
     }
 }
 
-internal const val PEN_DEFAULT_SIZE = 25f
+internal const val PEN_DEFAULT_SIZE = 15f
 internal const val PEN_DEFAULT_OPACITY = 255
 internal const val MARKER_DEFAULT_SIZE = 50f
 internal const val MARKER_DEFAULT_OPACITY = 80
-internal const val PENCIL_DEFAULT_SIZE = 12f
-internal const val PENCIL_DEFAULT_OPACITY = 180
+internal const val PENCIL_DEFAULT_SIZE = 7f
+internal const val PENCIL_DEFAULT_OPACITY = 255
 internal const val DEFAULT_ERASER_SIZE = 25f
 internal const val MIN_BRUSH_SIZE = 5f
 internal const val MAX_BRUSH_SIZE = 80f

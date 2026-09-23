@@ -29,6 +29,7 @@ import ja.burhanrashid52.photoeditor.PhotoEditor
 import ja.burhanrashid52.photoeditor.PhotoEditorView
 import ja.burhanrashid52.photoeditor.PhotoFilter
 import ja.burhanrashid52.photoeditor.SaveSettings
+import ja.burhanrashid52.photoeditor.TextStyleBuilder
 import ja.burhanrashid52.photoeditor.ViewType
 import ja.burhanrashid52.photoeditor.shape.ShapeBuilder
 import ja.burhanrashid52.photoeditor.shape.ShapeType
@@ -83,7 +84,10 @@ class PhotoEditorHandle {
     }
 
     fun addText(text: String, color: Int) {
-        photoEditor?.addText(text, color)
+        photoEditor?.addText(text, TextStyleBuilder().apply {
+            withTextSize(48f)
+            withTextColor(color)
+        })
     }
 
     fun editText(view: View, text: String, color: Int) {
