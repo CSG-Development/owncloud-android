@@ -53,6 +53,7 @@ import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
 import com.owncloud.android.presentation.common.compose.HomeCloudFileExistsDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import ja.burhanrashid52.photoeditor.shape.ArrowPointerLocation
 import ja.burhanrashid52.photoeditor.shape.ShapeType
 import java.io.File
 import android.graphics.Color as AndroidColor
@@ -76,6 +77,7 @@ fun EditPhotoScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTool by rememberSaveable { mutableStateOf(EditPhotoTool.None) }
+    var showAddMenu by rememberSaveable { mutableStateOf(false) }
     var brushColor by rememberSaveable { mutableIntStateOf(AndroidColor.WHITE) }
     var penSize by rememberSaveable { mutableFloatStateOf(PEN_DEFAULT_SIZE) }
     var penOpacity by rememberSaveable { mutableIntStateOf(PEN_DEFAULT_OPACITY) }
@@ -84,13 +86,23 @@ fun EditPhotoScreen(
     var pencilSize by rememberSaveable { mutableFloatStateOf(PENCIL_DEFAULT_SIZE) }
     var pencilOpacity by rememberSaveable { mutableIntStateOf(PENCIL_DEFAULT_OPACITY) }
     var eraserSize by rememberSaveable { mutableFloatStateOf(DEFAULT_ERASER_SIZE) }
+    var shapeSize by rememberSaveable { mutableFloatStateOf(PEN_DEFAULT_SIZE) }
+    var shapeOpacity by rememberSaveable { mutableIntStateOf(PEN_DEFAULT_OPACITY) }
     var canUndo by remember { mutableStateOf(false) }
     var canRedo by remember { mutableStateOf(false) }
     var textSession by remember { mutableStateOf<EditPhotoTextSession?>(null) }
 
     val toolsEnabled = uiState is EditPhotoUiState.Ready && uiState.isImageLoaded
-    val activeBrushSize = selectedTool.brushSize(penSize, markerSize, pencilSize)
-    val activeBrushOpacity = selectedTool.brushOpacity(penOpacity, markerOpacity, pencilOpacity)
+    val activeStrokeSize = if (selectedTool.isShapeTool) {
+        shapeSize
+    } else {
+        selectedTool.brushSize(penSize, markerSize, pencilSize)
+    }
+    val activeStrokeOpacity = if (selectedTool.isShapeTool) {
+        shapeOpacity
+    } else {
+        selectedTool.brushOpacity(penOpacity, markerOpacity, pencilOpacity)
+    }
 
     LaunchedEffect(
         selectedTool,
@@ -102,6 +114,8 @@ fun EditPhotoScreen(
         pencilSize,
         pencilOpacity,
         eraserSize,
+        shapeSize,
+        shapeOpacity,
         toolsEnabled,
     ) {
         if (!toolsEnabled) return@LaunchedEffect
@@ -113,6 +127,30 @@ fun EditPhotoScreen(
                 color = brushColor,
                 size = selectedTool.brushSize(penSize, markerSize, pencilSize),
                 opacity = selectedTool.brushOpacity(penOpacity, markerOpacity, pencilOpacity),
+            )
+            EditPhotoTool.Line -> editorHandle.applyShape(
+                shapeType = ShapeType.Line,
+                color = brushColor,
+                size = shapeSize,
+                opacity = shapeOpacity,
+            )
+            EditPhotoTool.Oval -> editorHandle.applyShape(
+                shapeType = ShapeType.Oval,
+                color = brushColor,
+                size = shapeSize,
+                opacity = shapeOpacity,
+            )
+            EditPhotoTool.Rectangle -> editorHandle.applyShape(
+                shapeType = ShapeType.Rectangle,
+                color = brushColor,
+                size = shapeSize,
+                opacity = shapeOpacity,
+            )
+            EditPhotoTool.Arrow -> editorHandle.applyShape(
+                shapeType = ShapeType.Arrow(pointerLocation = ArrowPointerLocation.END),
+                color = brushColor,
+                size = shapeSize,
+                opacity = shapeOpacity,
             )
             EditPhotoTool.Eraser -> editorHandle.enableEraser(eraserSize)
             EditPhotoTool.None,
@@ -126,9 +164,10 @@ fun EditPhotoScreen(
         errorMessage = errorMessage,
         editorHandle = editorHandle,
         selectedTool = selectedTool,
+        showAddMenu = showAddMenu,
         brushColor = brushColor,
-        brushSize = activeBrushSize,
-        brushOpacity = activeBrushOpacity,
+        brushSize = activeStrokeSize,
+        brushOpacity = activeStrokeOpacity,
         eraserSize = eraserSize,
         canUndo = canUndo,
         canRedo = canRedo,
@@ -141,31 +180,65 @@ fun EditPhotoScreen(
             canRedo = redoEnabled
         },
         onToolSelected = { tool ->
+            showAddMenu = false
             val nextTool = if (selectedTool == tool) EditPhotoTool.None else tool
             selectedTool = nextTool
-            if (nextTool == EditPhotoTool.Text) {
-                if (textSession == null) {
-                    textSession = EditPhotoTextSession(view = null, text = "", color = brushColor)
+            textSession = null
+        },
+        onAddClick = {
+            showAddMenu = true
+            if (selectedTool.isShapeTool) {
+                selectedTool = EditPhotoTool.None
+            }
+            textSession = null
+        },
+        onAddDismissed = { showAddMenu = false },
+        onAddItemSelected = { item ->
+            showAddMenu = false
+            when (item) {
+                EditPhotoAddItem.Text -> {
+                    selectedTool = EditPhotoTool.Text
+                    if (textSession == null) {
+                        textSession = EditPhotoTextSession(view = null, text = "", color = brushColor)
+                    }
                 }
-            } else {
-                textSession = null
+                EditPhotoAddItem.Emoji -> {
+                    textSession = null
+                    selectedTool = EditPhotoTool.Emoji
+                }
+                EditPhotoAddItem.Line -> {
+                    textSession = null
+                    selectedTool = EditPhotoTool.Line
+                }
+                EditPhotoAddItem.Oval -> {
+                    textSession = null
+                    selectedTool = EditPhotoTool.Oval
+                }
+                EditPhotoAddItem.Rectangle -> {
+                    textSession = null
+                    selectedTool = EditPhotoTool.Rectangle
+                }
+                EditPhotoAddItem.Arrow -> {
+                    textSession = null
+                    selectedTool = EditPhotoTool.Arrow
+                }
             }
         },
         onBrushColorChange = { brushColor = it },
         onBrushSizeChange = { size ->
-            when (selectedTool) {
-                EditPhotoTool.Pen -> penSize = size
-                EditPhotoTool.Marker -> markerSize = size
-                EditPhotoTool.Pencil -> pencilSize = size
-                else -> Unit
+            when {
+                selectedTool.isShapeTool -> shapeSize = size
+                selectedTool == EditPhotoTool.Pen -> penSize = size
+                selectedTool == EditPhotoTool.Marker -> markerSize = size
+                selectedTool == EditPhotoTool.Pencil -> pencilSize = size
             }
         },
         onBrushOpacityChange = { opacity ->
-            when (selectedTool) {
-                EditPhotoTool.Pen -> penOpacity = opacity
-                EditPhotoTool.Marker -> markerOpacity = opacity
-                EditPhotoTool.Pencil -> pencilOpacity = opacity
-                else -> Unit
+            when {
+                selectedTool.isShapeTool -> shapeOpacity = opacity
+                selectedTool == EditPhotoTool.Pen -> penOpacity = opacity
+                selectedTool == EditPhotoTool.Marker -> markerOpacity = opacity
+                selectedTool == EditPhotoTool.Pencil -> pencilOpacity = opacity
             }
         },
         onEraserSizeChange = { eraserSize = it },
@@ -178,6 +251,7 @@ fun EditPhotoScreen(
             canUndo = true
         },
         onEditTextRequested = { view, text, color ->
+            showAddMenu = false
             selectedTool = EditPhotoTool.Text
             textSession = EditPhotoTextSession(view = view, text = text, color = color)
         },
@@ -213,6 +287,7 @@ private fun EditPhotoScreenView(
     errorMessage: String?,
     editorHandle: PhotoEditorHandle,
     selectedTool: EditPhotoTool,
+    showAddMenu: Boolean,
     brushColor: Int,
     brushSize: Float,
     brushOpacity: Int,
@@ -225,6 +300,9 @@ private fun EditPhotoScreenView(
     onImageLoaded: (success: Boolean) -> Unit,
     onHistoryChanged: (canUndo: Boolean, canRedo: Boolean) -> Unit,
     onToolSelected: (EditPhotoTool) -> Unit,
+    onAddClick: () -> Unit,
+    onAddDismissed: () -> Unit,
+    onAddItemSelected: (EditPhotoAddItem) -> Unit,
     onBrushColorChange: (Int) -> Unit,
     onBrushSizeChange: (Float) -> Unit,
     onBrushOpacityChange: (Int) -> Unit,
@@ -288,7 +366,7 @@ private fun EditPhotoScreenView(
                 modifier = Modifier.padding(dimensionResource(R.dimen.standard_half_margin)),
             )
         }
-        if (selectedTool.isBrushTool) {
+        if (selectedTool.isBrushTool || selectedTool.isShapeTool) {
             EditPhotoBrushSettings(
                 selectedColor = brushColor,
                 brushSize = brushSize,
@@ -310,14 +388,26 @@ private fun EditPhotoScreenView(
         }
         EditPhotoToolsRow(
             selectedTool = selectedTool,
+            addMenuOpen = showAddMenu,
             canUndo = canUndo,
             canRedo = canRedo,
             enabled = toolsEnabled,
             onToolSelected = onToolSelected,
+            onAddClick = onAddClick,
             onUndo = onUndo,
             onRedo = onRedo,
             modifier = drawingBarModifier,
         )
+    }
+    if (showAddMenu) {
+        ModalBottomSheet(onDismissRequest = onAddDismissed) {
+            EditPhotoAddMenu(
+                onItemSelected = onAddItemSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(dimensionResource(R.dimen.standard_margin)),
+            )
+        }
     }
     if (selectedTool == EditPhotoTool.Emoji) {
         ModalBottomSheet(onDismissRequest = { onToolSelected(EditPhotoTool.None) }) {
@@ -517,6 +607,13 @@ private class EditPhotoScreenPreviewParameterProvider :
                 selectedTool = EditPhotoTool.Eraser,
             ),
             EditPhotoScreenPreviewModel(
+                uiState = EditPhotoUiState.Ready(
+                    localFilePath = PREVIEW_LOCAL_PATH,
+                    isImageLoaded = true,
+                ),
+                selectedTool = EditPhotoTool.Line,
+            ),
+            EditPhotoScreenPreviewModel(
                 uiState = EditPhotoUiState.Downloading(progress = INDETERMINATE_DOWNLOAD_PROGRESS),
             ),
             EditPhotoScreenPreviewModel(
@@ -551,6 +648,7 @@ private fun EditPhotoScreenPreview(
                 errorMessage = model.errorMessage,
                 editorHandle = previewEditorHandle,
                 selectedTool = model.selectedTool,
+                showAddMenu = false,
                 brushColor = AndroidColor.WHITE,
                 brushSize = PEN_DEFAULT_SIZE,
                 brushOpacity = PEN_DEFAULT_OPACITY,
@@ -563,6 +661,9 @@ private fun EditPhotoScreenPreview(
                 onImageLoaded = {},
                 onHistoryChanged = { _, _ -> },
                 onToolSelected = {},
+                onAddClick = {},
+                onAddDismissed = {},
+                onAddItemSelected = {},
                 onBrushColorChange = {},
                 onBrushSizeChange = {},
                 onBrushOpacityChange = {},

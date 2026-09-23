@@ -275,6 +275,7 @@
     <string name="homecloud_editphoto_tool_marker">Marker</string>
     <string name="homecloud_editphoto_tool_pencil">Pencil</string>
     <string name="homecloud_editphoto_tool_eraser">Eraser</string>
+    <string name="homecloud_editphoto_tool_add">Add</string>
     <string name="homecloud_editphoto_tool_text">Text</string>
     <string name="homecloud_editphoto_tool_emoji">Emoji</string>
     <string name="homecloud_editphoto_tool_undo">Undo</string>

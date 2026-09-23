@@ -9,17 +9,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoFixOff
 import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,12 +56,31 @@ internal enum class EditPhotoTool {
     Eraser,
     Text,
     Emoji,
+    Line,
+    Oval,
+    Rectangle,
+    Arrow,
+}
+
+internal enum class EditPhotoAddItem {
+    Text,
+    Emoji,
+    Line,
+    Oval,
+    Rectangle,
+    Arrow,
 }
 
 internal val EditPhotoTool.isBrushTool: Boolean
     get() = this == EditPhotoTool.Pen ||
         this == EditPhotoTool.Marker ||
         this == EditPhotoTool.Pencil
+
+internal val EditPhotoTool.isShapeTool: Boolean
+    get() = this == EditPhotoTool.Line ||
+        this == EditPhotoTool.Oval ||
+        this == EditPhotoTool.Rectangle ||
+        this == EditPhotoTool.Arrow
 
 @Composable
 internal fun EditPhotoBrushSettings(
@@ -156,10 +181,12 @@ internal fun EditPhotoColorRow(
 @Composable
 internal fun EditPhotoToolsRow(
     selectedTool: EditPhotoTool,
+    addMenuOpen: Boolean,
     canUndo: Boolean,
     canRedo: Boolean,
     enabled: Boolean,
     onToolSelected: (EditPhotoTool) -> Unit,
+    onAddClick: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     modifier: Modifier = Modifier,
@@ -197,18 +224,11 @@ internal fun EditPhotoToolsRow(
             onClick = { onToolSelected(EditPhotoTool.Eraser) },
         )
         EditPhotoToolButton(
-            icon = Icons.Filled.TextFields,
-            label = stringResource(R.string.homecloud_editphoto_tool_text),
-            selected = selectedTool == EditPhotoTool.Text,
+            icon = Icons.Filled.Add,
+            label = stringResource(R.string.homecloud_editphoto_tool_add),
+            selected = addMenuOpen || selectedTool.isShapeTool,
             enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Text) },
-        )
-        EditPhotoToolButton(
-            icon = Icons.Filled.EmojiEmotions,
-            label = stringResource(R.string.homecloud_editphoto_tool_emoji),
-            selected = selectedTool == EditPhotoTool.Emoji,
-            enabled = enabled,
-            onClick = { onToolSelected(EditPhotoTool.Emoji) },
+            onClick = onAddClick,
         )
         EditPhotoToolButton(
             icon = Icons.AutoMirrored.Filled.Undo,
@@ -223,6 +243,77 @@ internal fun EditPhotoToolsRow(
             selected = false,
             enabled = enabled && canRedo,
             onClick = onRedo,
+        )
+    }
+}
+
+@Composable
+internal fun EditPhotoAddMenu(
+    onItemSelected: (EditPhotoAddItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        EditPhotoAddMenuItem(
+            icon = Icons.Filled.TextFields,
+            label = stringResource(R.string.homecloud_editphoto_tool_text),
+            onClick = { onItemSelected(EditPhotoAddItem.Text) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        EditPhotoAddMenuItem(
+            icon = Icons.Filled.EmojiEmotions,
+            label = stringResource(R.string.homecloud_editphoto_tool_emoji),
+            onClick = { onItemSelected(EditPhotoAddItem.Emoji) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        EditPhotoAddMenuItem(
+            icon = Icons.Filled.HorizontalRule,
+            label = stringResource(R.string.homecloud_editphoto_shape_line),
+            onClick = { onItemSelected(EditPhotoAddItem.Line) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        EditPhotoAddMenuItem(
+            icon = Icons.Filled.Circle,
+            label = stringResource(R.string.homecloud_editphoto_shape_oval),
+            onClick = { onItemSelected(EditPhotoAddItem.Oval) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        EditPhotoAddMenuItem(
+            icon = Icons.Filled.CropSquare,
+            label = stringResource(R.string.homecloud_editphoto_shape_rectangle),
+            onClick = { onItemSelected(EditPhotoAddItem.Rectangle) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        EditPhotoAddMenuItem(
+            icon = Icons.AutoMirrored.Filled.ArrowForward,
+            label = stringResource(R.string.homecloud_editphoto_shape_arrow),
+            onClick = { onItemSelected(EditPhotoAddItem.Arrow) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun EditPhotoAddMenuItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(dimensionResource(R.dimen.standard_half_margin)),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.standard_half_margin)),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }
@@ -316,12 +407,26 @@ private fun EditPhotoToolsRowPreview() {
         Surface {
             EditPhotoToolsRow(
                 selectedTool = EditPhotoTool.Pen,
+                addMenuOpen = false,
                 canUndo = true,
                 canRedo = false,
                 enabled = true,
                 onToolSelected = {},
+                onAddClick = {},
                 onUndo = {},
                 onRedo = {},
+            )
+        }
+    }
+}
+
+@HomeCloudPreview
+@Composable
+private fun EditPhotoAddMenuPreview() {
+    HomeCloudTheme {
+        Surface {
+            EditPhotoAddMenu(
+                onItemSelected = {},
             )
         }
     }
