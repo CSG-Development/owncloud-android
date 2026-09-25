@@ -287,6 +287,8 @@
     <string name="homecloud_editphoto_brush_size">Size</string>
     <string name="homecloud_editphoto_brush_opacity">Opacity</string>
     <string name="homecloud_editphoto_color">Color</string>
+    <string name="homecloud_editphoto_custom_color">Custom color</string>
+    <string name="homecloud_editphoto_custom_color_title">Custom color</string>
     <string name="homecloud_editphoto_text_title">Add text</string>
     <string name="homecloud_editphoto_text_edit_title">Edit text</string>
     <string name="homecloud_editphoto_text_hint">Enter text</string>
