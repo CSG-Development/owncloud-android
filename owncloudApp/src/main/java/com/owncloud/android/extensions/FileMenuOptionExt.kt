@@ -88,7 +88,7 @@ fun FileMenuOption.toDrawableResId() =
         FileMenuOption.REMOVE -> R.drawable.ic_action_delete_white
         FileMenuOption.OPEN_WITH -> R.drawable.ic_open_in_app
         FileMenuOption.CROP_AND_ROTATE -> R.drawable.ic_crop
-        FileMenuOption.EDIT_PHOTO -> R.drawable.ic_image
+        FileMenuOption.EDIT_PHOTO -> R.drawable.ic_edit_image
         FileMenuOption.SYNC -> R.drawable.ic_action_refresh
         FileMenuOption.CANCEL_SYNC -> R.drawable.ic_action_cancel_white
         FileMenuOption.SHARE -> R.drawable.ic_share_generic_white
