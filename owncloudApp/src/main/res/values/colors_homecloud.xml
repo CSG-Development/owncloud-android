@@ -52,6 +52,7 @@
 
     <color name="homecloud_progressbar_indicator">@color/homecloud_cta</color>
     <color name="homecloud_progressbar_track">#E0E0E0</color>
+    <color name="homecloud_slider_inactive">@color/homecloud_progressbar_track</color>
 
     <color name="homecloud_radiobutton_checked">@color/homecloud_cta</color>
     <color name="homecloud_radiobutton_unchecked">@color/homecloud_grey_2</color>

@@ -107,6 +107,7 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.common.compose.HomeCloudAlertDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.Companion.newInstance
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.SortDialogListener
@@ -124,6 +125,7 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.presentation.tags.TagsViewModel
@@ -837,6 +839,14 @@ class MainFileListFragment : FileFragment(),
                         fileActions?.openFile(file)
                     }
 
+                    FileMenuOption.CROP_AND_ROTATE -> {
+                        startCropAndRotate(file)
+                    }
+
+                    FileMenuOption.EDIT_PHOTO -> {
+                        startEditPhoto(file)
+                    }
+
                     FileMenuOption.CANCEL_SYNC -> {
                         fileActions?.cancelFileTransference(arrayListOf(file))
                     }
@@ -1505,6 +1515,18 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                startCropAndRotate(singleFile)
+                disableSelectionMode()
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                startEditPhoto(singleFile)
+                disableSelectionMode()
+                true
+            }
+
             R.id.action_rename_file -> {
                 val dialog = RenameFileDialogFragment.newInstance(singleFile)
                 dialog.show(requireActivity().supportFragmentManager, FRAGMENT_TAG_RENAME_FILE)
@@ -1665,6 +1687,16 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_crop_and_rotate -> {
+                checkedFiles.firstOrNull()?.let(::startCropAndRotate)
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                checkedFiles.firstOrNull()?.let(::startEditPhoto)
+                true
+            }
+
             else -> {
                 false
             }
@@ -1773,6 +1805,14 @@ class MainFileListFragment : FileFragment(),
                 zipFile = zipFile,
             ),
         )
+    }
+
+    private fun startCropAndRotate(file: OCFile) {
+        startActivity(ImageCropRotateActivity.createIntent(requireContext(), file))
+    }
+
+    private fun startEditPhoto(file: OCFile) {
+        startActivity(EditPhotoActivity.createIntent(requireContext(), file))
     }
 
     private fun disableSelectionMode() {

@@ -57,10 +57,12 @@ import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment.Companion.TAG_REMOVE_FILES_DIALOG_FRAGMENT
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.tags.TagsActivity
 import com.owncloud.android.ui.fragment.FileFragment
 import com.owncloud.android.utils.PreferenceUtils
@@ -236,6 +238,20 @@ class PreviewImageFragment : FileFragment() {
 
             R.id.action_open_file_with -> {
                 openFile()
+                true
+            }
+
+            R.id.action_crop_and_rotate -> {
+                file?.let {
+                    startActivity(ImageCropRotateActivity.createIntent(requireContext(), it))
+                }
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                file?.let {
+                    startActivity(EditPhotoActivity.createIntent(requireContext(), it))
+                }
                 true
             }
 

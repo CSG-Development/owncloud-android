@@ -30,4 +30,9 @@ const val MIME_PREFIX_TEXT = "text/"
 
 const val MIME_SVG = "image/svg+xml"
 const val MIME_PDF = "application/pdf"
+const val MIME_HEIC = "image/heic"
+const val MIME_GIF = "image/gif"
+const val MIME_X_DCRAW = "image/x-dcraw"
+/** Practical RAW extra; DNG is often advertised as this rather than image/x-dcraw. */
+const val MIME_X_ADOBE_DNG = "image/x-adobe-dng"
 

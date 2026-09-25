@@ -35,11 +35,13 @@ import com.owncloud.android.presentation.authentication.oauth.OAuthViewModel
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.conflicts.ConflictsResolveViewModel
+import com.owncloud.android.presentation.editphoto.EditPhotoViewModel
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel
 import com.owncloud.android.presentation.files.favorites.FavoritesViewModel
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel
 import com.owncloud.android.presentation.files.globalsearch.GlobalSearchViewModel
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
+import com.owncloud.android.presentation.imageedit.ImageCropRotateViewModel
 import com.owncloud.android.presentation.logging.LogListViewModel
 import com.owncloud.android.presentation.migration.MigrationViewModel
 import com.owncloud.android.presentation.network.NetworkMonitorViewModel
@@ -186,5 +188,11 @@ val viewModelModule = module {
     viewModel { ReceiveExternalFilesViewModel(get(), get(), get(), get()) }
     viewModel { (accountName: String, showPersonalSpace: Boolean) ->
         SpacesListViewModel(get(), get(), get(), get(), get(), get(), get(), accountName, showPersonalSpace)
+    }
+    viewModel { (file: OCFile) ->
+        ImageCropRotateViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
+    }
+    viewModel { (file: OCFile) ->
+        EditPhotoViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
     }
 }

@@ -20,6 +20,7 @@ import com.owncloud.android.extensions.toDrawableResId
 import com.owncloud.android.extensions.toResId
 import com.owncloud.android.extensions.toStringResId
 import com.owncloud.android.presentation.authentication.AccountUtils
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.filelist.MainFileListFragment
 import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperation.CompressOperation
@@ -32,6 +33,7 @@ import com.owncloud.android.presentation.files.operations.FileOperation.UnsetFil
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.presentation.tags.ManageTagsFragment
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.FolderPickerActivity
@@ -216,6 +218,14 @@ object FileOptionsBottomSheetHelper {
             FileMenuOption.REMOVE -> fileOperationsViewModel.showRemoveDialog(listOf(file))
 
             FileMenuOption.OPEN_WITH -> fileActions?.openFile(file)
+
+            FileMenuOption.CROP_AND_ROTATE -> {
+                activity.startActivity(ImageCropRotateActivity.createIntent(activity, file))
+            }
+
+            FileMenuOption.EDIT_PHOTO -> {
+                activity.startActivity(EditPhotoActivity.createIntent(activity, file))
+            }
 
             FileMenuOption.CANCEL_SYNC -> fileActions?.cancelFileTransference(listOf(file))
 

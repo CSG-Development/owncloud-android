@@ -26,6 +26,7 @@ import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
 import com.owncloud.android.presentation.files.SortOrder
@@ -39,6 +40,7 @@ import com.owncloud.android.presentation.files.operations.FileOperation
 import com.owncloud.android.presentation.files.operations.FileOperationsViewModel
 import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
+import com.owncloud.android.presentation.imageedit.ImageCropRotateActivity
 import com.owncloud.android.ui.LandscapeBarsScrollSink
 import com.owncloud.android.ui.activity.BaseActivity
 import com.owncloud.android.ui.activity.FileActivity
@@ -475,6 +477,18 @@ class GlobalSearchFragment : Fragment(),
 
             R.id.action_open_file_with -> {
                 fileActions?.openFile(singleFile)
+                disableSelectionMode()
+                true
+            }
+
+            R.id.action_crop_and_rotate -> {
+                startActivity(ImageCropRotateActivity.createIntent(requireContext(), singleFile))
+                disableSelectionMode()
+                true
+            }
+
+            R.id.action_edit_photo -> {
+                startActivity(EditPhotoActivity.createIntent(requireContext(), singleFile))
                 disableSelectionMode()
                 true
             }

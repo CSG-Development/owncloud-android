@@ -60,6 +60,7 @@ dependencies {
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material.icons.extended
     implementation libs.androidx.activity.compose
     debugImplementation platform(libs.androidx.compose.bom)
     debugImplementation libs.androidx.compose.ui.tooling
@@ -71,6 +72,12 @@ dependencies {
 
     // Zooming Android ImageView.
     implementation libs.photoview
+
+    // Image crop and rotate.
+    implementation libs.android.image.cropper
+
+    // Photo editor (draw, text, emoji, filters).
+    implementation libs.photoeditor
 
     // Koin dependency injector
     implementation libs.koin.androidx.workmanager
@@ -144,8 +151,8 @@ android {
 
         testInstrumentationRunner "com.owncloud.android.utils.OCTestAndroidJUnitRunner"
 
-        versionCode = 1_33_00_0
-        versionName = "1.33.0"
+        versionCode = 1_34_00_0
+        versionName = "1.34.0"
 
         buildConfigField "String", gitRemote, "\"" + getGitOriginRemote() + "\""
         buildConfigField "String", commitSHA1, "\"" + getLatestGitHash() + "\""

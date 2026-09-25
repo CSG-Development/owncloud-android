@@ -22,6 +22,8 @@ androidxTestMonitor = "1.6.1"
 androidxTestUiAutomator ="2.2.0"
 androidxWork = "2.10.5"
 coil = "2.2.2"
+# 4.7.0 pulls AndroidX Activity 1.9 and breaks existing onNewIntent; stay on 4.5.0 until that upgrade.
+androidImageCropper = "4.5.0"
 # Compose Compiler 1.5.5 matches Kotlin 1.9.20 (see Compose-Kotlin compatibility map).
 # BOM 2024.09.00 is the first stable BOM with Material3 PullToRefreshBox (material3 1.3.0).
 composeBom = "2024.09.00"
@@ -53,6 +55,7 @@ patternlockview = "a90b0d4bf0"
 pdfboxAndroid = "2.0.27.0"
 retrofit = "2.9.0"
 photoView = "2.3.0"
+photoEditor = "3.0.2"
 playServicesMlkitDocumentScanner = "16.0.0"
 preference = "1.2.0"
 sonarqube = "4.0.0.2929"
@@ -97,9 +100,11 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "androidxTestUiAutomator" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidxWork" }
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
+android-image-cropper = { group = "com.vanniktech", name = "android-image-cropper", version.ref = "androidImageCropper" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
@@ -142,6 +147,7 @@ patternlockview = { group = "com.github.aritraroy.PatternLockView", name = "patt
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoView" }
+photoeditor = { group = "com.burhanrashid52", name = "photoeditor", version.ref = "photoEditor" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
 stetho = { group = "com.facebook.stetho", name = "stetho", version.ref = "stetho" }

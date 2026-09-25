@@ -31,6 +31,7 @@
     <color name="homecloud_dialog_accent_border">#FF9800</color>
 
     <color name="homecloud_progressbar_track">@color/homecloud_content_disabled_bg</color>
+    <color name="homecloud_slider_inactive">#5D5D5D</color>
 
     <color name="homecloud_radiobutton_unchecked">#B2B2B2</color>
     <color name="homecloud_radiobutton_checked_disabled">@color/homecloud_content_disabled_bg</color>
