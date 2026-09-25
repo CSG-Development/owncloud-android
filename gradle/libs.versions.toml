@@ -55,6 +55,7 @@ patternlockview = "a90b0d4bf0"
 pdfboxAndroid = "2.0.27.0"
 retrofit = "2.9.0"
 photoView = "2.3.0"
+photoEditor = "3.0.2"
 playServicesMlkitDocumentScanner = "16.0.0"
 preference = "1.2.0"
 sonarqube = "4.0.0.2929"
@@ -103,6 +104,7 @@ android-image-cropper = { group = "com.vanniktech", name = "android-image-croppe
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
@@ -145,6 +147,7 @@ patternlockview = { group = "com.github.aritraroy.PatternLockView", name = "patt
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoView" }
+photoeditor = { group = "com.burhanrashid52", name = "photoeditor", version.ref = "photoEditor" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
 stetho = { group = "com.facebook.stetho", name = "stetho", version.ref = "stetho" }

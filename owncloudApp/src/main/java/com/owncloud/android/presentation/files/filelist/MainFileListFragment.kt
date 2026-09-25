@@ -107,6 +107,7 @@ import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.common.compose.HomeCloudAlertDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
+import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.Companion.newInstance
 import com.owncloud.android.presentation.files.SortBottomSheetFragment.SortDialogListener
@@ -842,6 +843,10 @@ class MainFileListFragment : FileFragment(),
                         startCropAndRotate(file)
                     }
 
+                    FileMenuOption.EDIT_PHOTO -> {
+                        startEditPhoto(file)
+                    }
+
                     FileMenuOption.CANCEL_SYNC -> {
                         fileActions?.cancelFileTransference(arrayListOf(file))
                     }
@@ -1516,6 +1521,12 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_edit_photo -> {
+                startEditPhoto(singleFile)
+                disableSelectionMode()
+                true
+            }
+
             R.id.action_rename_file -> {
                 val dialog = RenameFileDialogFragment.newInstance(singleFile)
                 dialog.show(requireActivity().supportFragmentManager, FRAGMENT_TAG_RENAME_FILE)
@@ -1681,6 +1692,11 @@ class MainFileListFragment : FileFragment(),
                 true
             }
 
+            R.id.action_edit_photo -> {
+                checkedFiles.firstOrNull()?.let(::startEditPhoto)
+                true
+            }
+
             else -> {
                 false
             }
@@ -1793,6 +1809,10 @@ class MainFileListFragment : FileFragment(),
 
     private fun startCropAndRotate(file: OCFile) {
         startActivity(ImageCropRotateActivity.createIntent(requireContext(), file))
+    }
+
+    private fun startEditPhoto(file: OCFile) {
+        startActivity(EditPhotoActivity.createIntent(requireContext(), file))
     }
 
     private fun disableSelectionMode() {

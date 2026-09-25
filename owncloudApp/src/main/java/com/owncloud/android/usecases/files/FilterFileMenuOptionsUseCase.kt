@@ -110,6 +110,12 @@ class FilterFileMenuOptionsUseCase(
         if (isSingleFile(files) && files.first().isImage) {
             optionsToShow.add(FileMenuOption.CROP_AND_ROTATE)
         }
+        // Edit photo
+        if (isSingleFile(files) && files.first().isEditPhotoSupported &&
+            (files.first().hasWritePermission || currentFolder?.hasAddFilePermission == true)
+        ) {
+            optionsToShow.add(FileMenuOption.EDIT_PHOTO)
+        }
         // Download
         if (noSyncAndPreviewing && !onlyAvailableOfflineFiles && !onlySharedByLinkFiles &&
             !anyFolder(files) && !anyFileDownloaded(files)) {

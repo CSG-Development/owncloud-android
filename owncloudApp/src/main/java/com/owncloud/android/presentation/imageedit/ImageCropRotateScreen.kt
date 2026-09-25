@@ -36,7 +36,7 @@ import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameter
 import com.owncloud.android.R
 import com.owncloud.android.presentation.common.compose.HomeCloudBanner
 import com.owncloud.android.presentation.common.compose.HomeCloudBannerStyle
-import com.owncloud.android.presentation.common.compose.HomeCloudDialog
+import com.owncloud.android.presentation.common.compose.HomeCloudFileExistsDialog
 import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudSlider
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
@@ -155,7 +155,7 @@ internal fun ImageCropRotateScreenView(
         )
     }
     if (uiState is ImageCropRotateUiState.NameConflict) {
-        ImageCropRotateNameConflictDialog(
+        HomeCloudFileExistsDialog(
             fileName = uiState.existingFileName,
             onOverwrite = onOverwriteChosen,
             onSaveAsCopy = onSaveAsCopyChosen,
@@ -214,26 +214,6 @@ private fun ImageCropRotateControls(
             modifier = Modifier.fillMaxWidth(),
         )
     }
-}
-
-@Composable
-private fun ImageCropRotateNameConflictDialog(
-    fileName: String,
-    onOverwrite: () -> Unit,
-    onSaveAsCopy: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    HomeCloudDialog(
-        onDismissRequest = onDismiss,
-        title = stringResource(R.string.file_already_exists),
-        text = stringResource(R.string.file_already_exists_description, fileName),
-        confirmLabel = stringResource(R.string.conflict_replace),
-        onConfirm = onOverwrite,
-        modifier = modifier,
-        dismissLabel = stringResource(R.string.conflict_keep_both),
-        onDismiss = onSaveAsCopy,
-    )
 }
 
 @Composable

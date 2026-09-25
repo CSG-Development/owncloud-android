@@ -35,6 +35,7 @@ import com.owncloud.android.presentation.authentication.oauth.OAuthViewModel
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.DrawerViewModel
 import com.owncloud.android.presentation.conflicts.ConflictsResolveViewModel
+import com.owncloud.android.presentation.editphoto.EditPhotoViewModel
 import com.owncloud.android.presentation.files.details.FileDetailsViewModel
 import com.owncloud.android.presentation.files.favorites.FavoritesViewModel
 import com.owncloud.android.presentation.files.filelist.MainFileListViewModel
@@ -190,5 +191,8 @@ val viewModelModule = module {
     }
     viewModel { (file: OCFile) ->
         ImageCropRotateViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
+    }
+    viewModel { (file: OCFile) ->
+        EditPhotoViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), file)
     }
 }

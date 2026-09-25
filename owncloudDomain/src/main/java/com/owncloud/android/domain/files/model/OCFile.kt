@@ -92,6 +92,12 @@ data class OCFile(
         get() = isOfType(MIME_PREFIX_IMAGE)
 
     /**
+     * @return 'True' if the file is a bitmap that can be opened in the in-app photo editor
+     */
+    val isEditPhotoSupported: Boolean
+        get() = isImage && !isExcludedEditPhotoMime(mimeType) && !isExcludedEditPhotoMime(getMimeTypeFromName())
+
+    /**
      * @return 'True' if the file is simple text (e.g. not application-dependent, like .doc or .docx)
      */
     val isText: Boolean
@@ -226,6 +232,9 @@ data class OCFile(
      */
     private fun isOfType(type: String): Boolean =
         mimeType.startsWith(type) || getMimeTypeFromName()?.startsWith(type) ?: false
+
+    private fun isExcludedEditPhotoMime(mime: String?): Boolean =
+        mime?.lowercase(Locale.ROOT)?.isOneOf(MIME_HEIC, MIME_GIF, MIME_X_DCRAW, MIME_X_ADOBE_DNG, MIME_SVG) == true
 
     fun getMimeTypeFromName(): String? {
         val extension = remotePath.substringAfterLast('.').lowercase(Locale.ROOT)

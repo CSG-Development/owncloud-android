@@ -60,6 +60,7 @@ dependencies {
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material.icons.extended
     implementation libs.androidx.activity.compose
     debugImplementation platform(libs.androidx.compose.bom)
     debugImplementation libs.androidx.compose.ui.tooling
@@ -74,6 +75,9 @@ dependencies {
 
     // Image crop and rotate.
     implementation libs.android.image.cropper
+
+    // Photo editor (draw, text, emoji, filters).
+    implementation libs.photoeditor
 
     // Koin dependency injector
     implementation libs.koin.androidx.workmanager

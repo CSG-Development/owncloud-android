@@ -70,6 +70,11 @@
             android:resource="@xml/managed_configurations" />
 
         <activity
+            android:name=".presentation.editphoto.EditPhotoActivity"
+            android:label="@string/homecloud_filelist_edit_photo"
+            android:theme="@style/Theme.homeCloud.Toolbar"
+            android:exported="false" />
+        <activity
             android:name=".presentation.imageedit.ImageCropRotateActivity"
             android:label="@string/homecloud_imageedit_title"
             android:theme="@style/Theme.homeCloud.Toolbar"
