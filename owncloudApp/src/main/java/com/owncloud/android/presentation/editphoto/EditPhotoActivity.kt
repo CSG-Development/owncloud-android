@@ -34,6 +34,7 @@ class EditPhotoActivity : AppCompatActivity() {
     }
 
     private val editorHandle = PhotoEditorHandle()
+    private var saveInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,8 +79,8 @@ class EditPhotoActivity : AppCompatActivity() {
                             editorHandle = editorHandle,
                             onErrorDismissed = viewModel::consumeError,
                             onImageLoaded = viewModel::onImageLoaded,
-                            onOverwriteChosen = viewModel::onOverwriteChosen,
-                            onSaveAsCopyChosen = viewModel::onSaveAsCopyChosen,
+                            onOverwriteChosen = ::onOverwriteChosen,
+                            onSaveAsCopyChosen = ::onSaveAsCopyChosen,
                             onConflictDismissed = viewModel::onConflictDismissed,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -124,16 +125,50 @@ class EditPhotoActivity : AppCompatActivity() {
     }
 
     private fun onSaveRequested() {
-        if (!isDoneEnabled() || editorHandle.photoEditor == null) return
+        if (saveInFlight || !isDoneEnabled() || editorHandle.photoEditor == null) return
+        saveInFlight = true
+        lifecycleScope.launch {
+            try {
+                if (viewModel.targetNameExists()) {
+                    viewModel.showNameConflict()
+                } else {
+                    flattenAndEnqueue(overwrite = false)
+                }
+            } finally {
+                saveInFlight = false
+            }
+        }
+    }
+
+    private fun onOverwriteChosen() {
+        flattenAfterConflict(overwrite = true)
+    }
+
+    private fun onSaveAsCopyChosen() {
+        flattenAfterConflict(overwrite = false)
+    }
+
+    private fun flattenAfterConflict(overwrite: Boolean) {
+        if (saveInFlight || viewModel.uiState.value !is EditPhotoUiState.NameConflict) return
+        if (editorHandle.photoEditor == null) return
+        saveInFlight = true
+        lifecycleScope.launch {
+            try {
+                flattenAndEnqueue(overwrite)
+            } finally {
+                saveInFlight = false
+            }
+        }
+    }
+
+    private suspend fun flattenAndEnqueue(overwrite: Boolean) {
         viewModel.onSaveStarted()
         val outputFile = viewModel.createOutputFile()
-        lifecycleScope.launch {
-            val error = editorHandle.saveAsFile(
-                file = outputFile,
-                compressFormat = viewModel.getOutputCompressFormat(),
-            )
-            viewModel.onSaveCompleted(outputFile = outputFile, error = error)
-        }
+        val error = editorHandle.saveAsFile(
+            file = outputFile,
+            compressFormat = viewModel.getOutputCompressFormat(),
+        )
+        viewModel.onFlattenCompleted(outputFile = outputFile, error = error, overwrite = overwrite)
     }
 
     companion object {

@@ -54,7 +54,6 @@ sealed interface EditPhotoUiState {
     data class NameConflict(
         val localFilePath: String,
         val existingFileName: String,
-        val tempOutputFile: File,
     ) : EditPhotoUiState
 
     data class Saved(
@@ -148,7 +147,30 @@ class EditPhotoViewModel(
         }
     }
 
-    fun onSaveCompleted(outputFile: File?, error: Exception?) {
+    suspend fun targetNameExists(): Boolean {
+        val targetName = targetFileName()
+        return withContext(coroutinesDispatcherProvider.io) {
+            getFileByRemotePathUseCase(
+                GetFileByRemotePathUseCase.Params(
+                    owner = ocFile.owner,
+                    remotePath = ocFile.getParentRemotePath() + targetName,
+                    spaceId = ocFile.spaceId,
+                )
+            ).getDataOrNull() != null
+        }
+    }
+
+    fun showNameConflict() {
+        _uiState.update { current ->
+            val ready = current as? EditPhotoUiState.Ready ?: return@update current
+            EditPhotoUiState.NameConflict(
+                localFilePath = ready.localFilePath,
+                existingFileName = targetFileName(),
+            )
+        }
+    }
+
+    fun onFlattenCompleted(outputFile: File?, error: Exception?, overwrite: Boolean) {
         if (error != null) {
             Timber.e(error, "Failed to flatten edited photo")
         }
@@ -159,24 +181,13 @@ class EditPhotoViewModel(
             return
         }
         viewModelScope.launch {
-            persistOrShowConflict(flattenedFile)
+            enqueueUploadAndFinish(tempOutputFile = flattenedFile, overwrite = overwrite)
         }
-    }
-
-    fun onOverwriteChosen() {
-        val conflict = _uiState.value as? EditPhotoUiState.NameConflict ?: return
-        enqueueChosenUpload(tempOutputFile = conflict.tempOutputFile, overwrite = true)
-    }
-
-    fun onSaveAsCopyChosen() {
-        val conflict = _uiState.value as? EditPhotoUiState.NameConflict ?: return
-        enqueueChosenUpload(tempOutputFile = conflict.tempOutputFile, overwrite = false)
     }
 
     fun onConflictDismissed() {
         _uiState.update { current ->
             if (current !is EditPhotoUiState.NameConflict) return@update current
-            current.tempOutputFile.delete()
             EditPhotoUiState.Ready(
                 localFilePath = current.localFilePath,
                 isImageLoaded = true,
@@ -203,39 +214,6 @@ class EditPhotoViewModel(
             withContext(NonCancellable + coroutinesDispatcherProvider.io) {
                 cancelDownloadForFileUseCase(CancelDownloadForFileUseCase.Params(ocFile))
             }
-        }
-    }
-
-    private suspend fun persistOrShowConflict(outputFile: File) {
-        val path = _uiState.value.localFilePath() ?: return
-        val targetName = targetFileName()
-        val existing = withContext(coroutinesDispatcherProvider.io) {
-            getFileByRemotePathUseCase(
-                GetFileByRemotePathUseCase.Params(
-                    owner = ocFile.owner,
-                    remotePath = ocFile.getParentRemotePath() + targetName,
-                    spaceId = ocFile.spaceId,
-                )
-            ).getDataOrNull()
-        }
-        if (existing != null) {
-            _uiState.update {
-                EditPhotoUiState.NameConflict(
-                    localFilePath = path,
-                    existingFileName = targetName,
-                    tempOutputFile = outputFile,
-                )
-            }
-            return
-        }
-        enqueueUploadAndFinish(tempOutputFile = outputFile, overwrite = false)
-    }
-
-    private fun enqueueChosenUpload(tempOutputFile: File, overwrite: Boolean) {
-        val path = _uiState.value.localFilePath() ?: return
-        _uiState.update { EditPhotoUiState.Saving(localFilePath = path) }
-        viewModelScope.launch {
-            enqueueUploadAndFinish(tempOutputFile = tempOutputFile, overwrite = overwrite)
         }
     }
 

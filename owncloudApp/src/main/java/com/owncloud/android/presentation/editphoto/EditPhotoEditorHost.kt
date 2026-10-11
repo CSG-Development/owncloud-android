@@ -24,6 +24,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
+import ja.burhanrashid52.photoeditor.DrawingView
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener
 import ja.burhanrashid52.photoeditor.PhotoEditor
 import ja.burhanrashid52.photoeditor.PhotoEditorView
@@ -155,7 +156,7 @@ class PhotoEditorHandle {
         }
     }
 
-    private fun captureMarkupOverlayCropped(
+    private suspend fun captureMarkupOverlayCropped(
         editor: PhotoEditor,
         editorView: PhotoEditorView,
     ): Bitmap? {
@@ -176,11 +177,40 @@ class PhotoEditorHandle {
         return overlayCropped
     }
 
-    private fun captureView(view: View): Bitmap {
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-        return bitmap
+    private suspend fun captureView(view: View): Bitmap {
+        return withLiveDrawingLayer(view) {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            bitmap
+        }
+    }
+
+    // DrawingView uses a hardware layer whose software draw replays a cached display list.
+    private suspend fun <T> withLiveDrawingLayer(view: View, block: suspend () -> T): T {
+        val drawingViews = ArrayList<Pair<DrawingView, Int>>(1)
+        collectDrawingViews(view, drawingViews)
+        drawingViews.forEach { (drawingView, _) ->
+            drawingView.destroyDrawingCache()
+            drawingView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        }
+        return try {
+            block()
+        } finally {
+            drawingViews.forEach { (drawingView, previousLayerType) ->
+                drawingView.setLayerType(previousLayerType, null)
+            }
+        }
+    }
+
+    private fun collectDrawingViews(view: View, drawingViews: MutableList<Pair<DrawingView, Int>>) {
+        if (view is DrawingView) {
+            drawingViews.add(view to view.layerType)
+        }
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                collectDrawingViews(view.getChildAt(index), drawingViews)
+            }
+        }
     }
 
     private suspend fun decodeOriginalBitmap(context: Context, path: String): Bitmap? {
@@ -249,7 +279,9 @@ class PhotoEditorHandle {
             .setCompressQuality(SAVE_COMPRESS_QUALITY)
             .setClearViewsEnabled(false)
             .build()
-        val captured = editor.saveAsBitmap(saveSettings)
+        val captured = withLiveDrawingLayer(editorView) {
+            editor.saveAsBitmap(saveSettings)
+        }
         val cropped = cropToDisplayedSourceImage(captured, editorView) ?: captured
         try {
             withContext(Dispatchers.IO) {

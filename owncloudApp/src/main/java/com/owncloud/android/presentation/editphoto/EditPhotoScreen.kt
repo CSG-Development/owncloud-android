@@ -55,7 +55,6 @@ import com.owncloud.android.presentation.common.compose.HomeCloudPreview
 import com.owncloud.android.presentation.common.compose.HomeCloudTheme
 import ja.burhanrashid52.photoeditor.shape.ArrowPointerLocation
 import ja.burhanrashid52.photoeditor.shape.ShapeType
-import java.io.File
 import android.graphics.Color as AndroidColor
 
 private data class EditPhotoTextSession(
@@ -623,7 +622,6 @@ private class EditPhotoScreenPreviewParameterProvider :
                 uiState = EditPhotoUiState.NameConflict(
                     localFilePath = PREVIEW_LOCAL_PATH,
                     existingFileName = PREVIEW_FILE_NAME,
-                    tempOutputFile = File(PREVIEW_FILE_NAME),
                 ),
             ),
             EditPhotoScreenPreviewModel(
