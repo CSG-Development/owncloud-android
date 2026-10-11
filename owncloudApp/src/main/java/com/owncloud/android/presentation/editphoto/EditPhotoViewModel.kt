@@ -8,11 +8,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.owncloud.android.R
+import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.domain.files.usecases.GetFileByIdUseCase
 import com.owncloud.android.domain.files.usecases.GetFileByRemotePathUseCase
 import com.owncloud.android.extensions.getTagsForDownload
 import com.owncloud.android.extensions.getWorkInfoByTags
+import com.owncloud.android.extensions.replaceContentsOf
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.usecases.transfers.downloads.CancelDownloadForFileUseCase
@@ -247,6 +249,8 @@ class EditPhotoViewModel(
             } else {
                 tempOutputFile.copyTo(namedFile, overwrite = true)
             }
+            fileToUpload.replaceContentsOf(ocFile.storagePath)
+            resetThumbnailAfterReplace()
             uploadFileInConflictUseCase(
                 UploadFileInConflictUseCase.Params(
                     accountName = ocFile.owner,
@@ -266,6 +270,11 @@ class EditPhotoViewModel(
                 )
             )
         }
+    }
+
+    private fun resetThumbnailAfterReplace() {
+        val remoteId = ocFile.remoteId?.takeIf { it.isNotBlank() } ?: return
+        ThumbnailsCacheManager.removeBitmapFromCache(remoteId)
     }
 
     private fun showSaveError() {

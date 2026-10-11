@@ -21,9 +21,12 @@
 package com.owncloud.android.extensions
 
 import android.content.Context
+import android.os.Build
 import com.owncloud.android.R
 import com.owncloud.android.utils.DisplayUtils
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,4 +41,35 @@ fun File.humanReadableModificationDateTime(context: Context): String {
     val dateString = SimpleDateFormat("yyyy-MMM-dd", Locale.getDefault()).format(dateTime)
     val timeString = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(dateTime)
     return context.getString(R.string.homecloud_settings_logs_datetime_pattern, dateString, timeString)
+}
+
+fun File.replaceContentsOf(destinationPath: String?) {
+    val storagePath = destinationPath?.takeIf { it.isNotBlank() }
+        ?: error("Cannot replace local file, missing storage path")
+    val destination = File(storagePath)
+    if (destination.absolutePath == absolutePath) return
+
+    val parent = destination.parentFile
+        ?: error("Cannot replace local file, missing parent directory")
+    val temp = File(parent, "${destination.name}.edit-tmp")
+    try {
+        copyTo(temp, overwrite = true)
+        moveReplacing(source = temp, destination = destination)
+    } catch (throwable: Throwable) {
+        temp.delete()
+        throw throwable
+    }
+}
+
+private fun moveReplacing(source: File, destination: File) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Files.move(
+            source.toPath(),
+            destination.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+    } else if (!source.renameTo(destination)) {
+        error("Cannot replace local file at ${destination.absolutePath}")
+    }
 }
