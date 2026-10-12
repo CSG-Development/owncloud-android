@@ -25,6 +25,7 @@ package com.owncloud.android.data.files.datasources.implementation
 import android.webkit.MimeTypeMap
 import androidx.annotation.VisibleForTesting
 import com.owncloud.android.data.files.datasources.LocalFileDataSource
+import com.owncloud.android.data.files.datasources.implementation.OCLocalFileDataSource.Companion.DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS
 import com.owncloud.android.data.files.db.FileDao
 import com.owncloud.android.data.files.db.OCFileAndFileSync
 import com.owncloud.android.data.files.db.OCFileEntity
@@ -40,8 +41,12 @@ import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.VirtualUploadFileIds
 import com.owncloud.android.domain.transfers.model.OCTransfer
 import com.owncloud.android.domain.transfers.model.TransferStatus
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.util.Locale
 import java.util.UUID
@@ -108,7 +113,8 @@ class OCLocalFileDataSource(
         combine(
             fileDao.getFolderContentWithSyncInfoAsFlow(folderId = folderId),
             fileDao.getFileByIdAsFlow(folderId),
-            localTransferDataSource.getTransfersForUploadVirtualFilesAsStream(),
+            localTransferDataSource.getTransfersForUploadVirtualFilesAsStream()
+                .flatMapLatest { transfers -> transfers.reemitWhenSucceededRetentionEnds() },
         ) { folderContent, currentFolder, activeTransfers ->
             val persistedFolderContent = folderContent.map { it.toModel() }
             if (currentFolder == null) {
@@ -303,6 +309,32 @@ class OCLocalFileDataSource(
             .toList()
     }
 
+    /**
+     * Succeeded uploads stay in the list only until [DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS].
+     * Room does not emit again when that deadline passes, so re-emit the same transfers then.
+     * The flow stays open afterwards; completing it would complete the folder combine.
+     */
+    private fun List<OCTransfer>.reemitWhenSucceededRetentionEnds(): Flow<List<OCTransfer>> = flow {
+        emit(this@reemitWhenSucceededRetentionEnds)
+        var delayMillis = nextSucceededRetentionDelayMillis()
+        while (delayMillis != null) {
+            delay(delayMillis)
+            emit(this@reemitWhenSucceededRetentionEnds)
+            delayMillis = nextSucceededRetentionDelayMillis()
+        }
+        awaitCancellation()
+    }
+
+    private fun List<OCTransfer>.nextSucceededRetentionDelayMillis(
+        now: Long = System.currentTimeMillis(),
+    ): Long? =
+        asSequence()
+            .filter { it.status == TransferStatus.TRANSFER_SUCCEEDED }
+            .mapNotNull { it.transferEndTimestamp }
+            .map { endTimestamp -> endTimestamp + DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS - now }
+            .filter { remaining -> remaining > 0 }
+            .minOrNull()
+
     private fun OCTransfer.isEligibleForVirtualFile(now: Long, retentionMillis: Long): Boolean =
         when (status) {
             TransferStatus.TRANSFER_QUEUED,
@@ -335,11 +367,12 @@ class OCLocalFileDataSource(
                 spaceId = spaceId,
             ),
             uploadProgress = if (status == TransferStatus.TRANSFER_SUCCEEDED) 100 else null,
+            isProgressIndeterminate = status != TransferStatus.TRANSFER_SUCCEEDED,
         )
     }
 
     companion object {
-        const val DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS = 5_000L
+        const val DEFAULT_UPLOAD_VIRTUAL_FILE_RETENTION_MILLIS = 10_000L
 
         @VisibleForTesting
         fun OCFileEntity.toModel(): OCFile =

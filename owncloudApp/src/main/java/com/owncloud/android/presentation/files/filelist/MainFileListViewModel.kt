@@ -956,7 +956,11 @@ class MainFileListViewModel(
 
     private fun OCFileWithSyncInfo.withUploadProgress(progressByTransferId: Map<Long, Int>): OCFileWithSyncInfo {
         val transferId = file.uploadTransferId() ?: return this
-        return copy(uploadProgress = progressByTransferId[transferId] ?: uploadProgress)
+        val runningProgress = progressByTransferId[transferId] ?: return this
+        return copy(
+            uploadProgress = runningProgress,
+            isProgressIndeterminate = false,
+        )
     }
 
     private fun WorkInfo.extractTransferIdFromTags(): Long? =

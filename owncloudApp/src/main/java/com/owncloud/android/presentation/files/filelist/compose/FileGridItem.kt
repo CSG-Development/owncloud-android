@@ -166,7 +166,7 @@ private fun FileGridItemMedia(
                     .padding(horizontal = 4.dp),
             )
         }
-        if (item.isVirtual) {
+        if (item.showUploadProgress) {
             FileListUploadProgress(
                 item = item,
                 modifier = Modifier
