@@ -91,7 +91,7 @@ fun FileListRow(
                 .fillMaxWidth()
                 .padding(vertical = dimensionResource(R.dimen.standard_quarter_margin)),
         )
-        if (item.isVirtual) {
+        if (item.showUploadProgress) {
             FileListUploadProgress(
                 item = item,
                 modifier = Modifier

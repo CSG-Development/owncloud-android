@@ -39,6 +39,9 @@ data class FileListItemUiModel(
     val isVirtual: Boolean
         get() = virtualKind != FileListVirtualKind.None
 
+    val showUploadProgress: Boolean
+        get() = isVirtual && uploadProgress != 100
+
     val showShareIcons: Boolean
         get() = !isVirtual && (sharedByLink || sharedWithUsers)
 }

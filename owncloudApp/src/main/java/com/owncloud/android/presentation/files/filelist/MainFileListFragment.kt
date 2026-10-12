@@ -202,6 +202,7 @@ class MainFileListFragment : FileFragment(),
     private var fileOptionsBottomSheetSingleFileLayout: LinearLayout? = null
     private var succeededTransfers: List<OCTransfer>? = null
     private var numberOfUploadsRefreshed: Int = 0
+    private var pendingUploadFolderRefresh: OCFile? = null
 
     private val actionModeController = FileListActionModeController(
         object : FileListActionModeController.Host {
@@ -986,13 +987,20 @@ class MainFileListFragment : FileFragment(),
 
     private fun observeRefreshFolder() {
         fileOperationsViewModel.refreshFolderLiveData.observe(viewLifecycleOwner) {
-            binding.syncProgressBar.isIndeterminate = it.peekContent().isLoading
-            mainFileListViewModel.setRefreshing(it.peekContent().isLoading)
+            val isLoading = it.peekContent().isLoading
+            binding.syncProgressBar.isIndeterminate = isLoading
+            mainFileListViewModel.setRefreshing(isLoading)
 
             // Refresh the spaces and update the quota
             spacesListViewModel.refreshSpacesFromServer()
 
             hideRefreshFab()
+            if (!isLoading) {
+                pendingUploadFolderRefresh?.let { folder ->
+                    pendingUploadFolderRefresh = null
+                    refreshFolderAfterUpload(folder)
+                }
+            }
         }
     }
 
@@ -1060,14 +1068,7 @@ class MainFileListFragment : FileFragment(),
                         val currentFolder = mainFileListViewModel.getFile()
                         if (transfer.getParentRemotePath() == currentFolder.remotePath) {
                             if (numberOfUploadsRefreshed <= maxUploadsToRefresh) {
-                                if (!fileOperationsViewModel.refreshFolderLiveData.value!!.peekContent().isLoading) {
-                                    fileOperationsViewModel.performOperation(
-                                        FileOperation.RefreshFolderOperation(
-                                            folderToRefresh = currentFolder,
-                                            shouldSyncContents = false,
-                                        )
-                                    )
-                                }
+                                refreshFolderAfterUpload(currentFolder)
                             } else {
                                 binding.fabRefresh.apply {
                                     isVisible = true
@@ -1082,6 +1083,23 @@ class MainFileListFragment : FileFragment(),
             }
         }
 
+    }
+
+    private fun refreshFolderAfterUpload(folder: OCFile) {
+        val refreshInProgress = fileOperationsViewModel.refreshFolderLiveData.value
+            ?.peekContent()
+            ?.isLoading == true
+        if (refreshInProgress) {
+            pendingUploadFolderRefresh = folder
+            return
+        }
+        pendingUploadFolderRefresh = null
+        fileOperationsViewModel.performOperation(
+            FileOperation.RefreshFolderOperation(
+                folderToRefresh = folder,
+                shouldSyncContents = false,
+            )
+        )
     }
 
     private fun observeClearSelectionEvents() {
