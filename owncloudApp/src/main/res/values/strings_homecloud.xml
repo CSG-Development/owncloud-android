@@ -280,6 +280,8 @@
     <string name="homecloud_editphoto_tool_emoji">Emoji</string>
     <string name="homecloud_editphoto_tool_undo">Undo</string>
     <string name="homecloud_editphoto_tool_redo">Redo</string>
+    <string name="homecloud_editphoto_hide_tool_settings">Hide %1$s settings</string>
+    <string name="homecloud_editphoto_turn_off_tool">Turn off %1$s</string>
     <string name="homecloud_editphoto_shape_line">Line</string>
     <string name="homecloud_editphoto_shape_oval">Oval</string>
     <string name="homecloud_editphoto_shape_rectangle">Rectangle</string>
