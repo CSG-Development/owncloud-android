@@ -72,6 +72,7 @@
         <activity
             android:name=".presentation.editphoto.EditPhotoActivity"
             android:label="@string/homecloud_filelist_edit_photo"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:theme="@style/Theme.homeCloud.Toolbar"
             android:exported="false" />
         <activity

@@ -107,6 +107,9 @@ internal val EditPhotoTool.isShapeTool: Boolean
         this == EditPhotoTool.Rectangle ||
         this == EditPhotoTool.Arrow
 
+internal val EditPhotoTool.hasSettingsPanel: Boolean
+    get() = isBrushTool || isShapeTool || this == EditPhotoTool.Eraser
+
 @Composable
 internal fun EditPhotoBrushSettings(
     selectedColor: Int,
@@ -424,6 +427,7 @@ private suspend fun PointerInputScope.detectPressAndDrag(onPosition: (Offset) ->
 @Composable
 internal fun EditPhotoToolsRow(
     selectedTool: EditPhotoTool,
+    settingsPanelVisible: Boolean,
     addMenuOpen: Boolean,
     canUndo: Boolean,
     canRedo: Boolean,
@@ -440,35 +444,64 @@ internal fun EditPhotoToolsRow(
     ) {
         EditPhotoToolButton(
             icon = ImageVector.vectorResource(R.drawable.ic_pen),
-            label = stringResource(R.string.homecloud_editphoto_tool_pen),
+            label = toolButtonDescription(
+                label = stringResource(R.string.homecloud_editphoto_tool_pen),
+                selected = selectedTool == EditPhotoTool.Pen,
+                hasSettingsPanel = true,
+                settingsPanelVisible = settingsPanelVisible,
+            ),
             selected = selectedTool == EditPhotoTool.Pen,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Pen) },
         )
         EditPhotoToolButton(
             icon = ImageVector.vectorResource(R.drawable.ic_marker),
-            label = stringResource(R.string.homecloud_editphoto_tool_marker),
+            label = toolButtonDescription(
+                label = stringResource(R.string.homecloud_editphoto_tool_marker),
+                selected = selectedTool == EditPhotoTool.Marker,
+                hasSettingsPanel = true,
+                settingsPanelVisible = settingsPanelVisible,
+            ),
             selected = selectedTool == EditPhotoTool.Marker,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Marker) },
         )
         EditPhotoToolButton(
             icon = Icons.Outlined.Edit,
-            label = stringResource(R.string.homecloud_editphoto_tool_pencil),
+            label = toolButtonDescription(
+                label = stringResource(R.string.homecloud_editphoto_tool_pencil),
+                selected = selectedTool == EditPhotoTool.Pencil,
+                hasSettingsPanel = true,
+                settingsPanelVisible = settingsPanelVisible,
+            ),
             selected = selectedTool == EditPhotoTool.Pencil,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Pencil) },
         )
         EditPhotoToolButton(
             icon = ImageVector.vectorResource(R.drawable.ic_eraser),
-            label = stringResource(R.string.homecloud_editphoto_tool_eraser),
+            label = toolButtonDescription(
+                label = stringResource(R.string.homecloud_editphoto_tool_eraser),
+                selected = selectedTool == EditPhotoTool.Eraser,
+                hasSettingsPanel = true,
+                settingsPanelVisible = settingsPanelVisible,
+            ),
             selected = selectedTool == EditPhotoTool.Eraser,
             enabled = enabled,
             onClick = { onToolSelected(EditPhotoTool.Eraser) },
         )
         EditPhotoToolButton(
             icon = Icons.Filled.Add,
-            label = stringResource(R.string.homecloud_editphoto_tool_add),
+            label = if (selectedTool.isShapeTool) {
+                toolButtonDescription(
+                    label = selectedTool.shapeLabel(),
+                    selected = true,
+                    hasSettingsPanel = true,
+                    settingsPanelVisible = settingsPanelVisible,
+                )
+            } else {
+                stringResource(R.string.homecloud_editphoto_tool_add)
+            },
             selected = addMenuOpen || selectedTool.isShapeTool,
             enabled = enabled,
             onClick = onAddClick,
@@ -587,6 +620,35 @@ private fun EditPhotoLabeledSlider(
 }
 
 @Composable
+private fun toolButtonDescription(
+    label: String,
+    selected: Boolean,
+    hasSettingsPanel: Boolean,
+    settingsPanelVisible: Boolean,
+): String {
+    if (!selected || !hasSettingsPanel) return label
+    return stringResource(
+        if (settingsPanelVisible) {
+            R.string.homecloud_editphoto_hide_tool_settings
+        } else {
+            R.string.homecloud_editphoto_turn_off_tool
+        },
+        label,
+    )
+}
+
+@Composable
+private fun EditPhotoTool.shapeLabel(): String = stringResource(
+    when (this) {
+        EditPhotoTool.Line -> R.string.homecloud_editphoto_shape_line
+        EditPhotoTool.Oval -> R.string.homecloud_editphoto_shape_oval
+        EditPhotoTool.Rectangle -> R.string.homecloud_editphoto_shape_rectangle
+        EditPhotoTool.Arrow -> R.string.homecloud_editphoto_shape_arrow
+        else -> R.string.homecloud_editphoto_tool_add
+    },
+)
+
+@Composable
 private fun EditPhotoToolButton(
     icon: ImageVector,
     label: String,
@@ -651,6 +713,7 @@ private fun EditPhotoToolsRowPreview() {
         Surface {
             EditPhotoToolsRow(
                 selectedTool = EditPhotoTool.Pen,
+                settingsPanelVisible = true,
                 addMenuOpen = false,
                 canUndo = true,
                 canRedo = false,

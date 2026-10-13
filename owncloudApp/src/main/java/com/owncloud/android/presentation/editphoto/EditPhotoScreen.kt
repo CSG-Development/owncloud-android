@@ -76,6 +76,7 @@ fun EditPhotoScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTool by rememberSaveable { mutableStateOf(EditPhotoTool.None) }
+    var settingsPanelVisible by rememberSaveable { mutableStateOf(true) }
     var showAddMenu by rememberSaveable { mutableStateOf(false) }
     var brushColor by rememberSaveable { mutableIntStateOf(AndroidColor.WHITE) }
     var penSize by rememberSaveable { mutableFloatStateOf(PEN_DEFAULT_SIZE) }
@@ -163,6 +164,7 @@ fun EditPhotoScreen(
         errorMessage = errorMessage,
         editorHandle = editorHandle,
         selectedTool = selectedTool,
+        settingsPanelVisible = settingsPanelVisible,
         showAddMenu = showAddMenu,
         brushColor = brushColor,
         brushSize = activeStrokeSize,
@@ -180,16 +182,29 @@ fun EditPhotoScreen(
         },
         onToolSelected = { tool ->
             showAddMenu = false
-            val nextTool = if (selectedTool == tool) EditPhotoTool.None else tool
-            selectedTool = nextTool
             textSession = null
+            val (nextTool, panelVisible) = nextToolSelection(
+                currentTool = selectedTool,
+                tappedTool = tool,
+                settingsPanelVisible = settingsPanelVisible,
+            )
+            selectedTool = nextTool
+            settingsPanelVisible = panelVisible
         },
         onAddClick = {
-            showAddMenu = true
-            if (selectedTool.isShapeTool) {
-                selectedTool = EditPhotoTool.None
-            }
             textSession = null
+            if (selectedTool.isShapeTool) {
+                val (nextTool, panelVisible) = nextToolSelection(
+                    currentTool = selectedTool,
+                    tappedTool = selectedTool,
+                    settingsPanelVisible = settingsPanelVisible,
+                )
+                selectedTool = nextTool
+                settingsPanelVisible = panelVisible
+                showAddMenu = false
+            } else {
+                showAddMenu = true
+            }
         },
         onAddDismissed = { showAddMenu = false },
         onAddItemSelected = { item ->
@@ -208,18 +223,22 @@ fun EditPhotoScreen(
                 EditPhotoAddItem.Line -> {
                     textSession = null
                     selectedTool = EditPhotoTool.Line
+                    settingsPanelVisible = true
                 }
                 EditPhotoAddItem.Oval -> {
                     textSession = null
                     selectedTool = EditPhotoTool.Oval
+                    settingsPanelVisible = true
                 }
                 EditPhotoAddItem.Rectangle -> {
                     textSession = null
                     selectedTool = EditPhotoTool.Rectangle
+                    settingsPanelVisible = true
                 }
                 EditPhotoAddItem.Arrow -> {
                     textSession = null
                     selectedTool = EditPhotoTool.Arrow
+                    settingsPanelVisible = true
                 }
             }
         },
@@ -286,6 +305,7 @@ private fun EditPhotoScreenView(
     errorMessage: String?,
     editorHandle: PhotoEditorHandle,
     selectedTool: EditPhotoTool,
+    settingsPanelVisible: Boolean,
     showAddMenu: Boolean,
     brushColor: Int,
     brushSize: Float,
@@ -365,7 +385,7 @@ private fun EditPhotoScreenView(
                 modifier = Modifier.padding(dimensionResource(R.dimen.standard_half_margin)),
             )
         }
-        if (selectedTool.isBrushTool || selectedTool.isShapeTool) {
+        if (settingsPanelVisible && (selectedTool.isBrushTool || selectedTool.isShapeTool)) {
             EditPhotoBrushSettings(
                 selectedColor = brushColor,
                 brushSize = brushSize,
@@ -377,7 +397,7 @@ private fun EditPhotoScreenView(
                 modifier = drawingBarModifier,
             )
         }
-        if (selectedTool == EditPhotoTool.Eraser) {
+        if (settingsPanelVisible && selectedTool == EditPhotoTool.Eraser) {
             EditPhotoEraserSettings(
                 eraserSize = eraserSize,
                 enabled = toolsEnabled,
@@ -387,6 +407,7 @@ private fun EditPhotoScreenView(
         }
         EditPhotoToolsRow(
             selectedTool = selectedTool,
+            settingsPanelVisible = settingsPanelVisible,
             addMenuOpen = showAddMenu,
             canUndo = canUndo,
             canRedo = canRedo,
@@ -560,6 +581,19 @@ private fun EditPhotoDownloadProgress(
     }
 }
 
+private fun nextToolSelection(
+    currentTool: EditPhotoTool,
+    tappedTool: EditPhotoTool,
+    settingsPanelVisible: Boolean,
+): Pair<EditPhotoTool, Boolean> = when {
+    currentTool == tappedTool && tappedTool.hasSettingsPanel && settingsPanelVisible ->
+        currentTool to false
+    currentTool == tappedTool ->
+        EditPhotoTool.None to true
+    else ->
+        tappedTool to true
+}
+
 private fun EditPhotoTool.brushSize(
     penSize: Float,
     markerSize: Float,
@@ -586,6 +620,7 @@ private data class EditPhotoScreenPreviewModel(
     val uiState: EditPhotoUiState,
     val errorMessage: String? = null,
     val selectedTool: EditPhotoTool = EditPhotoTool.None,
+    val settingsPanelVisible: Boolean = true,
 )
 
 private class EditPhotoScreenPreviewParameterProvider :
@@ -597,6 +632,14 @@ private class EditPhotoScreenPreviewParameterProvider :
                     isImageLoaded = true,
                 ),
                 selectedTool = EditPhotoTool.Pen,
+            ),
+            EditPhotoScreenPreviewModel(
+                uiState = EditPhotoUiState.Ready(
+                    localFilePath = PREVIEW_LOCAL_PATH,
+                    isImageLoaded = true,
+                ),
+                selectedTool = EditPhotoTool.Pen,
+                settingsPanelVisible = false,
             ),
             EditPhotoScreenPreviewModel(
                 uiState = EditPhotoUiState.Ready(
@@ -646,6 +689,7 @@ private fun EditPhotoScreenPreview(
                 errorMessage = model.errorMessage,
                 editorHandle = previewEditorHandle,
                 selectedTool = model.selectedTool,
+                settingsPanelVisible = model.settingsPanelVisible,
                 showAddMenu = false,
                 brushColor = AndroidColor.WHITE,
                 brushSize = PEN_DEFAULT_SIZE,

@@ -14,6 +14,7 @@ import android.media.ExifInterface
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class PhotoEditorHandle {
@@ -401,11 +403,7 @@ fun EditPhotoEditorHost(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            PhotoEditorView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
+            val editorView = PhotoEditorView(context).apply {
                 setBackgroundColor(Color.BLACK)
                 val editor = PhotoEditor.Builder(context, this)
                     .setPinchTextScalable(true)
@@ -436,8 +434,16 @@ fun EditPhotoEditorHost(
                     },
                 )
             }
+            EditorCanvasHost(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+                addView(editorView)
+            }
         },
-        update = { photoEditorView ->
+        update = { _ ->
+            val photoEditorView = handle.photoEditorView ?: return@AndroidView
             handle.localFilePath = localFilePath
             if (localFilePath != photoEditorView.tag) {
                 photoEditorView.tag = localFilePath
@@ -466,6 +472,7 @@ fun EditPhotoEditorHost(
                                 isFirstResource: Boolean,
                             ): Boolean {
                                 onImageLoadedState.value(true)
+                                photoEditorView.post { photoEditorView.requestLayout() }
                                 return false
                             }
                         },
@@ -473,11 +480,84 @@ fun EditPhotoEditorHost(
                     .into(photoEditorView.source)
             }
         },
-        onRelease = { photoEditorView ->
-            Glide.with(photoEditorView.context).clear(photoEditorView.source)
+        onRelease = {
+            handle.photoEditorView?.let { photoEditorView ->
+                Glide.with(photoEditorView).clear(photoEditorView.source)
+            }
             handle.photoEditor = null
             handle.photoEditorView = null
             handle.localFilePath = null
         },
     )
+}
+
+/**
+ * Locks the editor to the photo aspect ratio once the image is loaded, then scales
+ * that canvas uniformly when the available space changes. Strokes and text stay on
+ * the same parts of the photo, and the photo uses the largest size that fits.
+ */
+private class EditorCanvasHost(context: Context) : FrameLayout(context) {
+    private var canvasWidth = 0
+    private var canvasHeight = 0
+
+    init {
+        clipChildren = false
+        clipToPadding = false
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = View.MeasureSpec.getSize(widthMeasureSpec)
+        val height = View.MeasureSpec.getSize(heightMeasureSpec)
+        val child = getChildAt(0) as? PhotoEditorView
+        if (child != null && width > 0 && height > 0) {
+            ensureCanvasSize(child, width, height)
+            val childWidth = if (canvasWidth > 0) canvasWidth else width
+            val childHeight = if (canvasHeight > 0) canvasHeight else height
+            child.measure(
+                View.MeasureSpec.makeMeasureSpec(childWidth, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(childHeight, View.MeasureSpec.EXACTLY),
+            )
+        }
+        setMeasuredDimension(width, height)
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val child = getChildAt(0) ?: return
+        val childWidth = child.measuredWidth
+        val childHeight = child.measuredHeight
+        if (childWidth == 0 || childHeight == 0) return
+        val parentWidth = right - left
+        val parentHeight = bottom - top
+        val childLeft = (parentWidth - childWidth) / 2
+        val childTop = (parentHeight - childHeight) / 2
+        child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight)
+        if (parentWidth == 0 || parentHeight == 0) return
+        val scale = min(
+            parentWidth / childWidth.toFloat(),
+            parentHeight / childHeight.toFloat(),
+        )
+        child.pivotX = childWidth / 2f
+        child.pivotY = childHeight / 2f
+        child.scaleX = scale
+        child.scaleY = scale
+    }
+
+    private fun ensureCanvasSize(
+        editor: PhotoEditorView,
+        parentWidth: Int,
+        parentHeight: Int,
+    ) {
+        if (canvasWidth > 0 && canvasHeight > 0) return
+        val drawable = editor.source.drawable ?: return
+        val imageWidth = drawable.intrinsicWidth
+        val imageHeight = drawable.intrinsicHeight
+        if (imageWidth <= 0 || imageHeight <= 0) return
+        val scale = min(
+            parentWidth / imageWidth.toFloat(),
+            parentHeight / imageHeight.toFloat(),
+        )
+        if (scale <= 0f) return
+        canvasWidth = (imageWidth * scale).roundToInt().coerceAtLeast(1)
+        canvasHeight = (imageHeight * scale).roundToInt().coerceAtLeast(1)
+    }
 }

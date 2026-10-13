@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.editphoto
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -88,6 +89,11 @@ class EditPhotoActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        window.decorView.requestApplyInsets()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
