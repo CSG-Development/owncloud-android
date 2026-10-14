@@ -19,7 +19,6 @@
 
 package com.owncloud.android.presentation.viewmodels.authentication
 
-import com.owncloud.android.presentation.authentication.oauth.OAuthUtils
 import com.owncloud.android.domain.UseCaseResult
 import com.owncloud.android.domain.authentication.oauth.OIDCDiscoveryUseCase
 import com.owncloud.android.domain.authentication.oauth.RegisterClientUseCase
@@ -28,9 +27,10 @@ import com.owncloud.android.domain.authentication.oauth.model.OIDCServerConfigur
 import com.owncloud.android.domain.authentication.oauth.model.TokenResponse
 import com.owncloud.android.domain.exceptions.ServerNotReachableException
 import com.owncloud.android.domain.utils.Event
+import com.owncloud.android.presentation.authentication.oauth.OAuthUtils
+import com.owncloud.android.presentation.authentication.oauth.OAuthViewModel
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.viewmodels.ViewModelTest
-import com.owncloud.android.presentation.authentication.oauth.OAuthViewModel
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.testutil.OC_SECURE_SERVER_INFO_BASIC_AUTH
 import com.owncloud.android.testutil.oauth.OC_OIDC_SERVER_CONFIGURATION
@@ -86,8 +86,6 @@ class OAuthViewModelTest : ViewModelTest() {
         getOIDCDiscoveryUseCase = mockk()
         requestTokenUseCase = mockk()
         registerClientUseCase = mockk()
-
-        testCoroutineDispatcher.pauseDispatcher()
 
         oAuthViewModel = OAuthViewModel(
             getOIDCDiscoveryUseCase = getOIDCDiscoveryUseCase,

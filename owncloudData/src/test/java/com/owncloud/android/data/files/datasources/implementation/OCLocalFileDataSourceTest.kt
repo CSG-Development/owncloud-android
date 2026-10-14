@@ -26,6 +26,7 @@ package com.owncloud.android.data.files.datasources.implementation
 import com.owncloud.android.data.files.datasources.implementation.OCLocalFileDataSource.Companion.toEntity
 import com.owncloud.android.data.files.db.FileDao
 import com.owncloud.android.data.files.db.OCFileEntity
+import com.owncloud.android.data.transfers.datasources.LocalTransferDataSource
 import com.owncloud.android.domain.availableoffline.model.AvailableOfflineStatus
 import com.owncloud.android.domain.files.model.MIME_DIR
 import com.owncloud.android.domain.files.model.MIME_PREFIX_IMAGE
@@ -60,13 +61,16 @@ class OCLocalFileDataSourceTest {
 
     private lateinit var ocLocalFileDataSource: OCLocalFileDataSource
     private val fileDao = mockk<FileDao>(relaxUnitFun = true)
+    private val localTransferDataSource = mockk<LocalTransferDataSource>()
 
     private val fileEntitySharedByLink = OC_FILE_ENTITY.copy(sharedByLink = true).apply { this.id = OC_FILE_ENTITY.id }
     private val fileSharedByLink = OC_FILE.copy(sharedByLink = true)
     private val timeInMilliseconds = 3600000L
     @Before
     fun setUp() {
-        ocLocalFileDataSource = OCLocalFileDataSource(fileDao)
+        every { localTransferDataSource.getTransfersForUploadVirtualFilesAsStream() } returns flowOf(emptyList())
+        every { fileDao.getFileByIdAsFlow(any()) } returns flowOf(null)
+        ocLocalFileDataSource = OCLocalFileDataSource(fileDao, localTransferDataSource)
     }
 
     @Test

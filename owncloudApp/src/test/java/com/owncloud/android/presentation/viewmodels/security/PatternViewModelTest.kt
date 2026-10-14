@@ -24,6 +24,8 @@ import com.owncloud.android.data.providers.SharedPreferencesProvider
 import com.owncloud.android.presentation.security.pattern.PatternActivity
 import com.owncloud.android.presentation.security.pattern.PatternViewModel
 import com.owncloud.android.presentation.viewmodels.ViewModelTest
+import com.owncloud.android.providers.ContextProvider
+import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -43,7 +45,12 @@ class PatternViewModelTest : ViewModelTest() {
     @Before
     fun setUp() {
         preferencesProvider = mockk(relaxUnitFun = true)
-        patternViewModel = PatternViewModel(preferencesProvider)
+        patternViewModel = PatternViewModel(
+            preferencesProvider = preferencesProvider,
+            removeAccountUseCase = mockk<RemoveAccountUseCase>(relaxed = true),
+            appContextProvider = mockk<ContextProvider>(relaxed = true),
+            coroutinesDispatcherProvider = coroutineDispatcherProvider,
+        )
     }
 
     @Test

@@ -20,10 +20,14 @@
  */
 package com.owncloud.android.presentation.viewmodels
 
+import android.accounts.AccountManager
 import com.owncloud.android.data.providers.LocalStorageProvider
+import com.owncloud.android.domain.device.AccountBaseUrlManager
+import com.owncloud.android.domain.device.usecases.UpdateBaseUrlUseCase
 import com.owncloud.android.domain.user.usecases.GetStoredQuotaAsStreamUseCase
 import com.owncloud.android.domain.user.usecases.GetUserQuotasUseCase
 import com.owncloud.android.presentation.common.DrawerViewModel
+import com.owncloud.android.providers.AccountProvider
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.usecases.accounts.RemoveAccountUseCase
 import io.mockk.every
@@ -69,8 +73,6 @@ class DrawerViewModelTest : ViewModelTest() {
         getUserQuotasUseCase = mockk()
         localStorageProvider = mockk()
 
-        testCoroutineDispatcher.pauseDispatcher()
-
         drawerViewModel = DrawerViewModel(
             getStoredQuotaAsStreamUseCase = getStoredQuotaAsStreamUseCase,
             removeAccountUseCase = removeAccountUseCase,
@@ -78,6 +80,10 @@ class DrawerViewModelTest : ViewModelTest() {
             localStorageProvider = localStorageProvider,
             coroutinesDispatcherProvider = coroutineDispatcherProvider,
             contextProvider = contextProvider,
+            accountBaseUrlManager = mockk<AccountBaseUrlManager>(relaxed = true),
+            accountProvider = mockk<AccountProvider>(relaxed = true),
+            accountManager = mockk<AccountManager>(relaxed = true),
+            updateBaseUrlUseCase = mockk<UpdateBaseUrlUseCase>(relaxed = true),
         )
     }
 

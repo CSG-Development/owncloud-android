@@ -1,6 +1,8 @@
 package com.owncloud.android.data.device
 
+import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.model.DevicePathType
+import com.owncloud.android.domain.mdnsdiscovery.MdnsDiscoveryRepository
 import com.owncloud.android.domain.remoteaccess.RemoteAccessRepository
 import com.owncloud.android.domain.server.usecases.DeviceUrlResolver
 import io.mockk.coEvery
@@ -17,20 +19,28 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class HCBaseUrlChooserTest {
 
-    private val currentDeviceStorage: CurrentDeviceStorage = mockk(relaxed = true)
+    private val currentDeviceRepository: CurrentDeviceRepository = mockk(relaxed = true)
     private val deviceUrlResolver: DeviceUrlResolver = mockk()
     private val remoteAccessRepository: RemoteAccessRepository = mockk()
+    private val mdnsDiscoveryRepository: MdnsDiscoveryRepository = mockk(relaxed = true)
 
     private val chooser = HCBaseUrlChooser(
-        currentDeviceStorage,
+        currentDeviceRepository,
         deviceUrlResolver,
         remoteAccessRepository,
+        mdnsDiscoveryRepository,
     )
 
     private fun stubPaths(local: String? = null, public: String? = null, remote: String? = null) {
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.LOCAL.name) } returns local
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.PUBLIC.name) } returns public
-        every { currentDeviceStorage.getDeviceBaseUrl(DevicePathType.REMOTE.name) } returns remote
+        val paths = buildMap {
+            local?.let { put(DevicePathType.LOCAL, it) }
+            public?.let { put(DevicePathType.PUBLIC, it) }
+            remote?.let { put(DevicePathType.REMOTE, it) }
+        }
+        every { currentDeviceRepository.getCurrentDevicePaths() } returns paths
+        every { currentDeviceRepository.getDevicePath(DevicePathType.LOCAL) } returns local
+        every { currentDeviceRepository.getDevicePath(DevicePathType.PUBLIC) } returns public
+        every { currentDeviceRepository.getDevicePath(DevicePathType.REMOTE) } returns remote
     }
 
     @Test
@@ -58,7 +68,7 @@ class HCBaseUrlChooserTest {
     fun `falls back to relay when priority fails and no cache refresh available`() = runTest {
         stubPaths(local = "https://192.168.1.100/files", remote = "https://relay.example.com/files")
         coEvery { deviceUrlResolver.testPriorityPaths(any(), any()) } returns null
-        every { currentDeviceStorage.arePathsExpired() } returns false
+        every { currentDeviceRepository.arePathsExpired() } returns false
         coEvery { deviceUrlResolver.testSinglePath("https://relay.example.com/files", isLocal = false) } returns "https://relay.example.com/files"
 
         val result = chooser.chooseBestAvailableBaseUrl(wifiAvailable = true)
@@ -71,8 +81,8 @@ class HCBaseUrlChooserTest {
     fun `cache refresh skipped when not expired`() = runTest {
         stubPaths(local = "https://l/files")
         coEvery { deviceUrlResolver.testPriorityPaths(any(), any()) } returns null
-        every { currentDeviceStorage.arePathsExpired() } returns false
-        every { currentDeviceStorage.getSeagateDeviceId() } returns "id-1"
+        every { currentDeviceRepository.arePathsExpired() } returns false
+        every { currentDeviceRepository.getSeagateDeviceId() } returns "id-1"
         every { remoteAccessRepository.hasAccessToken() } returns true
 
         chooser.chooseBestAvailableBaseUrl(wifiAvailable = true)
@@ -85,15 +95,15 @@ class HCBaseUrlChooserTest {
         val cached = mapOf(DevicePathType.LOCAL to "https://l/files", DevicePathType.PUBLIC to "https://p/files")
         stubPaths(local = "https://l/files", public = "https://p/files")
         coEvery { deviceUrlResolver.testPriorityPaths(any(), any()) } returns null
-        every { currentDeviceStorage.arePathsExpired() } returns true
-        every { currentDeviceStorage.getSeagateDeviceId() } returns "id-1"
+        every { currentDeviceRepository.arePathsExpired() } returns true
+        every { currentDeviceRepository.getSeagateDeviceId() } returns "id-1"
         every { remoteAccessRepository.hasAccessToken() } returns true
         coEvery { remoteAccessRepository.getDevicePathsById("id-1") } returns cached
 
         val result = chooser.chooseBestAvailableBaseUrl(wifiAvailable = true)
 
         // Same paths returned: only timestamp updated, no second resolver attempt, no relay (none configured).
-        verify(exactly = 1) { currentDeviceStorage.savePathsTimestamp() }
+        verify(exactly = 1) { currentDeviceRepository.savePathsTimestamp() }
         coVerify(exactly = 1) { deviceUrlResolver.testPriorityPaths(any(), any()) }
         assertNull(result)
     }
@@ -104,15 +114,15 @@ class HCBaseUrlChooserTest {
         val freshPaths = mapOf(DevicePathType.LOCAL to "https://new-local/files")
         coEvery { deviceUrlResolver.testPriorityPaths(match { it[DevicePathType.LOCAL] == "https://old-local/files" }, any()) } returns null
         coEvery { deviceUrlResolver.testPriorityPaths(match { it[DevicePathType.LOCAL] == "https://new-local/files" }, any()) } returns "https://new-local/files"
-        every { currentDeviceStorage.arePathsExpired() } returns true
-        every { currentDeviceStorage.getSeagateDeviceId() } returns "id-1"
+        every { currentDeviceRepository.arePathsExpired() } returns true
+        every { currentDeviceRepository.getSeagateDeviceId() } returns "id-1"
         every { remoteAccessRepository.hasAccessToken() } returns true
         coEvery { remoteAccessRepository.getDevicePathsById("id-1") } returns freshPaths
 
         val result = chooser.chooseBestAvailableBaseUrl(wifiAvailable = true)
 
         assertEquals("https://new-local/files", result)
-        verify(exactly = 1) { currentDeviceStorage.replacePaths(freshPaths) }
+        verify(exactly = 1) { currentDeviceRepository.replacePaths(freshPaths) }
     }
 
     @Test
