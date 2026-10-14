@@ -46,7 +46,7 @@ class HCRemoteAccessRepositoryTest {
     fun `getAvailableDevices returns empty list when getDevices returns empty list`() = runTest {
         coEvery { remoteAccessService.getDevices() } returns emptyList()
 
-        val result = repository.getAvailableDevices()
+        val result = repository.getAvailableDevices(filterByCertificateCommonName = null)
 
         assertEquals(emptyList<Device>(), result)
     }
@@ -57,7 +57,7 @@ class HCRemoteAccessRepositoryTest {
         coEvery { remoteAccessService.getDevices() } returns devices
         coEvery { remoteAccessService.getDeviceById("1") } returns RemoteAccessDevicePathsResponse("1",  paths = emptyList())
 
-        val result = repository.getAvailableDevices()
+        val result = repository.getAvailableDevices(filterByCertificateCommonName = null)
 
         assertEquals(emptyList<Device>(), result)
     }
@@ -71,7 +71,7 @@ class HCRemoteAccessRepositoryTest {
         // REMOTE path ⇒ non-local timeout (isLocal = false).
         coEvery { deviceVerificationClient.getDeviceInfo("https://test.com:443", isLocal = false) } returns null
 
-        val result = repository.getAvailableDevices()
+        val result = repository.getAvailableDevices(filterByCertificateCommonName = null)
 
         assertEquals(1, result.size)
         assertEquals("Test Device", result[0].name)
@@ -92,7 +92,7 @@ class HCRemoteAccessRepositoryTest {
         // because the cached name is already non-empty.
         coEvery { deviceVerificationClient.getDeviceInfo("https://public.com:443", isLocal = false) } returns HCDeviceAboutResponse("test-cert-001")
 
-        val result = repository.getAvailableDevices()
+        val result = repository.getAvailableDevices(filterByCertificateCommonName = null)
 
         assertEquals(1, result.size)
         val device = result[0]
@@ -115,7 +115,7 @@ class HCRemoteAccessRepositoryTest {
         // declaration order, so LOCAL is visited first and the local timeout is used.
         coEvery { deviceVerificationClient.getDeviceInfo("https://192.168.1.100", isLocal = true) } returns HCDeviceAboutResponse("test-cert-001")
 
-        val result = repository.getAvailableDevices()
+        val result = repository.getAvailableDevices(filterByCertificateCommonName = null)
 
         assertEquals(1, result.size)
         val device = result[0]
