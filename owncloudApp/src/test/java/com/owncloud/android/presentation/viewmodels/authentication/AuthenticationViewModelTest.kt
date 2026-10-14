@@ -46,11 +46,11 @@ import com.owncloud.android.providers.WorkManagerProvider
 import com.owncloud.android.testutil.OC_ACCESS_TOKEN
 import com.owncloud.android.testutil.OC_ACCOUNT_NAME
 import com.owncloud.android.testutil.OC_AUTH_TOKEN_TYPE
-import com.owncloud.android.testutil.OC_SECURE_BASE_URL
 import com.owncloud.android.testutil.OC_BASIC_PASSWORD
 import com.owncloud.android.testutil.OC_BASIC_USERNAME
 import com.owncloud.android.testutil.OC_REFRESH_TOKEN
 import com.owncloud.android.testutil.OC_SCOPE
+import com.owncloud.android.testutil.OC_SECURE_BASE_URL
 import com.owncloud.android.testutil.OC_SECURE_SERVER_INFO_BASIC_AUTH
 import com.owncloud.android.testutil.OC_SECURE_SERVER_INFO_BEARER_AUTH
 import com.owncloud.android.testutil.OC_SECURE_SERVER_INFO_BEARER_AUTH_WEBFINGER_INSTANCE
@@ -128,8 +128,6 @@ class AuthenticationViewModelTest : ViewModelTest() {
         every { anyConstructed<OAuthUtils>().generateRandomState() } returns "STATE"
         every { contextProvider.getBoolean(R.bool.enforce_secure_connection) } returns false
         every { contextProvider.getBoolean(R.bool.enforce_oidc) } returns false
-
-        testCoroutineDispatcher.pauseDispatcher()
 
         authenticationViewModel = AuthenticationViewModel(
             loginBasicAsyncUseCase = loginBasicAsyncUseCase,
