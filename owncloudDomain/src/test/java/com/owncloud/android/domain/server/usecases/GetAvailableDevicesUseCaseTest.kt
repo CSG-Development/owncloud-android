@@ -35,6 +35,10 @@ class GetAvailableDevicesUseCaseTest {
         staticDeviceRepository,
     )
 
+    init {
+        every { staticDeviceRepository.getStaticDeviceAsFlow() } returns flowOf(null)
+    }
+
     @Test
     fun `getServersUpdates should return a merged list of remote and local devices`() = runTest {
         every { getSavedDeviceCertificateUseCase() } returns null
@@ -70,7 +74,7 @@ class GetAvailableDevicesUseCaseTest {
             availablePaths = mapOf(DevicePathType.LOCAL to localDevicePath)
         )
         val localDevicesFlow = flowOf(localDevice)
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns localDevicesFlow
 
         val job = SupervisorJob()
@@ -127,7 +131,7 @@ class GetAvailableDevicesUseCaseTest {
             certificateCommonName = "cert-001"
         )
         val localDevicesFlow = flowOf(localDevice)
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns localDevicesFlow
 
         val job = SupervisorJob()
@@ -186,7 +190,7 @@ class GetAvailableDevicesUseCaseTest {
             certificateCommonName = "cert-003"
         )
         val localDevicesFlow = flowOf(localDevice)
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns localDevicesFlow
 
         val job = SupervisorJob()
@@ -240,7 +244,7 @@ class GetAvailableDevicesUseCaseTest {
             certificateCommonName = "cert3"
         )
         val localDevicesFlow = flowOf(localDevice)
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns localDevicesFlow
 
         val job = SupervisorJob()
@@ -293,7 +297,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns emptyFlow()
 
         val job = SupervisorJob()
@@ -337,7 +341,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns emptyFlow()
 
         val job = SupervisorJob()
@@ -379,7 +383,7 @@ class GetAvailableDevicesUseCaseTest {
         )
         coEvery { mGetRemoteAvailableDevicesUseCase.execute() }.returns(devices)
 
-        val params = DiscoverLocalNetworkDevicesUseCase.Params("serviceType", "serviceName", 10.seconds)
+        val params = DiscoverLocalNetworkDevicesUseCase.Params(10.seconds)
         coEvery { discoverLocalNetworkDevicesUseCase.execute(any()) } returns emptyFlow()
 
         val job = SupervisorJob()
