@@ -76,6 +76,9 @@ class GlobalSearchViewModel(
     private val _menuOptions: MutableSharedFlow<List<FileMenuOption>> = MutableSharedFlow()
     val menuOptions: SharedFlow<List<FileMenuOption>> = _menuOptions
 
+    private val _singleFileMenu: MutableSharedFlow<SingleFileMenu> = MutableSharedFlow()
+    val singleFileMenu: SharedFlow<SingleFileMenu> = _singleFileMenu
+
     private val _filtersState = MutableStateFlow(SearchFiltersState())
     val filtersState: StateFlow<SearchFiltersState> = _filtersState
 
@@ -362,30 +365,63 @@ class GlobalSearchViewModel(
         displaySelectAll: Boolean,
         isMultiselection: Boolean
     ) {
-        val shareViaLinkAllowed = contextProvider.getBoolean(R.bool.share_via_link_feature)
-        val shareWithUsersAllowed = contextProvider.getBoolean(R.bool.share_with_users_feature)
-        val sendAllowed = contextProvider.getString(R.string.send_files_to_other_apps).equals("on", ignoreCase = true)
         val accountName = files.firstOrNull()?.owner ?: return
-
         viewModelScope.launch(coroutinesDispatcherProvider.io) {
-            val result = filterFileMenuOptionsUseCase(
-                FilterFileMenuOptionsUseCase.Params(
+            _menuOptions.emit(
+                filteredMenuOptions(
                     files = files,
                     filesSyncInfo = filesSyncInfo,
                     accountName = accountName,
-                    isAnyFileVideoPreviewing = false,
                     displaySelectAll = displaySelectAll,
                     displaySelectInverse = isMultiselection,
-                    onlyAvailableOfflineFiles = false,
-                    onlySharedByLinkFiles = false,
-                    shareViaLinkAllowed = shareViaLinkAllowed,
-                    shareWithUsersAllowed = shareWithUsersAllowed,
-                    sendAllowed = sendAllowed,
                 )
             )
-            _menuOptions.emit(result)
         }
     }
+
+    fun showSingleFileMenu(fileWithSyncInfo: OCFileWithSyncInfo) {
+        val file = fileWithSyncInfo.file
+        val fileId = file.id ?: return
+        viewModelScope.launch(coroutinesDispatcherProvider.io) {
+            val options = filteredMenuOptions(
+                files = listOf(file),
+                filesSyncInfo = listOf(
+                    OCFileSyncInfo(
+                        fileId = fileId,
+                        uploadWorkerUuid = fileWithSyncInfo.uploadWorkerUuid,
+                        downloadWorkerUuid = fileWithSyncInfo.downloadWorkerUuid,
+                        isSynchronizing = fileWithSyncInfo.isSynchronizing,
+                    )
+                ),
+                accountName = file.owner,
+                displaySelectAll = false,
+                displaySelectInverse = false,
+            )
+            _singleFileMenu.emit(SingleFileMenu(file, options))
+        }
+    }
+
+    private fun filteredMenuOptions(
+        files: List<OCFile>,
+        filesSyncInfo: List<OCFileSyncInfo>,
+        accountName: String,
+        displaySelectAll: Boolean,
+        displaySelectInverse: Boolean,
+    ): List<FileMenuOption> = filterFileMenuOptionsUseCase(
+        FilterFileMenuOptionsUseCase.Params(
+            files = files,
+            filesSyncInfo = filesSyncInfo,
+            accountName = accountName,
+            isAnyFileVideoPreviewing = false,
+            displaySelectAll = displaySelectAll,
+            displaySelectInverse = displaySelectInverse,
+            onlyAvailableOfflineFiles = false,
+            onlySharedByLinkFiles = false,
+            shareViaLinkAllowed = contextProvider.getBoolean(R.bool.share_via_link_feature),
+            shareWithUsersAllowed = contextProvider.getBoolean(R.bool.share_with_users_feature),
+            sendAllowed = contextProvider.getString(R.string.send_files_to_other_apps).equals("on", ignoreCase = true),
+        )
+    )
 
     private fun toComposeUiState(
         searchUiState: SearchUiState,
@@ -441,6 +477,11 @@ class GlobalSearchViewModel(
             footerContext = contextProvider.getContext(),
         )
     }
+
+    data class SingleFileMenu(
+        val file: OCFile,
+        val options: List<FileMenuOption>,
+    )
 
     private sealed class SearchUiState(open val query: String) {
         data object Initial : SearchUiState("")
