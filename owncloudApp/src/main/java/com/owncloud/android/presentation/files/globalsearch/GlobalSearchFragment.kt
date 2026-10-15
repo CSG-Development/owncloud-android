@@ -26,6 +26,7 @@ import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
+import com.owncloud.android.presentation.common.FileOptionsBottomSheetHelper
 import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
@@ -64,6 +65,7 @@ class GlobalSearchFragment : Fragment(),
     private val fileOperationsViewModel by activityViewModel<FileOperationsViewModel>()
 
     private var latestMenuOptions: List<FileMenuOption> = emptyList()
+    private var filesToRemove: List<OCFile> = emptyList()
 
     private val capabilityViewModel: CapabilityViewModel by activityViewModel {
         parametersOf(
@@ -355,6 +357,20 @@ class GlobalSearchFragment : Fragment(),
             actionModeController.menu?.filterMenuOptions(menuOptions, hasWritePermission)
         }
 
+        collectLatestLifecycleFlow(globalSearchViewModel.singleFileMenu) { menu ->
+            FileOptionsBottomSheetHelper.show(
+                fragment = this,
+                file = menu.file,
+                menuOptions = menu.options,
+                fileOperationsViewModel = fileOperationsViewModel,
+                fileActions = requireActivity() as? MainFileListFragment.FileActions,
+                isMultiPersonal = capabilityViewModel.checkMultiPersonal(),
+                onRemoveSelected = { file -> filesToRemove = listOf(file) },
+            )
+        }
+
+        observeRemoveConfirmation()
+
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
             disableSelectionMode()
         }
@@ -442,8 +458,25 @@ class GlobalSearchFragment : Fragment(),
     }
 
     private fun onComposeThreeDotClick(fileId: Long) {
-        val file = findFileWithSyncInfo(fileId)?.file ?: return
-        (requireActivity() as? MainFileListFragment.FileActions)?.showDetails(file)
+        val fileWithSyncInfo = findFileWithSyncInfo(fileId) ?: return
+        globalSearchViewModel.showSingleFileMenu(fileWithSyncInfo)
+    }
+
+    private fun observeRemoveConfirmation() {
+        collectLatestLifecycleFlow(fileOperationsViewModel.checkIfFileIsLocalAndNotAvailableOfflineSharedFlow) { uiResult ->
+            val fileActivity = requireActivity() as FileActivity
+            when (uiResult) {
+                is UIResult.Loading -> fileActivity.showLoadingDialog(R.string.common_loading)
+                is UIResult.Success -> {
+                    fileActivity.dismissLoadingDialog()
+                    uiResult.data?.let { isLocalAndNotAvailableOffline ->
+                        RemoveFilesDialogFragment.newInstance(ArrayList(filesToRemove), isLocalAndNotAvailableOffline)
+                            .show(requireActivity().supportFragmentManager, RemoveFilesDialogFragment.TAG_REMOVE_FILES_DIALOG_FRAGMENT)
+                    }
+                }
+                is UIResult.Error -> fileActivity.dismissLoadingDialog()
+            }
+        }
     }
 
     private fun showSelectionMoreBottomSheet() {
