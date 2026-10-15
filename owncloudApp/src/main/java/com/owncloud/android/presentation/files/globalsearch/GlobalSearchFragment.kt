@@ -26,6 +26,7 @@ import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.presentation.authentication.AccountUtils
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
 import com.owncloud.android.presentation.common.FileListSelectionMoreBottomSheetHelper
+import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.editphoto.EditPhotoActivity
 import com.owncloud.android.presentation.files.SortBottomSheetFragment
 import com.owncloud.android.presentation.files.SortOptionsView
@@ -356,6 +357,13 @@ class GlobalSearchFragment : Fragment(),
 
         collectLatestLifecycleFlow(fileOperationsViewModel.disableSelectionModeEvent) {
             disableSelectionMode()
+        }
+
+        fileOperationsViewModel.removeFileLiveData.observe(viewLifecycleOwner) { event ->
+            val result = event?.peekContent()
+            if (result is UIResult.Success) {
+                result.data?.let(globalSearchViewModel::removeDeletedFiles)
+            }
         }
 
         collectLatestLifecycleFlow(globalSearchViewModel.filtersState) { filtersState ->

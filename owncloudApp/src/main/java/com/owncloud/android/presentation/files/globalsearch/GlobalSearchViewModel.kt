@@ -28,6 +28,7 @@ import com.owncloud.android.presentation.files.filelist.compose.fileListEmptyUiS
 import com.owncloud.android.presentation.files.filelist.compose.fileListItemsUiState
 import com.owncloud.android.presentation.files.filelist.compose.fileListLoadingUiState
 import com.owncloud.android.presentation.files.filelist.inverseFileSelection
+import com.owncloud.android.presentation.files.filelist.isOnlyListOrderChanged
 import com.owncloud.android.presentation.files.filelist.retainFileSelection
 import com.owncloud.android.presentation.files.filelist.selectAllFiles
 import com.owncloud.android.presentation.files.filelist.toggleFileSelection
@@ -115,14 +116,16 @@ class GlobalSearchViewModel(
         sortTypeAndOrder.update { Pair(sortTypeSelected, sortOrderSelected) }
 
         viewModelScope.launch {
+            var previousContent: List<OCFileWithSyncInfo> = emptyList()
             searchUiState.collect { state ->
                 val newContent = when (state) {
                     is SearchUiState.Success -> state.results
                     else -> emptyList()
                 }
-                if (state is SearchUiState.Success) {
+                if (state is SearchUiState.Success && isOnlyListOrderChanged(previousContent, newContent)) {
                     _scrollToTopEvents.tryEmit(Unit)
                 }
+                previousContent = newContent
                 val selectableIds = newContent.mapNotNull { info ->
                     info.file.id?.takeUnless { info.file.isVirtualFile() }
                 }.toSet()
@@ -252,6 +255,32 @@ class GlobalSearchViewModel(
     fun isGridModeSetAsPreferred(): Boolean =
         sharedPreferencesProvider.getBoolean(PREF_FILE_LIST_GRID, false)
 
+    fun removeDeletedFiles(deletedFiles: List<OCFile>) {
+        if (deletedFiles.isEmpty()) return
+        searchUiState.update { state ->
+            val success = state as? SearchUiState.Success ?: return@update state
+            val remaining = success.results.filterNot { info ->
+                deletedFiles.any { deleted -> info.file.wasRemovedWith(deleted) }
+            }
+            when {
+                remaining.size == success.results.size -> state
+                remaining.isEmpty() -> SearchUiState.Empty(success.query)
+                else -> SearchUiState.Success(remaining, success.query)
+            }
+        }
+    }
+
+    private fun OCFile.wasRemovedWith(deleted: OCFile): Boolean {
+        if (id != null && id == deleted.id) return true
+        if (!deleted.isFolder || owner != deleted.owner || spaceId != deleted.spaceId) return false
+        val folderPath = if (deleted.remotePath.endsWith(OCFile.PATH_SEPARATOR)) {
+            deleted.remotePath
+        } else {
+            deleted.remotePath + OCFile.PATH_SEPARATOR
+        }
+        return remotePath.startsWith(folderPath)
+    }
+
     private fun performSearch(query: String, allowEmptyQuery: Boolean = false) {
         if (query.isBlank() && !allowEmptyQuery) {
             searchUiState.update { SearchUiState.Initial }
@@ -305,6 +334,9 @@ class GlobalSearchViewModel(
                     } else {
                         SearchUiState.Success(sortedResults, query)
                     }
+                }
+                if (sortedResults.isNotEmpty()) {
+                    _scrollToTopEvents.tryEmit(Unit)
                 }
             } catch (e: Exception) {
                 searchUiState.update { SearchUiState.Error(e.message ?: "Unknown error", it.query) }
