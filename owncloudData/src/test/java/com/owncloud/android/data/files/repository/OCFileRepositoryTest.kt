@@ -125,7 +125,7 @@ class OCFileRepositoryTest {
                     assertEquals(0, it[0].length)
                     assertEquals(MIME_DIR, it[0].mimeType)
                     assertEquals(OC_PARENT_FOLDER_WITH_SPACE_ID.spaceId, it[0].spaceId)
-                    assertEquals("CK", it[0].permissions)
+                    assertEquals(OC_PARENT_FOLDER_WITH_SPACE_ID.permissions, it[0].permissions)
                 }
             )
         }

@@ -77,7 +77,9 @@ class OCFileRepository(
                         length = 0,
                         mimeType = MIME_DIR,
                         spaceId = parentFolder.spaceId,
-                        permissions = "CK" // To be able to write inside a folder before the fetch is done
+                        // Inherit the parent mask so folder actions are available before the next PROPFIND.
+                        // "CK" keeps create rights when the parent permissions are still unknown.
+                        permissions = parentFolder.permissions?.takeIf { it.isNotBlank() } ?: "CK",
                     )
                 )
             )
