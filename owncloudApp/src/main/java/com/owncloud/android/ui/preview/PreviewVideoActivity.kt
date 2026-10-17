@@ -220,7 +220,10 @@ class PreviewVideoActivity : FileActivity(), Player.Listener, OnPrepareVideoPlay
             .setAudioAttributes(AudioAttributes.DEFAULT, true)
             .setHandleAudioBecomingNoisy(true)
             .setTrackSelector(trackSelector)
-            .setLoadControl(DefaultLoadControl.Builder().build()).build()
+            .setLoadControl(DefaultLoadControl.Builder().build())
+            .setSeekBackIncrementMs(5_000)
+            .setSeekForwardIncrementMs(5_000)
+            .build()
 
         player?.addListener(this)
         playerView.player = player
