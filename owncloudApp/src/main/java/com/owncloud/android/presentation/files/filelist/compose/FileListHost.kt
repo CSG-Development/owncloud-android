@@ -3,10 +3,13 @@ package com.owncloud.android.presentation.files.filelist.compose
 import android.accounts.Account
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +38,70 @@ import kotlin.math.roundToInt
 
 private val NoArchiveActivityFlow: StateFlow<ArchiveActivityUiModel?> = MutableStateFlow(null)
 
+private class FolderScrollStack {
+    var folderId: Long? = null
+    val saved = ArrayDeque<FolderScrollSnapshot>()
+}
+
+private data class FolderScrollSnapshot(
+    val folderId: Long,
+    val listIndex: Int,
+    val listOffset: Int,
+    val gridIndex: Int,
+    val gridOffset: Int,
+)
+
+/**
+ * [newFolderId] null and repeat emissions are ignored. The first real id is recorded without scrolling.
+ * Entering a child (its parent id is the folder being left) snapshots list and grid scroll, then pins
+ * both to the top. Returning to a saved ancestor restores that snapshot and drops it. Any other jump
+ * clears the stack and starts at the top.
+ */
+private fun applyFolderScroll(
+    stack: FolderScrollStack,
+    newFolderId: Long?,
+    newParentId: Long?,
+    listState: LazyListState,
+    gridState: LazyGridState,
+) {
+    val previousId = stack.folderId
+    if (newFolderId == null || newFolderId == previousId) return
+    if (previousId == null) {
+        stack.folderId = newFolderId
+        return
+    }
+
+    val current = FolderScrollSnapshot(
+        folderId = previousId,
+        listIndex = listState.firstVisibleItemIndex,
+        listOffset = listState.firstVisibleItemScrollOffset,
+        gridIndex = gridState.firstVisibleItemIndex,
+        gridOffset = gridState.firstVisibleItemScrollOffset,
+    )
+    when {
+        newParentId == previousId -> {
+            stack.saved.removeAll { it.folderId == newFolderId }
+            stack.saved.addLast(current)
+            listState.requestScrollToItem(0)
+            gridState.requestScrollToItem(0)
+        }
+        stack.saved.any { it.folderId == newFolderId } -> {
+            while (stack.saved.last().folderId != newFolderId) {
+                stack.saved.removeLast()
+            }
+            val saved = stack.saved.removeLast()
+            listState.requestScrollToItem(saved.listIndex, saved.listOffset)
+            gridState.requestScrollToItem(saved.gridIndex, saved.gridOffset)
+        }
+        else -> {
+            stack.saved.clear()
+            listState.requestScrollToItem(0)
+            gridState.requestScrollToItem(0)
+        }
+    }
+    stack.folderId = newFolderId
+}
+
 /**
  * Shared Compose host for file-list screens: theme, state collection, thumbnails, callbacks.
  *
@@ -62,8 +129,19 @@ fun FileListHost(
     val archiveActivity by archiveActivityFlow.collectAsState()
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+    val folderScrollStack = remember { FolderScrollStack() }
     val layoutModeState = rememberUpdatedState(composeState.layoutMode)
     val onSelectionBecameEmptyState = rememberUpdatedState(onSelectionBecameEmpty)
+
+    SideEffect {
+        applyFolderScroll(
+            stack = folderScrollStack,
+            newFolderId = composeState.displayedFolderId,
+            newParentId = composeState.displayedFolderParentId,
+            listState = listState,
+            gridState = gridState,
+        )
+    }
 
     LaunchedEffect(composeState.hasSelection) {
         if (!composeState.hasSelection) {

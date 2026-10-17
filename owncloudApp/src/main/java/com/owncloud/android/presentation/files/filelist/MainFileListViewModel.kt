@@ -643,6 +643,7 @@ class MainFileListViewModel(
         }
 
         val folderContent = fileListUiState.folderContent
+        val folder = fileListUiState.folderToDisplay
         return fileListItemsUiState(
             folderContent = folderContent,
             emptyModel = option.toFileListEmptyUiModel(
@@ -662,6 +663,9 @@ class MainFileListViewModel(
             },
             footerContext = contextProvider.getContext(),
             includeFooter = !isPickerMode,
+        ).copy(
+            displayedFolderId = folder?.id,
+            displayedFolderParentId = folder?.parentId,
         )
     }
 

@@ -15,6 +15,8 @@ data class FileListComposeUiState(
     val selectedIds: Set<Long> = emptySet(),
     val isRefreshing: Boolean = false,
     val pullToRefreshEnabled: Boolean = true,
+    val displayedFolderId: Long? = null,
+    val displayedFolderParentId: Long? = null,
 ) {
     val selectedItemCount: Int
         get() = selectedIds.size
