@@ -27,7 +27,7 @@ class FileNameValidator {
     fun validateOrThrowException(string: String) {
         if (string.trim().isBlank()) {
             throw FileNameException(type = FileNameException.FileNameExceptionType.FILE_NAME_EMPTY)
-        } else if (string.length >= FILE_NAME_MAX_LENGTH_ALLOWED) {
+        } else if (string.length > FILE_NAME_MAX_LENGTH_ALLOWED) {
             throw FileNameException(type = FileNameException.FileNameExceptionType.FILE_NAME_TOO_LONG)
         } else if (FILE_NAME_REGEX.containsMatchIn(string)) {
             throw FileNameException(type = FileNameException.FileNameExceptionType.FILE_NAME_FORBIDDEN_CHARACTERS)

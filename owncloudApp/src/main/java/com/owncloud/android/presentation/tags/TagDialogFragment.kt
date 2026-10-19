@@ -2,6 +2,7 @@ package com.owncloud.android.presentation.tags
 
 import android.app.Dialog
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.WindowManager
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
@@ -30,6 +31,7 @@ class TagDialogFragment : DialogFragment() {
 
         val inputText: EditText = view.findViewById(R.id.user_input)
         val inputLayout: TextInputLayout = view.findViewById(R.id.edit_box_input_text_layout)
+        inputText.filters = arrayOf(InputFilter.LengthFilter(MAX_TAG_LENGTH))
 
         inputLayout.hint = getString(if (isEdit) R.string.tags_edit_hint else R.string.tags_add_hint)
         inputText.setText(currentName)
