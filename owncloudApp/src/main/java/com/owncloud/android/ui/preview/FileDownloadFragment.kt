@@ -59,6 +59,7 @@ class FileDownloadFragment : FileFragment() {
     private var account: Account? = null
     private var ignoreFirstSavedState = false
     private var error = false
+    private var fileNotFound = false
     private var progressBar: ProgressBar? = null
     private var liveData: LiveData<WorkInfo?>? = null
 
@@ -91,6 +92,7 @@ class FileDownloadFragment : FileFragment() {
                 file = it.getParcelable<Parcelable>(EXTRA_FILE) as OCFile?
                 account = it.getParcelable(EXTRA_ACCOUNT)
                 error = it.getBoolean(EXTRA_ERROR)
+                fileNotFound = it.getBoolean(EXTRA_FILE_NOT_FOUND)
             } else {
                 ignoreFirstSavedState = false
             }
@@ -106,7 +108,7 @@ class FileDownloadFragment : FileFragment() {
         }
 
         if (error) {
-            setButtonsForRemote(view)
+            showRemoteError(view)
         } else {
             setButtonsForTransferring(view)
         }
@@ -118,6 +120,7 @@ class FileDownloadFragment : FileFragment() {
             putParcelable(EXTRA_FILE, file)
             putParcelable(EXTRA_ACCOUNT, account)
             putBoolean(EXTRA_ERROR, error)
+            putBoolean(EXTRA_FILE_NOT_FOUND, fileNotFound)
         }
     }
 
@@ -166,6 +169,22 @@ class FileDownloadFragment : FileFragment() {
             findViewById<View>(R.id.errorText).isVisible = false
             findViewById<View>(R.id.error_image).isVisible = false
         }
+    }
+
+    /**
+     * Hides the download progress and shows that the remote file no longer exists.
+     */
+    fun showFileNotFound() {
+        error = true
+        fileNotFound = true
+        showRemoteError(view)
+    }
+
+    private fun showRemoteError(rootView: View?) {
+        if (fileNotFound) {
+            rootView?.findViewById<TextView>(R.id.errorText)?.setText(R.string.downloader_download_file_not_found)
+        }
+        setButtonsForRemote(rootView)
     }
 
     /**
@@ -239,7 +258,11 @@ class FileDownloadFragment : FileFragment() {
                 removeObserverAfterNull = false,
             )
         }
-        setButtonsForTransferring(view)
+        if (error) {
+            showRemoteError(view)
+        } else {
+            setButtonsForTransferring(view)
+        }
     }
 
     private fun leaveTransferProgress() {
@@ -254,6 +277,7 @@ class FileDownloadFragment : FileFragment() {
         const val EXTRA_FILE = "FILE"
         const val EXTRA_ACCOUNT = "ACCOUNT"
         private const val EXTRA_ERROR = "ERROR"
+        private const val EXTRA_FILE_NOT_FOUND = "FILE_NOT_FOUND"
         private const val ARG_FILE = "FILE"
         private const val ARG_IGNORE_FIRST = "IGNORE_FIRST"
         private const val ARG_ACCOUNT = "ACCOUNT"

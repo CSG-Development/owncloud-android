@@ -61,6 +61,7 @@ import com.owncloud.android.presentation.spaces.SpacesListViewModel
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.fragment.FileFragment
+import com.owncloud.android.usecases.synchronization.SynchronizeFileUseCase
 import com.owncloud.android.usecases.transfers.DOWNLOAD_ADDED_MESSAGE
 import com.owncloud.android.usecases.transfers.DOWNLOAD_FINISH_MESSAGE
 import com.owncloud.android.utils.PreferenceUtils
@@ -177,10 +178,30 @@ class PreviewImageActivity : FileActivity(),
         })
 
         fileOperationsViewModel.syncFileLiveData.observe(this, Event.EventObserver { uiResult ->
-            if (uiResult is UIResult.Error && uiResult.error is AccountNotFoundException) {
-                showRequestAccountChangeNotice(getString(R.string.sync_fail_ticker_unauthorized), false)
+            when (uiResult) {
+                is UIResult.Success -> {
+                    if (uiResult.data == SynchronizeFileUseCase.SyncType.FileNotFound) {
+                        showMissingFileError()
+                    }
+                }
+
+                is UIResult.Error -> {
+                    if (uiResult.error is AccountNotFoundException) {
+                        showRequestAccountChangeNotice(getString(R.string.sync_fail_ticker_unauthorized), false)
+                    }
+                }
+
+                is UIResult.Loading -> Unit
             }
         })
+    }
+
+    private fun showMissingFileError() {
+        if (!::previewImagePagerAdapter.isInitialized) return
+        when (val fragment = previewImagePagerAdapter.cachedFragmentAt(binding.fragmentPager.currentItem)) {
+            is FileDownloadFragment -> fragment.showFileNotFound()
+            is PreviewImageFragment -> fragment.showFileNotFound()
+        }
     }
 
     private fun initViewPager() {
