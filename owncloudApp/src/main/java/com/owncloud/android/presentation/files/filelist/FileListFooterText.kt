@@ -16,7 +16,7 @@ object FileListFooterText {
         for (fileWithSyncInfo in list) {
             if (fileWithSyncInfo.file.isFolder) {
                 foldersCount++
-            } else if (!fileWithSyncInfo.file.isHidden) {
+            } else {
                 filesCount++
             }
         }
