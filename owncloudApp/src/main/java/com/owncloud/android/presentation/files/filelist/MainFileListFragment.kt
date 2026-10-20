@@ -281,6 +281,7 @@ class MainFileListFragment : FileFragment(),
 
     override fun onResume() {
         super.onResume()
+        mainFileListViewModel.refreshShowHiddenFiles()
         if (browserOpened) {
             browserOpened = false
             fileOperationsViewModel.performOperation(

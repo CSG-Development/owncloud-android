@@ -138,7 +138,13 @@ class MainFileListViewModel(
     private val isPickerMode: Boolean = false,
 ) : ViewModel() {
 
-    private val showHiddenFiles: Boolean = sharedPreferencesProvider.getBoolean(PREF_SHOW_HIDDEN_FILES, false)
+    private val showHiddenFiles = MutableStateFlow(
+        sharedPreferencesProvider.getBoolean(PREF_SHOW_HIDDEN_FILES, false)
+    )
+
+    fun refreshShowHiddenFiles() {
+        showHiddenFiles.value = sharedPreferencesProvider.getBoolean(PREF_SHOW_HIDDEN_FILES, false)
+    }
 
     val currentFolderDisplayed: MutableStateFlow<OCFile> = MutableStateFlow(initialFolderToDisplay)
     val fileListOption: MutableStateFlow<FileListOption> = MutableStateFlow(fileListOptionParam)
@@ -939,18 +945,19 @@ class MainFileListViewModel(
     ) = combine(
         this,
         uploadProgressByTransferId,
-    ) { folderContent, progressByTransferId ->
+        showHiddenFiles,
+    ) { folderContent, progressByTransferId, showHidden ->
         folderContent.map { fileWithSyncInfo ->
             fileWithSyncInfo.withUploadProgress(progressByTransferId)
-        }
-    }.map { folderContentWithProgress ->
+        } to showHidden
+    }.map { (folderContentWithProgress, showHidden) ->
         FileListUiState.Success(
             folderToDisplay = currentFolderDisplayed,
             folderContent = folderContentWithProgress.filter { fileWithSyncInfo ->
                 fileWithSyncInfo.file.fileName.contains(
                     searchFilter ?: "",
                     ignoreCase = true
-                ) && (showHiddenFiles || !fileWithSyncInfo.file.fileName.startsWith("."))
+                ) && (showHidden || !fileWithSyncInfo.file.fileName.startsWith("."))
             }.let { sortList(it, sortTypeAndOrder) },
             fileListOption = fileListOption,
             searchFilter = searchFilter,
