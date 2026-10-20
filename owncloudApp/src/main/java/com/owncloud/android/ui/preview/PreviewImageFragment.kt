@@ -358,6 +358,18 @@ class PreviewImageFragment : FileFragment() {
         // Nothing to do here, sync is not shown in previews
     }
 
+    /**
+     * Replaces the cached photo with an error when the remote file no longer exists.
+     * The photo view is drawn above the error views, so it has to be hidden.
+     */
+    fun showFileNotFound() {
+        val safeBinding = _binding ?: return
+        safeBinding.photoView.isVisible = false
+        safeBinding.progressWheel.isVisible = false
+        safeBinding.errorText.setText(R.string.downloader_download_file_not_found)
+        safeBinding.errorGroup.isVisible = true
+    }
+
     private fun loadAndShowImage() {
         val localStoragePath = file?.storagePath
         if (localStoragePath == null) {

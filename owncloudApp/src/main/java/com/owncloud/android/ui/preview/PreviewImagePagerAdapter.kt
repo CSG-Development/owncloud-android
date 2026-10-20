@@ -31,8 +31,6 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import com.owncloud.android.domain.files.model.OCFile
 import com.owncloud.android.ui.fragment.FileFragment
-import java.util.HashMap
-import java.util.HashSet
 
 /**
  * Adapter class that provides Fragment instances
@@ -133,6 +131,8 @@ class PreviewImagePagerAdapter(
     }
 
     fun pendingErrorAt(position: Int) = mDownloadErrors.contains(position)
+
+    fun cachedFragmentAt(position: Int): FileFragment? = mCachedFragments[position]
 
     /**
      * Reset the image zoom to default value for each CachedFragments
