@@ -34,6 +34,7 @@ import com.owncloud.android.domain.automaticuploads.usecases.ResetPictureUploads
 import com.owncloud.android.domain.automaticuploads.usecases.ResetVideoUploadsUseCase
 import com.owncloud.android.domain.device.CurrentDeviceRepository
 import com.owncloud.android.domain.device.usecases.DynamicUrlSwitchingController
+import com.owncloud.android.presentation.security.biometric.BiometricActivity
 import com.owncloud.android.presentation.security.passcode.PassCodeActivity
 import com.owncloud.android.presentation.security.pattern.PatternActivity
 import com.owncloud.android.usecases.transfers.uploads.CancelTransfersFromAccountUseCase
@@ -100,11 +101,12 @@ class RemoveAccountUseCase(
 
         dynamicUrlSwitchingController.stopDynamicUrlSwitching()
 
-        // Remove passcode or pattern if exist
+        // Remove passcode, pattern and biometric lock if they exist
         preferencesProvider.removePreference(PassCodeActivity.PREFERENCE_PASSCODE)
         preferencesProvider.putBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false)
         preferencesProvider.removePreference(PatternActivity.PREFERENCE_PATTERN)
         preferencesProvider.putBoolean(PatternActivity.PREFERENCE_SET_PATTERN, false)
+        preferencesProvider.putBoolean(BiometricActivity.PREFERENCE_SET_BIOMETRIC, false)
     }
 
     data class Params(
