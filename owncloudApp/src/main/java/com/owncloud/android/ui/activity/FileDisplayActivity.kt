@@ -1182,6 +1182,17 @@ open class FileDisplayActivity : FileActivity(),
         // or it will show the root folder one
         if (intent.action == ACTION_DETAILS && chosenFile?.remotePath == OCFile.ROOT_PATH && secondFragment is FileDetailsFragment) return
 
+        // Search replaces the file list, but the activity file can still be the folder we left.
+        // Keep the hamburger menu unless a search result detail is open.
+        if (fileListOption == FileListOption.GLOBAL_SEARCH && secondFragment == null) {
+            updateStandardToolbar(
+                title = "",
+                homeButtonDisplayed = true,
+                showBackArrow = false,
+            )
+            return
+        }
+
         if (chosenFile == null || (chosenFile.remotePath == OCFile.ROOT_PATH && (space == null || isNotProjectSpaceAndMultiPersonalMode(space) ||
                     isMultiPersonalModeInAvailableOffline(space))
                     )
@@ -2095,6 +2106,11 @@ open class FileDisplayActivity : FileActivity(),
                     fileListOption = newFileListOption
                     initAndShowGlobalSearch()
                     setGlobalSearchBarVisible(true)
+                    updateStandardToolbar(
+                        title = "",
+                        homeButtonDisplayed = true,
+                        showBackArrow = false,
+                    )
                 }
             }
 
