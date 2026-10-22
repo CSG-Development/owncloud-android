@@ -18,8 +18,6 @@ import com.owncloud.android.domain.files.model.OCFileWithSyncInfo
 import com.owncloud.android.domain.files.model.isVirtualFile
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
-import com.owncloud.android.extensions.isLandscapeMode
-import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showFavoriteStatusSnackbar
 import com.owncloud.android.presentation.authentication.AccountUtils
@@ -214,8 +212,6 @@ class FavoritesFragment : Fragment(),
     }
 
     private fun onComposeItemLongClick(fileId: Long) {
-        if (requireContext().isLandscapeMode && !requireContext().isTablet) return
-
         val file = findFileWithSyncInfo(fileId)?.file ?: return
         if (file.isVirtualFile()) return
 
