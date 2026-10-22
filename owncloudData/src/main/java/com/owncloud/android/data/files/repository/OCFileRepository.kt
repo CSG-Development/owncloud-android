@@ -427,9 +427,14 @@ class OCFileRepository(
                     val remoteFolder = fetchFolderResult.first()
                     val remoteFolderContent = fetchFolderResult.drop(1)
 
-                    // Skip traversal if etag indicates no change; otherwise enqueue child folders
+                    // Skip traversal if etag indicates no change; otherwise enqueue child folders.
+                    // Match by remote id first so a rename, which keeps the id and changes the path, is not treated as a new folder.
                     remoteFolderContent.forEach { remoteChild ->
-                        val localChild = localFileDataSource.getFileByRemotePath(
+                        val localChild = remoteChild.remoteId?.let { remoteId ->
+                            localFileDataSource.getFileByRemoteId(remoteId)
+                        }?.takeIf { localFile ->
+                            localFile.owner == remoteChild.owner && localFile.spaceId == remoteChild.spaceId
+                        } ?: localFileDataSource.getFileByRemotePath(
                             remotePath = remoteChild.remotePath,
                             owner = remoteChild.owner,
                             spaceId = remoteChild.spaceId,
@@ -454,6 +459,8 @@ class OCFileRepository(
         spaceId: String?,
         isActionSetFolderAvailableOfflineOrSynchronize: Boolean = false) : List<OCFile> {
         val folderContentUpdated = mutableListOf<OCFile>()
+        val descendantPathUpdates = mutableListOf<DescendantPathUpdate>()
+        val localFileMoves = mutableListOf<Pair<OCFile, String>>()
 
         // Find local folder and obtain its etag for skip logic
         val localFolderByRemotePath: OCFile? =
@@ -478,6 +485,7 @@ class OCFileRepository(
             remoteFolderContent.forEach { remoteChild ->
                 val localChildToSync = localFilesMap.remove(remoteChild.remoteId)
                     ?: localFilesMap.remove(remoteChild.remotePath)
+                val remotePathChanged = localChildToSync != null && localChildToSync.remotePath != remoteChild.remotePath
 
                 if (localChildToSync == null) {
                     folderContentUpdated.add(
@@ -491,15 +499,27 @@ class OCFileRepository(
                         }
                     )
                 } else if (
+                    remotePathChanged ||
                     localChildToSync.etag != remoteChild.etag ||
                     localChildToSync.localModificationTimestamp > remoteChild.lastSyncDateForData!! ||
                     isActionSetFolderAvailableOfflineOrSynchronize
                 ) {
+                    val updatedStoragePath = updatedStoragePathForRename(
+                        localChild = localChildToSync,
+                        remoteChild = remoteChild,
+                        spaceId = spaceId,
+                        remotePathChanged = remotePathChanged,
+                        descendantPathUpdates = descendantPathUpdates,
+                        localFileMoves = localFileMoves,
+                    )
                     folderContentUpdated.add(
                         remoteChild.apply {
                             copyLocalPropertiesFrom(localChildToSync)
                             // DO NOT update etag till contents are synced.
                             etag = localChildToSync.etag
+                            if (updatedStoragePath != null) {
+                                storagePath = updatedStoragePath
+                            }
                             needsToUpdateThumbnail =
                                 (!remoteChild.isFolder && remoteChild.modificationTimestamp != localChildToSync.modificationTimestamp) ||
                                         localChildToSync.needsToUpdateThumbnail
@@ -529,12 +549,93 @@ class OCFileRepository(
             remoteFolder.etagInConflict = null
         }
 
+        descendantPathUpdates.forEach { update ->
+            localFileDataSource.updateDescendantPaths(
+                owner = update.owner,
+                spaceId = update.spaceId,
+                oldRemotePathPrefix = update.oldRemotePathPrefix,
+                newRemotePathPrefix = update.newRemotePathPrefix,
+                oldStoragePathPrefix = update.oldStoragePathPrefix,
+                newStoragePathPrefix = update.newStoragePathPrefix,
+            )
+        }
+
         // Persist folder and its updated children
-        return localFileDataSource.saveFilesInFolderAndReturnTheFilesThatChanged(
+        val savedFiles = localFileDataSource.saveFilesInFolderAndReturnTheFilesThatChanged(
             folder = remoteFolder,
             listOfFiles = folderContentUpdated
         )
+        localFileMoves.forEach { (sourceFile, finalStoragePath) ->
+            localStorageProvider.moveLocalFile(sourceFile, finalStoragePath)
+        }
+        return savedFiles
     }
+
+    /**
+     * A server rename keeps the file id and etag. Record the local move and, for a folder, the
+     * descendant path rewrite. Returns the storage path to store on the renamed row when it already
+     * had a local copy.
+     */
+    private fun updatedStoragePathForRename(
+        localChild: OCFile,
+        remoteChild: OCFile,
+        spaceId: String?,
+        remotePathChanged: Boolean,
+        descendantPathUpdates: MutableList<DescendantPathUpdate>,
+        localFileMoves: MutableList<Pair<OCFile, String>>,
+    ): String? {
+        if (!remotePathChanged) return null
+
+        if (remoteChild.isFolder) {
+            val oldRemotePrefix = localChild.remotePath.withTrailing(PATH_SEPARATOR)
+            val newRemotePrefix = remoteChild.remotePath.withTrailing(PATH_SEPARATOR)
+            if (oldRemotePrefix == newRemotePrefix) return null
+
+            val oldStoragePrefix = localChild.storagePath
+                ?.takeIf { it.isNotBlank() }
+                ?.withTrailing(File.separatorChar)
+                ?: localStorageProvider.getDefaultSavePathFor(
+                    accountName = remoteChild.owner,
+                    remotePath = oldRemotePrefix,
+                    spaceId = spaceId,
+                )
+            val newStoragePrefix = localStorageProvider.getDefaultSavePathFor(
+                accountName = remoteChild.owner,
+                remotePath = newRemotePrefix,
+                spaceId = spaceId,
+            )
+            descendantPathUpdates.add(
+                DescendantPathUpdate(
+                    owner = remoteChild.owner,
+                    spaceId = spaceId,
+                    oldRemotePathPrefix = oldRemotePrefix,
+                    newRemotePathPrefix = newRemotePrefix,
+                    oldStoragePathPrefix = oldStoragePrefix,
+                    newStoragePathPrefix = newStoragePrefix,
+                )
+            )
+            val moveSource = if (localChild.storagePath.isNullOrBlank()) {
+                localChild.copy(storagePath = oldStoragePrefix)
+            } else {
+                localChild
+            }
+            localFileMoves.add(moveSource to newStoragePrefix)
+            return if (localChild.storagePath.isNullOrBlank()) null else newStoragePrefix
+        }
+
+        if (localChild.storagePath.isNullOrBlank()) return null
+
+        val newStoragePath = localStorageProvider.getDefaultSavePathFor(
+            accountName = remoteChild.owner,
+            remotePath = remoteChild.remotePath,
+            spaceId = spaceId,
+        )
+        localFileMoves.add(localChild to newStoragePath)
+        return newStoragePath
+    }
+
+    private fun String.withTrailing(separator: Char): String =
+        if (endsWith(separator)) this else this + separator
 
     override fun deleteFiles(listOfFilesToDelete: List<OCFile>, removeOnlyLocalCopy: Boolean) {
         val spaceWebDavUrl = localSpacesDataSource.getWebDavUrlForSpace(
@@ -733,4 +834,13 @@ class OCFileRepository(
             localFileDataSource.deleteFile(ocFile.id!!)
         }
     }
+
+    private data class DescendantPathUpdate(
+        val owner: String,
+        val spaceId: String?,
+        val oldRemotePathPrefix: String,
+        val newRemotePathPrefix: String,
+        val oldStoragePathPrefix: String,
+        val newStoragePathPrefix: String,
+    )
 }
