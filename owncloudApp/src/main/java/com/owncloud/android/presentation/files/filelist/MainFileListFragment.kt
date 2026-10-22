@@ -89,8 +89,6 @@ import com.owncloud.android.domain.utils.Event
 import com.owncloud.android.extensions.avoidScreenshotsIfNeeded
 import com.owncloud.android.extensions.collectLatestLifecycleFlow
 import com.owncloud.android.extensions.filterMenuOptions
-import com.owncloud.android.extensions.isLandscapeMode
-import com.owncloud.android.extensions.isTablet
 import com.owncloud.android.extensions.parseError
 import com.owncloud.android.extensions.sendDownloadedFilesByShareSheet
 import com.owncloud.android.extensions.showErrorInSnackbar
@@ -1751,8 +1749,6 @@ class MainFileListFragment : FileFragment(),
 
     private fun onComposeItemLongClick(fileId: Long) {
         if (isPickingAFolder()) return
-
-        if (requireContext().isLandscapeMode && !requireContext().isTablet) return
 
         val file = findFileWithSyncInfo(fileId)?.file ?: return
         // Virtual files are not selectable via long-press.
