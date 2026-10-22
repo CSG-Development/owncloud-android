@@ -59,6 +59,20 @@ interface LocalFileDataSource {
     fun deleteFilesForAccount(accountName: String)
     fun renameFile(fileToRename: OCFile, finalRemotePath: String, finalStoragePath: String)
 
+    /**
+     * Rewrites paths of files stored inside a folder whose remote path changed.
+     * [oldRemotePathPrefix] and [newRemotePathPrefix] must end with a separator so a sibling
+     * such as `/Folder/AB` is not updated when `/Folder/A` is renamed.
+     */
+    fun updateDescendantPaths(
+        owner: String,
+        spaceId: String?,
+        oldRemotePathPrefix: String,
+        newRemotePathPrefix: String,
+        oldStoragePathPrefix: String,
+        newStoragePathPrefix: String,
+    )
+
     fun disableThumbnailsForFile(fileId: Long)
     fun updateAvailableOfflineStatusForFile(ocFile: OCFile, newAvailableOfflineStatus: AvailableOfflineStatus)
     fun updateDownloadedFilesStorageDirectoryInStoragePath(oldDirectory: String, newDirectory: String)

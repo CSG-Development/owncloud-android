@@ -395,6 +395,45 @@ interface FileDao {
     fun updateDownloadedFilesStorageDirectoryInStoragePath(oldDirectory: String, newDirectory: String)
 
     @Transaction
+    fun updateDescendantPaths(
+        owner: String,
+        spaceId: String?,
+        oldRemotePathPrefix: String,
+        newRemotePathPrefix: String,
+        oldStoragePathPrefix: String,
+        newStoragePathPrefix: String,
+    ) {
+        updateDescendantRemotePaths(
+            owner = owner,
+            spaceId = spaceId,
+            oldRemotePathPrefix = oldRemotePathPrefix,
+            newRemotePathPrefix = newRemotePathPrefix,
+        )
+        updateDescendantStoragePaths(
+            owner = owner,
+            spaceId = spaceId,
+            oldStoragePathPrefix = oldStoragePathPrefix,
+            newStoragePathPrefix = newStoragePathPrefix,
+        )
+    }
+
+    @Query(UPDATE_DESCENDANT_REMOTE_PATHS)
+    fun updateDescendantRemotePaths(
+        owner: String,
+        spaceId: String?,
+        oldRemotePathPrefix: String,
+        newRemotePathPrefix: String,
+    )
+
+    @Query(UPDATE_DESCENDANT_STORAGE_PATHS)
+    fun updateDescendantStoragePaths(
+        owner: String,
+        spaceId: String?,
+        oldStoragePathPrefix: String,
+        newStoragePathPrefix: String,
+    )
+
+    @Transaction
     fun updateAvailableOfflineStatusForFile(ocFile: OCFile, newAvailableOfflineStatus: Int) {
         if (ocFile.isFolder) {
             updateFolderWithNewAvailableOfflineStatus(ocFile.id!!, newAvailableOfflineStatus)
@@ -660,6 +699,25 @@ interface FileDao {
             UPDATE ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
             SET storagePath = `REPLACE`(storagePath, :oldDirectory, :newDirectory)
             WHERE storagePath IS NOT NULL
+        """
+
+        private const val UPDATE_DESCENDANT_REMOTE_PATHS = """
+            UPDATE ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
+            SET remotePath = :newRemotePathPrefix || SUBSTR(remotePath, LENGTH(:oldRemotePathPrefix) + 1)
+            WHERE owner = :owner
+            AND spaceId IS :spaceId
+            AND LENGTH(remotePath) > LENGTH(:oldRemotePathPrefix)
+            AND SUBSTR(remotePath, 1, LENGTH(:oldRemotePathPrefix)) = :oldRemotePathPrefix
+        """
+
+        private const val UPDATE_DESCENDANT_STORAGE_PATHS = """
+            UPDATE ${ProviderMeta.ProviderTableMeta.FILES_TABLE_NAME}
+            SET storagePath = :newStoragePathPrefix || SUBSTR(storagePath, LENGTH(:oldStoragePathPrefix) + 1)
+            WHERE owner = :owner
+            AND spaceId IS :spaceId
+            AND storagePath IS NOT NULL
+            AND LENGTH(storagePath) > LENGTH(:oldStoragePathPrefix)
+            AND SUBSTR(storagePath, 1, LENGTH(:oldStoragePathPrefix)) = :oldStoragePathPrefix
         """
 
         private const val DELETE_FILES_FOR_ACCOUNT = """

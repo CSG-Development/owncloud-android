@@ -228,6 +228,24 @@ class OCLocalFileDataSource(
         )
     }
 
+    override fun updateDescendantPaths(
+        owner: String,
+        spaceId: String?,
+        oldRemotePathPrefix: String,
+        newRemotePathPrefix: String,
+        oldStoragePathPrefix: String,
+        newStoragePathPrefix: String,
+    ) {
+        fileDao.updateDescendantPaths(
+            owner = owner,
+            spaceId = spaceId,
+            oldRemotePathPrefix = oldRemotePathPrefix,
+            newRemotePathPrefix = newRemotePathPrefix,
+            oldStoragePathPrefix = oldStoragePathPrefix,
+            newStoragePathPrefix = newStoragePathPrefix,
+        )
+    }
+
     override fun disableThumbnailsForFile(fileId: Long) {
         fileDao.disableThumbnailsForFile(fileId)
     }
