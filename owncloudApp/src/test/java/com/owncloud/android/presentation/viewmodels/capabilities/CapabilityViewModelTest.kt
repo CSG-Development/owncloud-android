@@ -23,13 +23,14 @@ package com.owncloud.android.presentation.viewmodels.capabilities
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
 import com.owncloud.android.domain.UseCaseResult
+import com.owncloud.android.domain.capabilities.model.CapabilityBooleanType
 import com.owncloud.android.domain.capabilities.model.OCCapability
 import com.owncloud.android.domain.capabilities.usecases.GetCapabilitiesAsLiveDataUseCase
 import com.owncloud.android.domain.capabilities.usecases.GetStoredCapabilitiesUseCase
 import com.owncloud.android.domain.capabilities.usecases.RefreshCapabilitiesFromServerAsyncUseCase
 import com.owncloud.android.domain.utils.Event
-import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.presentation.capabilities.CapabilityViewModel
+import com.owncloud.android.presentation.common.UIResult
 import com.owncloud.android.providers.ContextProvider
 import com.owncloud.android.providers.CoroutinesDispatcherProvider
 import com.owncloud.android.testutil.OC_ACCOUNT_NAME
@@ -164,9 +165,11 @@ class CapabilityViewModelTest {
 
     @Test
     fun fetchCapabilitiesSuccess() {
+        val capability = OC_CAPABILITY.copy(filesUndelete = CapabilityBooleanType.TRUE)
         fetchCapabilitiesVerification(
             useCaseResult = UseCaseResult.Success(Unit),
-            expectedValue = Event(UIResult.Loading())
+            expectedValue = Event(UIResult.Success(capability)),
+            storedCapability = capability,
         )
     }
 
@@ -181,10 +184,12 @@ class CapabilityViewModelTest {
 
     private fun fetchCapabilitiesVerification(
         useCaseResult: UseCaseResult<Unit>,
-        expectedValue: Event<UIResult<Unit>?>
+        expectedValue: Event<UIResult<OCCapability>?>,
+        storedCapability: OCCapability? = null,
     ) {
         initTest()
         coEvery { refreshCapabilitiesFromServerUseCase(any()) } returns useCaseResult
+        every { getStoredCapabilitiesUseCase(any()) } returns storedCapability
 
         capabilityViewModel.refreshCapabilitiesFromNetwork()
 

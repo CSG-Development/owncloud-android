@@ -166,7 +166,8 @@ object ViewModelExt : KoinComponent {
         cachedData: T?,
         liveData: MediatorLiveData<Event<UIResult<T>>>,
         useCase: BaseUseCaseWithResult<U, Params>,
-        useCaseParams: Params
+        useCaseParams: Params,
+        onSuccess: (() -> T?)? = null,
     ) {
         viewModelScope.launch(coroutineDispatcher) {
             liveData.postValue(Event(UIResult.Loading(cachedData)))
@@ -184,6 +185,12 @@ object ViewModelExt : KoinComponent {
 
             if (useCaseResult.isError) {
                 liveData.postValue(Event(UIResult.Error(error = useCaseResult.getThrowableOrNull(), data = cachedData)))
+            } else {
+                // A Loading post can replace the only Success from Room. Publish the stored value
+                // afterwards so observers are not left on Loading when the row does not change again.
+                onSuccess?.let { loadUpdatedData ->
+                    liveData.postValue(Event(UIResult.Success(loadUpdatedData())))
+                }
             }
         }
     }
