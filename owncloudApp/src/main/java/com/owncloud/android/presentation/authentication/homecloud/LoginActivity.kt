@@ -29,6 +29,7 @@ import com.owncloud.android.databinding.AccountSetupHomecloudBinding
 import com.owncloud.android.domain.device.model.Device
 import com.owncloud.android.extensions.applyStatusBarInsets
 import com.owncloud.android.extensions.checkPasscodeEnforced
+import com.owncloud.android.extensions.hideSoftKeyboard
 import com.owncloud.android.extensions.manageOptionLockSelected
 import com.owncloud.android.extensions.showMessageInSnackbar
 import com.owncloud.android.extensions.updateTextIfDiffers
@@ -147,6 +148,7 @@ class LoginActivity :
             loginViewModel.onCantFindDeviceClicked()
         }
         binding.actionButton.setOnClickListener {
+            hideSoftKeyboard(true)
             loginViewModel.onActionClicked()
         }
 
