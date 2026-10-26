@@ -71,7 +71,10 @@ class CapabilityViewModel(
         useCase = refreshCapabilitiesFromServerAsyncUseCase,
         useCaseParams = RefreshCapabilitiesFromServerAsyncUseCase.Params(
             accountName = accountName
-        )
+        ),
+        onSuccess = {
+            getStoredCapabilitiesUseCase(GetStoredCapabilitiesUseCase.Params(accountName))
+        }
     )
 
     fun checkMultiPersonal(): Boolean = runBlocking(CoroutinesDispatcherProvider().io) {
