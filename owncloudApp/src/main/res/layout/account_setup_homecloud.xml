@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/homecloud_signin_background"
-    android:fitsSystemWindows="true">
+    android:background="@color/homecloud_signin_background">
 
     <ScrollView
         android:id="@+id/scrollView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="24dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/login_footer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_goneMarginBottom="0dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layout_login"
@@ -23,10 +28,11 @@
                 android:id="@+id/thumbnail_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="80dp"
+                android:layout_marginTop="32dp"
+                android:paddingBottom="80dp"
+                app:layout_constraintTop_toTopOf="parent"
                 android:contentDescription="@string/app_name"
                 android:src="@drawable/seagate_personal_cloud_logo"
-                app:layout_constraintBottom_toTopOf="@id/thumbnail_logo"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -36,11 +42,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
+                android:layout_marginTop="56dp"
                 android:contentDescription="@string/app_name"
                 android:src="@drawable/ic_logo_big"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintVertical_bias="0.3"
+                app:layout_constraintTop_toBottomOf="@id/thumbnail_label"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -172,20 +177,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <androidx.constraintlayout.widget.Barrier
-                android:id="@+id/email_barrier"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:barrierDirection="bottom"
-                app:constraint_referenced_ids="reset_password_link,account_username_container,reset_password_progress" />
-
-            <androidx.constraintlayout.widget.Barrier
-                android:id="@+id/input_bottom_barrier"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:barrierDirection="bottom"
-                app:constraint_referenced_ids="account_username_container,error_message" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/account_password_container"
                 android:layout_width="0dp"
@@ -237,24 +228,6 @@
                 app:layout_constraintStart_toEndOf="@id/reset_password_link"
                 tools:visibility="visible" />
 
-            <TextView
-                android:id="@+id/error_message"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginHorizontal="24dp"
-                android:background="@drawable/background_login_error"
-                android:drawablePadding="16dp"
-                android:gravity="center_vertical"
-                android:padding="16dp"
-                android:visibility="gone"
-                app:drawableStartCompat="@drawable/ic_exclamation_mark_circle"
-                app:drawableTint="@color/homecloud_error"
-                tools:text="Incorrect username or password"
-                app:layout_constraintTop_toBottomOf="@id/email_barrier"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
-
             <androidx.constraintlayout.widget.Group
                 android:id="@+id/loading_layout"
                 app:constraint_referenced_ids="circular_progress,text_progress"
@@ -285,53 +258,79 @@
                 android:textAlignment="center"
                 android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-            <com.owncloud.android.ui.custom.LoadingButton
-                android:id="@+id/actionButton"
-                android:layout_width="0dp"
-                app:layout_constraintWidth_max="360dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="32dp"
-                android:layout_marginHorizontal="24dp"
-                android:contentDescription="@string/setup_btn_login"
-                app:buttonText="@string/setup_btn_login"
-                app:layout_constraintTop_toBottomOf="@id/error_message"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/login_footer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginBottom="32dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_max="360dp">
+
+        <TextView
+            android:id="@+id/error_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/background_login_error"
+            android:drawablePadding="16dp"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:visibility="gone"
+            app:drawableStartCompat="@drawable/ic_exclamation_mark_circle"
+            app:drawableTint="@color/homecloud_error"
+            tools:text="Incorrect username or password"
+            tools:visibility="visible" />
+
+        <com.owncloud.android.ui.custom.LoadingButton
+            android:id="@+id/actionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/setup_btn_login"
+            app:buttonText="@string/setup_btn_login" />
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/back_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
         android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/common_back"
         android:padding="@dimen/standard_padding"
         android:src="@drawable/ic_arrow_back"
         android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/homecloud_icon" />
 
     <ImageButton
         android:id="@+id/settings_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
         android:background="?attr/selectableItemBackground"
         android:contentDescription="@string/actionbar_settings"
         android:padding="@dimen/standard_padding"
         android:src="@drawable/ic_settings"
         android:text="@string/actionbar_settings"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/homecloud_icon" />
 
     <include
         android:id="@+id/unable_to_connect_layout"
         layout="@layout/layout_unable_to_connect"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

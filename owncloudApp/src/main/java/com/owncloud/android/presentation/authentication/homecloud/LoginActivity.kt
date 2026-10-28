@@ -18,7 +18,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -114,6 +117,19 @@ class LoginActivity :
             })
         }
         setupListeners()
+        setupLoginButtonInsets()
+    }
+
+    private fun setupLoginButtonInsets() {
+        val insetTypes = WindowInsetsCompat.Type.systemBars() or
+            WindowInsetsCompat.Type.displayCutout() or
+            WindowInsetsCompat.Type.ime()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val applied = insets.getInsets(insetTypes)
+            view.updatePadding(applied.left, applied.top, applied.right, applied.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(binding.root)
     }
 
     private fun handleDeepLink() {
@@ -393,6 +409,7 @@ class LoginActivity :
                 binding.accountUsernameContainer.error = state.errorEmailInvalidMessage
                 binding.loginStateGroup.visibility = View.GONE
                 binding.resetPasswordLink.visibility = View.GONE
+                binding.actionButton.visibility = View.VISIBLE
                 binding.actionButton.setText(R.string.homecloud_action_button_next)
                 // Enable button only if username is not empty and is a valid email
                 if (state.isActionButtonLoading) {
@@ -426,6 +443,8 @@ class LoginActivity :
                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
                             binding.scrollView.visibility = View.GONE
                             binding.backButton.visibility = View.GONE
+                            binding.actionButton.visibility = View.GONE
+                            binding.errorMessage.visibility = View.GONE
                             setupUnableToConnectContent()
                         }
 
@@ -433,6 +452,8 @@ class LoginActivity :
                             binding.unableToConnectLayout.unableToConnectContainer.visibility = View.VISIBLE
                             binding.scrollView.visibility = View.GONE
                             binding.backButton.visibility = View.GONE
+                            binding.actionButton.visibility = View.GONE
+                            binding.errorMessage.visibility = View.GONE
                             setupUnableToDetectContent()
                         }
                     }
@@ -452,6 +473,7 @@ class LoginActivity :
                 }
             }
         }
+        binding.loginFooter.isVisible = binding.actionButton.isVisible || binding.errorMessage.isVisible
     }
 
     private fun setSelectedDevice(selectedDevice: Device?) {
