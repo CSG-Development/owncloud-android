@@ -139,9 +139,13 @@ class PreviewImageFragment : FileFragment() {
         binding.top.setBackgroundColor(getBackgroundColor(file))
 
         binding.photoView.isVisible = false
-        binding.photoView.setOnClickListener {
+        val toggleFullScreen = View.OnClickListener {
             (requireActivity() as PreviewImageActivity).toggleFullScreen()
         }
+        // photoView sits above the error views and is hidden when the file is gone,
+        // so the root must toggle the toolbar for taps on that error screen.
+        binding.photoView.setOnClickListener(toggleFullScreen)
+        binding.top.setOnClickListener(toggleFullScreen)
 
         savedInstanceState?.let {
             if (!ignoreFirstSavedState) {
