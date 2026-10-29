@@ -102,6 +102,11 @@ class FileDownloadFragment : FileFragment() {
 
         progressBar = view.findViewById(R.id.progressBar)
 
+        view.setOnClickListener {
+            if (error) {
+                (requireActivity() as PreviewImageActivity).toggleFullScreen()
+            }
+        }
         view.findViewById<View>(R.id.cancelBtn).setOnClickListener {
             transfersViewModel.cancelTransfersForFile(file)
             requireActivity().finish()
