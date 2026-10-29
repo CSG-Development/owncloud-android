@@ -98,7 +98,10 @@ class RenameFileDialogFragment : DialogFragment(), DialogInterface.OnClickListen
             setNegativeButton(android.R.string.cancel, this@RenameFileDialogFragment)
             setTitle(R.string.rename_dialog_title)
         }.create().apply {
-            window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+            window?.setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
+                    WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+            )
             avoidScreenshotsIfNeeded()
 
             setOnShowListener {
