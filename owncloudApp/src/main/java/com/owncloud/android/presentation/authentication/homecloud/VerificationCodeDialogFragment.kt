@@ -8,11 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
 import androidx.core.os.bundleOf
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -132,17 +128,6 @@ class VerificationCodeDialogFragment : DialogFragment() {
             .setView(binding.root)
             .setCancelable(false)
             .create()
-
-        dialog.window?.let { window ->
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-                val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-                val sysBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
-                v.updatePadding(bottom = maxOf(imeBottom, sysBottom))
-                insets
-            }
-        }
-
         return dialog
     }
 
