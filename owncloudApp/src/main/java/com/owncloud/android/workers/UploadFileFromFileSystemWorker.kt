@@ -339,12 +339,18 @@ class UploadFileFromFileSystemWorker(
         file.getDataOrNull()?.let { ocFile ->
             val fileWithNewDetails =
                 if (ocTransfer.forceOverwrite) {
+                    val storageMtime = ocFile.storagePath
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { path -> File(path).takeIf { it.exists() }?.lastModified() }
+                        ?: 0L
+                    val lastSyncDate = maxOf(currentTime, storageMtime)
                     ocFile.copy(
                         needsToUpdateThumbnail = true,
                         etag = uploadFileOperation.etag,
                         length = (File(ocTransfer.localPath).length()),
-                        lastSyncDateForData = currentTime,
-                        modifiedAtLastSyncForData = currentTime,
+                        lastSyncDateForData = lastSyncDate,
+                        modifiedAtLastSyncForData = lastSyncDate,
+                        etagInConflict = null,
                     )
                 } else {
                     // Uploading a file should remove any conflicts on the file.
