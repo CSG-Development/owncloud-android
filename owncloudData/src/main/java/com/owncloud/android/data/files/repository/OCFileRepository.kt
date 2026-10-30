@@ -501,7 +501,7 @@ class OCFileRepository(
                 } else if (
                     remotePathChanged ||
                     localChildToSync.etag != remoteChild.etag ||
-                    localChildToSync.localModificationTimestamp > remoteChild.lastSyncDateForData!! ||
+                    localChildToSync.localModificationTimestamp > (localChildToSync.lastSyncDateForData ?: 0L) ||
                     isActionSetFolderAvailableOfflineOrSynchronize
                 ) {
                     val updatedStoragePath = updatedStoragePathForRename(
